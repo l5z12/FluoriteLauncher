@@ -69,6 +69,7 @@ public sealed class FluoriteLayout(string root) : IGameLayout
         manifest.Name = newName;
         manifest.Created = DateTimeOffset.Now;
         manifest.Stats = new InstanceStats();
+        manifest.Hidden = false; // A copy is made to be used: it shows.
         // Its own copy of the icon file, not the original's (which a later icon change there deletes).
         if (manifest.Icon is { } icon && Path.GetRelativePath(source.Directory, icon) is var rel && !rel.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(rel))
             manifest.Icon = Path.Combine(dir, rel);
@@ -104,10 +105,18 @@ public sealed class FluoriteLayout(string root) : IGameLayout
     public async Task SaveAsync(GameInstance instance, CancellationToken ct = default)
     {
         var path = Path.Combine(instance.Directory, ManifestFileName);
-        var tmp = path + ".tmp";
-        await using (var fs = File.Create(tmp))
-            await JsonSerializer.SerializeAsync(fs, instance.Manifest, FluoriteJsonContext.Default.InstanceManifest, ct).ConfigureAwait(false);
-        File.Move(tmp, path, overwrite: true);
+        // The manifest as it is now (it may change while this writes), through a temp file no other save shares.
+        var json = JsonSerializer.SerializeToUtf8Bytes(instance.Manifest, FluoriteJsonContext.Default.InstanceManifest);
+        var tmp = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            await File.WriteAllBytesAsync(tmp, json, ct).ConfigureAwait(false);
+            File.Move(tmp, path, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(tmp); // Only there when the write or move failed.
+        }
     }
 
     private GameInstance ToInstance(string dir, InstanceManifest manifest) => new()

@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 namespace Fluorite.App.Services;
 
 /// <summary>Notification-area icon used for close-to-tray and "hide while playing".</summary>
-public sealed class TrayService(InstanceRegistry layout, GameRunner runner) : IDisposable
+public sealed class TrayService(InstanceRegistry layout, GameRunner runner, SettingsService settings) : IDisposable
 {
     private TaskbarIcon? _icon;
 
@@ -41,6 +41,7 @@ public sealed class TrayService(InstanceRegistry layout, GameRunner runner) : ID
         menu.Items.Add(open);
 
         var recent = (await layout.GetInstancesAsync())
+            .Where(i => !settings.Current.IsHidden(i.Manifest))
             .OrderByDescending(i => i.Manifest.Stats.LastPlayed ?? i.Manifest.Created)
             .Take(5)
             .ToList();

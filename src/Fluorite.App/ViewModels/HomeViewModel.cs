@@ -99,6 +99,7 @@ public sealed partial class HomeViewModel(
 
         // Fetch first, then clear+fill with no await in between, so overlapping loads can't interleave duplicates.
         var recent = (await layout.GetInstancesAsync())
+            .Where(i => !settings.Current.IsHidden(i.Manifest))
             .OrderByDescending(i => i.Manifest.Stats.LastPlayed ?? i.Manifest.Created)
             .Take(6)
             .Select(i => new InstanceItem(i) { IsRunning = runner.Find(i) is not null })

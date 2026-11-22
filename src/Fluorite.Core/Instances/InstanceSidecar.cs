@@ -17,6 +17,9 @@ public sealed class InstanceSidecar
     public string? Group { get; set; }
     public string? Notes { get; set; }
 
+    /// <summary>Hidden in Fluorite (other launchers have no such flag, so it lives only here).</summary>
+    public bool Hidden { get; set; }
+
     /// <summary>The icon picked in Fluorite: an image file's path, or "" for none (the letter tile). Null: the launcher's.</summary>
     public string? Icon { get; set; }
 
@@ -63,10 +66,17 @@ public sealed class InstanceSidecar
     {
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, "sidecar.json");
-        var tmp = path + ".tmp";
-        await using (var fs = File.Create(tmp))
-            await JsonSerializer.SerializeAsync(fs, this, SidecarJsonContext.Default.InstanceSidecar, ct).ConfigureAwait(false);
-        File.Move(tmp, path, overwrite: true);
+        var json = JsonSerializer.SerializeToUtf8Bytes(this, SidecarJsonContext.Default.InstanceSidecar);
+        var tmp = $"{path}.{Guid.NewGuid():N}.tmp"; // No other save shares it.
+        try
+        {
+            await File.WriteAllBytesAsync(tmp, json, ct).ConfigureAwait(false);
+            File.Move(tmp, path, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(tmp); // Only there when the write or move failed.
+        }
     }
 
     /// <summary>Overlays this sidecar on a manifest built from the other launcher's metadata.</summary>
@@ -75,6 +85,7 @@ public sealed class InstanceSidecar
         manifest.Name = Name ?? manifest.Name;
         manifest.Group = Group ?? manifest.Group;
         manifest.Notes = Notes ?? manifest.Notes;
+        manifest.Hidden |= Hidden;
         if (IconKey is not null)
             (manifest.Icon, manifest.IconKey) = (null, IconKey);
         else if (Icon == "")
@@ -108,6 +119,7 @@ public sealed class InstanceSidecar
             Name = effective.Name != native.Name ? effective.Name : null,
             Group = effective.Group != native.Group ? effective.Group : null,
             Notes = effective.Notes != native.Notes ? effective.Notes : null,
+            Hidden = effective.Hidden,
             Icon = sameIcon || effective.IconKey is not null ? null : effective.Icon ?? "",
             IconKey = sameIcon ? null : effective.IconKey,
             Settings = InstanceSettingsDiff.Diff(effective.Settings, native.Settings),

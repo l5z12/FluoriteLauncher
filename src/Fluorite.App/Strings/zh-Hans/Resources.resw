@@ -1043,7 +1043,7 @@
   <data name="Library_GroupCollapsed" xml:space="preserve"><value>{0}，{1} 个实例，已折叠</value></data>
   <data name="Library_GroupCollapsedOne" xml:space="preserve"><value>{0}，1 个实例，已折叠</value></data>
   <data name="Library_RenameGroup.Text" xml:space="preserve"><value>重命名分组…</value></data>
-  <data name="Library_Ungroup.Text" xml:space="preserve"><value>取消分组</value></data>
+  <data name="Library_Ungroup.Text" xml:space="preserve"><value>移除分组</value></data>
   <data name="Menu_MoveToGroup.Text" xml:space="preserve"><value>移到分组</value></data>
   <data name="Library_NewGroup" xml:space="preserve"><value>新建分组…</value></data>
   <data name="Library_NewGroupTitle" xml:space="preserve"><value>新建分组</value></data>
@@ -1167,4 +1167,26 @@
   <data name="Review_Loader" xml:space="preserve"><value>同时将 {0} 从 {1} 更新到 {2}</value></data>
   <data name="Review_LoaderNeededBy" xml:space="preserve"><value>{0} 需要。新版本将在下次启动游戏时安装。</value></data>
   <data name="Review_WrongLoaderVersion" xml:space="preserve"><value>{0} 需要 {1} {2}。</value></data>
+  <data name="Library_Hide" xml:space="preserve"><value>隐藏</value></data>
+  <data name="Library_Unhide" xml:space="preserve"><value>在游戏库中显示</value></data>
+  <data name="Library_ShowHidden" xml:space="preserve"><value>显示隐藏的实例 ({0})</value></data>
+  <data name="Library_ShowHiddenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>同时显示隐藏的实例（变暗）</value></data>
+  <data name="Library_ShowHiddenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>显示隐藏的实例</value></data>
+  <data name="Library_HidOne" xml:space="preserve"><value>已隐藏“{0}”。</value></data>
+  <data name="Library_HidMany" xml:space="preserve"><value>已隐藏 {0} 个实例。</value></data>
+  <data name="Library_ItemHidden" xml:space="preserve"><value>已隐藏</value></data>
+  <data name="Library_NoMatchHiddenOne" xml:space="preserve"><value>没有显示的实例与“{0}”匹配，但有 1 个隐藏的实例匹配。</value></data>
+  <data name="Library_NoMatchHidden" xml:space="preserve"><value>没有显示的实例与“{0}”匹配，但有 {1} 个隐藏的实例匹配。</value></data>
+  <data name="Library_AllHiddenOne" xml:space="preserve"><value>这里唯一的实例已隐藏。</value></data>
+  <data name="Library_AllHidden" xml:space="preserve"><value>这里的 {0} 个实例都已隐藏。</value></data>
+  <data name="Library_RevealHidden.Content" xml:space="preserve"><value>显示隐藏的实例</value></data>
+  <data name="Library_ShowGroupNamed" xml:space="preserve"><value>显示分组“{0}”</value></data>
+  <data name="Library_HideGroup" xml:space="preserve"><value>隐藏分组</value></data>
+  <data name="Library_ShowGroup" xml:space="preserve"><value>显示分组</value></data>
+  <data name="Library_HidGroup" xml:space="preserve"><value>已隐藏分组“{0}”。</value></data>
+  <data name="Library_RemovedGroup" xml:space="preserve"><value>已移除分组“{0}”，其中的实例现为未分组。</value></data>
+  <data name="Library_SelectGroup.Text" xml:space="preserve"><value>选择组内实例</value></data>
+  <data name="Library_NewGroupItem.Text" xml:space="preserve"><value>新建分组…</value></data>
+  <data name="Library_EmptyGroup.Text" xml:space="preserve"><value>此分组中还没有实例。将实例拖到这里，或右键单击实例并选择“移到分组”。</value></data>
+  <data name="Library_GroupExists" xml:space="preserve"><value>已存在名为“{0}”的分组。</value></data>
 </root>

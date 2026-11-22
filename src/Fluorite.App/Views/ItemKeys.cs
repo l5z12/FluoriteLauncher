@@ -31,6 +31,9 @@ internal static class ItemKeys
     public const string MoveDown = "Alt+Down";
     public const string Select = "Ctrl+Space";
 
+    /// <summary>Hide (or show again) a Library instance or group.</summary>
+    public const string Hide = "Ctrl+H";
+
     /// <summary>Windows' own key for Properties: a mod's info.</summary>
     public const string Properties = "Alt+Enter";
 

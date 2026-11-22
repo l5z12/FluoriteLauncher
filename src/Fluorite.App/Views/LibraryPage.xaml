@@ -11,6 +11,20 @@
     AllowDrop="True" DragOver="Page_DragOver" Drop="Page_Drop">
 
     <Page.Resources>
+        <!-- The eye-slash on a hidden instance's icon (bottom-right, a little outside it). -->
+        <Style x:Key="HiddenBadgeStyle" TargetType="Border">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Margin" Value="0,0,-5,-5" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorTertiaryBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+
         <!-- One menu for every card and row: it learns which instance when it opens (InstanceMenu_Opening). -->
         <MenuFlyout x:Key="InstanceMenu" Opening="InstanceMenu_Opening">
             <MenuFlyoutItem x:Uid="Menu_Play" AutomationProperties.AutomationId="Play" Click="Play_Click" KeyboardAcceleratorTextOverride="Ctrl+Enter">
@@ -36,6 +50,10 @@
                 <MenuFlyoutSubItem.Icon><FontIcon Glyph="&#xE8EC;" /></MenuFlyoutSubItem.Icon>
                 <MenuFlyoutItem Text="…" IsEnabled="False" />
             </MenuFlyoutSubItem>
+            <!-- "Hide" or "Show in Library": set when the menu opens. -->
+            <MenuFlyoutItem AutomationProperties.AutomationId="Hide" Click="Hide_Click" KeyboardAcceleratorTextOverride="Ctrl+H">
+                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xED1A;" /></MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
             <MenuFlyoutItem x:Uid="Menu_Duplicate" AutomationProperties.AutomationId="Duplicate" Click="Duplicate_Click" KeyboardAcceleratorTextOverride="Ctrl+D">
                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
             </MenuFlyoutItem>
@@ -58,7 +76,7 @@
         <DataTemplate x:Key="InstanceCard" x:DataType="vm:InstanceItem">
             <Button Padding="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                     Tag="{x:Bind}" Click="Instance_Click" CornerRadius="8" AutomationProperties.Name="{x:Bind Name}"
-                    AutomationProperties.ItemStatus="{x:Bind local:Bind.SelectedStatus(IsSelected), Mode=OneWay}"
+                    AutomationProperties.ItemStatus="{x:Bind local:Bind.InstanceStatus(IsSelected, IsHidden), Mode=OneWay}"
                     PreviewKeyDown="Card_PreviewKeyDown" ContextFlyout="{StaticResource InstanceMenu}"
                     CanDrag="True" DragStarting="Instance_DragStarting">
                 <Grid Padding="16" RowSpacing="6">
@@ -73,15 +91,21 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <!-- The brand tile + initial only stands in for a missing icon; icons (Prism's are transparent) show on the card. -->
-                        <Border Width="40" Height="40" CornerRadius="8">
-                            <Grid>
-                                <Border Background="{ThemeResource FluoriteBrandBrush}" Visibility="{x:Bind local:Bind.Collapsed(HasIcon)}">
-                                    <TextBlock Text="{x:Bind Initial}" FontSize="18" FontWeight="SemiBold" Foreground="{ThemeResource FluoriteOnBrandBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Border>
-                                <Image Source="{x:Bind Icon}" Stretch="Uniform" />
-                            </Grid>
-                        </Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <Grid>
+                            <Border Width="40" Height="40" CornerRadius="8" Opacity="{x:Bind local:Bind.DimIf(IsHidden), Mode=OneWay}">
+                                <Grid>
+                                    <Border Background="{ThemeResource FluoriteBrandBrush}" Visibility="{x:Bind local:Bind.Collapsed(HasIcon)}">
+                                        <TextBlock Text="{x:Bind Initial}" FontSize="18" FontWeight="SemiBold" Foreground="{ThemeResource FluoriteOnBrandBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <Image Source="{x:Bind Icon}" Stretch="Uniform" />
+                                </Grid>
+                            </Border>
+                            <!-- Hidden (shown only while "Show hidden" is on): an eye-slash on the icon's corner. -->
+                            <Border Style="{StaticResource HiddenBadgeStyle}" Visibility="{x:Bind local:Bind.Visible(IsHidden), Mode=OneWay}">
+                                <FontIcon Glyph="&#xED1A;" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Border>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Opacity="{x:Bind local:Bind.DimIf(IsHidden), Mode=OneWay}">
                             <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" local:TrimToolTip.IsEnabled="True" />
                             <TextBlock Text="{x:Bind VersionText}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                        local:TrimToolTip.IsEnabled="True" />
@@ -135,7 +159,7 @@
         <DataTemplate x:Key="InstanceRow" x:DataType="vm:InstanceItem">
             <Button Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Tag="{x:Bind}" Click="Instance_Click" CornerRadius="6" AutomationProperties.Name="{x:Bind Name}"
-                    AutomationProperties.ItemStatus="{x:Bind local:Bind.SelectedStatus(IsSelected), Mode=OneWay}"
+                    AutomationProperties.ItemStatus="{x:Bind local:Bind.InstanceStatus(IsSelected, IsHidden), Mode=OneWay}"
                     PreviewKeyDown="Card_PreviewKeyDown" ContextFlyout="{StaticResource InstanceMenu}"
                     CanDrag="True" DragStarting="Instance_DragStarting">
                 <Grid ColumnSpacing="16">
@@ -146,15 +170,20 @@
                         <ColumnDefinition Width="0.7*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Border Width="32" Height="32" CornerRadius="6" VerticalAlignment="Center">
-                        <Grid>
-                            <Border Background="{ThemeResource FluoriteBrandBrush}" Visibility="{x:Bind local:Bind.Collapsed(HasIcon)}">
-                                <TextBlock Text="{x:Bind Initial}" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource FluoriteOnBrandBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
-                            <Image Source="{x:Bind Icon}" Stretch="Uniform" />
-                        </Grid>
-                    </Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <Grid VerticalAlignment="Center">
+                        <Border Width="32" Height="32" CornerRadius="6" Opacity="{x:Bind local:Bind.DimIf(IsHidden), Mode=OneWay}">
+                            <Grid>
+                                <Border Background="{ThemeResource FluoriteBrandBrush}" Visibility="{x:Bind local:Bind.Collapsed(HasIcon)}">
+                                    <TextBlock Text="{x:Bind Initial}" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource FluoriteOnBrandBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <Image Source="{x:Bind Icon}" Stretch="Uniform" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource HiddenBadgeStyle}" Visibility="{x:Bind local:Bind.Visible(IsHidden), Mode=OneWay}">
+                            <FontIcon Glyph="&#xED1A;" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Border>
+                    </Grid>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Opacity="{x:Bind local:Bind.DimIf(IsHidden), Mode=OneWay}">
                         <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" local:TrimToolTip.IsEnabled="True" />
                         <TextBlock Text="{x:Bind DetailText}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                    local:TrimToolTip.IsEnabled="True" />
@@ -194,6 +223,7 @@
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="A" Modifiers="Control" Invoked="SelectAll_Invoked" />
             <KeyboardAccelerator Key="Escape" Invoked="ClearSelection_Invoked" />
+            <KeyboardAccelerator Key="N" Modifiers="Control,Shift" Invoked="NewGroup_Invoked" />
         </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -205,10 +235,19 @@
         <Grid ColumnSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="320" />
             </Grid.ColumnDefinitions>
             <TextBlock x:Uid="Library_Title" Style="{StaticResource PageTitleStyle}" VerticalAlignment="Center" />
-            <AutoSuggestBox x:Name="SearchBox" x:Uid="Library_Search" Grid.Column="1" QueryIcon="Find" Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" VerticalAlignment="Center" />
+            <!-- Only when something is hidden: an eye-slash and how many; on, they show too (dimmed). Beside the search, a filter like it. -->
+            <ToggleButton Grid.Column="1" IsChecked="{x:Bind ViewModel.ShowHidden, Mode=TwoWay}" x:Uid="Library_ShowHiddenButton" VerticalAlignment="Center" Padding="10,5"
+                          Visibility="{x:Bind local:Bind.Visible(ViewModel.HasHidden), Mode=OneWay}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <FontIcon Glyph="&#xED1A;" FontSize="14" />
+                    <TextBlock Text="{x:Bind ViewModel.HiddenCountText, Mode=OneWay}" />
+                </StackPanel>
+            </ToggleButton>
+            <AutoSuggestBox x:Name="SearchBox" x:Uid="Library_Search" Grid.Column="2" QueryIcon="Find" Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" VerticalAlignment="Center" />
         </Grid>
 
         <!-- Narrow windows: Refresh and Open folder go icon-only, then the filters take a line of their own. -->
@@ -287,6 +326,13 @@
                             </MenuFlyout>
                         </DropDownButton.Flyout>
                     </DropDownButton>
+                    <!-- "Hide", or "Show in Library" when every one picked is hidden. -->
+                    <Button Click="HideSelection_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{x:Bind local:Bind.HideGlyph(ViewModel.SelectionAllHidden), Mode=OneWay}" FontSize="14" />
+                            <TextBlock Text="{x:Bind ViewModel.SelectionHideText, Mode=OneWay}" />
+                        </StackPanel>
+                    </Button>
                     <Button Click="DeleteSelection_Click" x:Uid="Library_SelectionDeleteButton">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="&#xE74D;" FontSize="14" />
@@ -298,6 +344,7 @@
             </Border>
             <InfoBar IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.ErrorMessage), Mode=OneWay, FallbackValue=False}" Severity="Error" Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" />
             <InfoBar IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.StatusMessage), Mode=OneWay, FallbackValue=False}" Severity="Success" Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+            <local:UndoBar Offer="{x:Bind ViewModel.PendingUndo, Mode=OneWay}" />
         </StackPanel>
 
         <!-- Right-click on the blank parts (cards and group headers have menus of their own). -->
@@ -306,6 +353,9 @@
                 <MenuFlyout Opening="LibraryMenu_Opening">
                     <MenuFlyoutItem x:Uid="LibraryMenu_New" Click="NewInstance_Click" KeyboardAcceleratorTextOverride="Ctrl+N">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE710;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Uid="Library_NewGroupItem" Click="NewGroup_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+N">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8F4;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
                     <MenuFlyoutSubItem x:Uid="LibraryMenu_Import">
                         <MenuFlyoutSubItem.Icon><FontIcon Glyph="&#xE8B5;" /></MenuFlyoutSubItem.Icon>
@@ -333,6 +383,9 @@
                         <RadioMenuFlyoutItem x:Uid="LibraryMenu_SortCreated" GroupName="LibrarySort" Click="MenuSort_Click" />
                         <RadioMenuFlyoutItem x:Uid="LibraryMenu_SortMostPlayed" GroupName="LibrarySort" Click="MenuSort_Click" />
                     </MenuFlyoutSubItem>
+                    <ToggleMenuFlyoutItem x:Name="MenuShowHidden" Click="MenuShowHidden_Click">
+                        <ToggleMenuFlyoutItem.Icon><FontIcon Glyph="&#xED1A;" /></ToggleMenuFlyoutItem.Icon>
+                    </ToggleMenuFlyoutItem>
                     <MenuFlyoutItem x:Name="MenuExpandAll" x:Uid="LibraryMenu_ExpandAll" Click="ExpandAll_Click">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE70D;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
@@ -352,7 +405,7 @@
             <!-- A background, so the gaps between cards take the right-click (and the wheel). -->
             <ScrollViewer Background="Transparent">
                 <!-- One section per group (a single, headerless one when there are no groups). -->
-                <ItemsControl ItemsSource="{x:Bind ViewModel.Groups}" Margin="0,0,0,36" IsTabStop="False">
+                <ItemsControl x:Name="GroupList" ItemsSource="{x:Bind ViewModel.Groups}" Margin="0,0,0,36" IsTabStop="False">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Spacing="20" />
@@ -371,10 +424,19 @@
                                             <MenuFlyoutItem x:Uid="Library_RenameGroup" Tag="{x:Bind}" Click="RenameGroup_Click" IsEnabled="{x:Bind IsNamed}" KeyboardAcceleratorTextOverride="F2">
                                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8AC;" /></MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
-                                            <MenuFlyoutItem x:Uid="Library_Ungroup" Tag="{x:Bind}" Click="Ungroup_Click" IsEnabled="{x:Bind IsNamed}">
+                                            <MenuFlyoutItem Text="{x:Bind HideText}" Tag="{x:Bind}" Click="HideGroup_Click" IsEnabled="{x:Bind IsNamed}" KeyboardAcceleratorTextOverride="Ctrl+H">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="{x:Bind HideGlyph}" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutItem x:Uid="Library_SelectGroup" Tag="{x:Bind}" Click="SelectGroup_Click" IsEnabled="{x:Bind HasItems}">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B3;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutItem x:Uid="Library_Ungroup" Tag="{x:Bind}" Click="Ungroup_Click" IsEnabled="{x:Bind IsNamed}" KeyboardAcceleratorTextOverride="Del">
                                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8E6;" /></MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
                                             <MenuFlyoutSeparator />
+                                            <MenuFlyoutItem x:Uid="Library_NewGroupItem" Click="NewGroup_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+N">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8F4;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
                                             <MenuFlyoutItem x:Uid="LibraryMenu_ExpandAll" Click="ExpandAll_Click">
                                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE70D;" /></MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
@@ -385,10 +447,19 @@
                                     </Button.ContextFlyout>
                                     <StackPanel Orientation="Horizontal" Spacing="10">
                                         <FontIcon Glyph="{x:Bind Chevron, Mode=OneWay}" FontSize="12" />
-                                        <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}" Opacity="{x:Bind local:Bind.DimIf(IsHidden)}" />
                                         <TextBlock Text="{x:Bind CountText}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                        <!-- A hidden group (shown while "Show hidden" is on). -->
+                                        <FontIcon Glyph="&#xED1A;" FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Visibility="{x:Bind local:Bind.Visible(IsHidden)}" />
                                     </StackPanel>
                                 </Button>
+                                <!-- A new group nothing is in yet: where to drop instances (it takes the drop too). -->
+                                <Grid Tag="{x:Bind}" Background="Transparent" AllowDrop="True" DragOver="GroupHeader_DragOver" Drop="GroupHeader_Drop" MinHeight="72"
+                                      Visibility="{x:Bind local:Bind.Visible(ShowEmpty), Mode=OneWay}">
+                                    <Rectangle RadiusX="8" RadiusY="8" Stroke="{ThemeResource ControlStrokeColorDefaultBrush}" StrokeThickness="1.5" StrokeDashArray="4,3" />
+                                    <TextBlock x:Uid="Library_EmptyGroup" Margin="16,12" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                               Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
                                 <!-- Tab enters a section once (at the card last used); arrows move between cards. -->
                                 <ItemsRepeater ItemsSource="{x:Bind Items}" ItemTemplate="{StaticResource InstanceCard}" Visibility="{x:Bind local:Bind.Visible(ShowGrid), Mode=OneWay}"
                                                TabFocusNavigation="Once" XYFocusKeyboardNavigation="Enabled">
@@ -425,8 +496,12 @@
                         Visibility="{x:Bind local:Bind.Visible(ViewModel.IsNoMatch), Mode=OneWay}">
                 <FontIcon Glyph="&#xE721;" FontSize="48" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                 <TextBlock Text="{x:Bind ViewModel.NoMatchText, Mode=OneWay}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-                <Button x:Uid="Library_ClearSearch" HorizontalAlignment="Center" Command="{x:Bind ViewModel.ClearSearchCommand}"
-                        Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.SearchText), Mode=OneWay, FallbackValue=Collapsed}" />
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                    <Button x:Uid="Library_RevealHidden" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.RevealHiddenCommand}"
+                            Visibility="{x:Bind local:Bind.Visible(ViewModel.CanRevealHidden), Mode=OneWay}" />
+                    <Button x:Uid="Library_ClearSearch" Command="{x:Bind ViewModel.ClearSearchCommand}"
+                            Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.SearchText), Mode=OneWay, FallbackValue=Collapsed}" />
+                </StackPanel>
             </StackPanel>
         </Grid>
 
