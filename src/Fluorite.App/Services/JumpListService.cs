@@ -11,7 +11,7 @@ namespace Fluorite.App.Services;
 /// Taskbar/Start jump list (requires package identity): recently played instances, and their recent worlds when the
 /// game can open a world directly (Quick Play).
 /// </summary>
-public sealed class JumpListService(ILogger<JumpListService> logger, QuickPlaySupport quickPlay)
+public sealed class JumpListService(ILogger<JumpListService> logger, QuickPlaySupport quickPlay, SettingsService settings)
 {
     public static bool IsSupported => PackageInfo.HasPackageIdentity && JumpList.IsSupported();
 
@@ -22,7 +22,7 @@ public sealed class JumpListService(ILogger<JumpListService> logger, QuickPlaySu
         try
         {
             var recent = instances
-                .Where(i => !i.Manifest.Hidden)
+                .Where(i => !settings.Current.IsHidden(i.Manifest))
                 .OrderByDescending(i => i.Manifest.Stats.LastPlayed ?? i.Manifest.Created)
                 .Take(6)
                 .ToList();

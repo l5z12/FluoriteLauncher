@@ -49,6 +49,12 @@ public sealed partial class LibraryPage : Page
             case ItemKeys.Delete when item.IsSelected && ViewModel.SelectionCount > 1:
                 DeleteSelection_Click(sender, e);
                 break;
+            case ItemKeys.Hide when item.IsSelected && ViewModel.SelectionCount > 1:
+                HideSelection_Click(sender, e);
+                break;
+            case ItemKeys.Hide:
+                Hide_Click(sender, e);
+                break;
             case ItemKeys.Play when !item.IsRunning:
                 Play_Click(sender, e);
                 break;
@@ -359,6 +365,8 @@ public sealed partial class LibraryPage : Page
         {
             var current = targets.All(t => string.Equals(name, t.Group, StringComparison.OrdinalIgnoreCase));
             var entry = new MenuFlyoutItem { Text = name, Icon = current ? new FontIcon { Glyph = "" } : null, IsEnabled = !current };
+            if (!current && ViewModel.IsGroupHidden(name)) // Moving there hides them too: say so before.
+                entry.Icon = new FontIcon { Glyph = Bind.HideGlyph(false) };
             entry.Click += async (_, _) => await ViewModel.SetGroupAsync(targets, name);
             items.Add(entry);
         }
@@ -388,14 +396,26 @@ public sealed partial class LibraryPage : Page
             ViewModel.ToggleGroup(group);
     }
 
-    /// <summary>F2 renames the focused group, as its menu says.</summary>
+    /// <summary>The keys its menu shows, on the focused group: F2 renames, Ctrl+H hides or shows, Del removes.</summary>
     private void GroupHeader_PreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
-        if (ItemKeys.Chord(e) == ItemKeys.Rename && Bind.ItemOf<InstanceGroup>(sender) is { IsNamed: true })
+        if (Bind.ItemOf<InstanceGroup>(sender) is not { IsNamed: true })
+            return;
+        switch (ItemKeys.Chord(e))
         {
-            e.Handled = true;
-            RenameGroup_Click(sender, e);
+            case ItemKeys.Rename:
+                RenameGroup_Click(sender, e);
+                break;
+            case ItemKeys.Hide:
+                HideGroup_Click(sender, e);
+                break;
+            case ItemKeys.Delete:
+                Ungroup_Click(sender, e);
+                break;
+            default:
+                return;
         }
+        e.Handled = true;
     }
 
     private async void RenameGroup_Click(object sender, RoutedEventArgs e)
@@ -405,11 +425,43 @@ public sealed partial class LibraryPage : Page
             await ViewModel.RenameGroupAsync(name, newName);
     }
 
-    /// <summary>The instances stay; they just move to the ungrouped ones.</summary>
+    /// <summary>"Remove group": the instances stay, ungrouped; Undo puts them back.</summary>
     private async void Ungroup_Click(object sender, RoutedEventArgs e)
     {
         if (Bind.ItemOf<InstanceGroup>(sender) is { Name: { } name })
-            await ViewModel.RenameGroupAsync(name, null);
+            await ViewModel.RemoveGroupAsync(name);
+    }
+
+    private void HideGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<InstanceGroup>(sender) is { Name: { } name } group)
+            ViewModel.SetGroupHidden(name, !group.IsHidden);
+    }
+
+    private void SelectGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<InstanceGroup>(sender) is { } group)
+            ViewModel.SelectGroup(group);
+    }
+
+    /// <summary>Ctrl+Shift+N, as Explorer's "New folder"; not while typing or with a dialog open.</summary>
+    private void NewGroup_Invoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (IsTypingOrInDialog())
+            return;
+        args.Handled = true;
+        NewGroup_Click(this, new RoutedEventArgs());
+    }
+
+    /// <summary>"New group…": an empty section, scrolled into view, ready for instances to be dragged onto it.</summary>
+    private async void NewGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (await Dialogs.PromptAsync(Loc.Get("Library_NewGroupTitle"), Loc.Get("Library_NewGroupButton"), Loc.Get("Library_GroupName"),
+                placeholder: Loc.Get("Library_GroupNamePlaceholder"), validate: ViewModel.CheckNewGroupName) is not { } name
+            || ViewModel.CreateGroup(name) is not { } group)
+            return;
+        GroupList.UpdateLayout();
+        (GroupList.ContainerFromItem(group) as UIElement)?.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = true, VerticalAlignmentRatio = 0.3 });
     }
 
     private void ExpandAll_Click(object sender, RoutedEventArgs e) => ViewModel.SetAllExpanded(true);

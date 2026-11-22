@@ -1043,7 +1043,7 @@
   <data name="Library_GroupCollapsed" xml:space="preserve"><value>{0}, {1} instances, collapsed</value></data>
   <data name="Library_GroupCollapsedOne" xml:space="preserve"><value>{0}, 1 instance, collapsed</value></data>
   <data name="Library_RenameGroup.Text" xml:space="preserve"><value>Rename group…</value></data>
-  <data name="Library_Ungroup.Text" xml:space="preserve"><value>Ungroup</value></data>
+  <data name="Library_Ungroup.Text" xml:space="preserve"><value>Remove group</value></data>
   <data name="Menu_MoveToGroup.Text" xml:space="preserve"><value>Move to group</value></data>
   <data name="Library_NewGroup" xml:space="preserve"><value>New group…</value></data>
   <data name="Library_NewGroupTitle" xml:space="preserve"><value>New group</value></data>
@@ -1180,4 +1180,13 @@
   <data name="Library_AllHiddenOne" xml:space="preserve"><value>The only instance here is hidden.</value></data>
   <data name="Library_AllHidden" xml:space="preserve"><value>All {0} instances here are hidden.</value></data>
   <data name="Library_RevealHidden.Content" xml:space="preserve"><value>Show hidden instances</value></data>
+  <data name="Library_ShowGroupNamed" xml:space="preserve"><value>Show group “{0}”</value></data>
+  <data name="Library_HideGroup" xml:space="preserve"><value>Hide group</value></data>
+  <data name="Library_ShowGroup" xml:space="preserve"><value>Show group</value></data>
+  <data name="Library_HidGroup" xml:space="preserve"><value>Hid group “{0}”.</value></data>
+  <data name="Library_RemovedGroup" xml:space="preserve"><value>Removed group “{0}”. Its instances are now ungrouped.</value></data>
+  <data name="Library_SelectGroup.Text" xml:space="preserve"><value>Select its instances</value></data>
+  <data name="Library_NewGroupItem.Text" xml:space="preserve"><value>New group…</value></data>
+  <data name="Library_EmptyGroup.Text" xml:space="preserve"><value>Nothing in this group yet. Drag instances here, or right-click one and choose Move to group.</value></data>
+  <data name="Library_GroupExists" xml:space="preserve"><value>There's already a group called “{0}”.</value></data>
 </root>

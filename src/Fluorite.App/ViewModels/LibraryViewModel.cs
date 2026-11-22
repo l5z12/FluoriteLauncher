@@ -58,11 +58,124 @@ public sealed partial class LibraryViewModel(
             g.IsListView = value == 1;
     }
 
-    /// <summary>Every group name in use, A–Z (for "Move to group" and the new instance dialog).</summary>
+    /// <summary>Every group, A–Z: those in use and the empty ones made with "New group…" (for "Move to group" and the new instance dialog).</summary>
     public IReadOnlyList<string> GroupNames => _all.Select(i => i.Group).OfType<string>()
+        .Concat(settings.Current.CreatedGroups)
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .Order(StringComparer.CurrentCultureIgnoreCase)
         .ToList();
+
+    public bool IsGroupHidden(string? group) => settings.Current.IsGroupHidden(group);
+
+    private static bool SameName(string? a, string? b) => string.Equals(a?.Trim(), b?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Takes a group out of one of the settings lists (collapsed, created, hidden); true if it was there.</summary>
+    private static bool Drop(List<string> list, string name) => list.RemoveAll(k => SameName(k, name)) > 0;
+
+    /// <summary>"New group…": an empty section to drag instances into, kept until removed. An existing name is just opened.</summary>
+    public InstanceGroup? CreateGroup(string name)
+    {
+        name = name.Trim();
+        if (name.Length == 0)
+            return null;
+        var s = settings.Current;
+        if (!GroupNames.Contains(name, StringComparer.OrdinalIgnoreCase))
+            s.CreatedGroups.Add(name);
+        Drop(s.CollapsedGroups, name);
+        settings.Save();
+        if (!string.IsNullOrWhiteSpace(SearchText)) // A search would hide the empty section just made.
+            SearchText = "";
+        if (s.IsGroupHidden(name))
+            ShowHidden = true;
+        ApplyFilter();
+        return Groups.FirstOrDefault(g => SameName(g.Name, name));
+    }
+
+    /// <summary>Hides a whole group (its instances count as hidden wherever they're listed), or shows it again.</summary>
+    public void SetGroupHidden(string name, bool hidden, bool offerUndo = true)
+    {
+        var s = settings.Current;
+        if (s.IsGroupHidden(name) == hidden)
+            return;
+        if (hidden)
+            s.HiddenGroups.Add(name.Trim());
+        else
+            Drop(s.HiddenGroups, name);
+        settings.Save();
+        ApplyFilter();
+        UpdateJumpList();
+        if (hidden && offerUndo && !ShowHidden)
+            OfferUndo(Loc.Format("Library_HidGroup", name), () =>
+            {
+                SetGroupHidden(name, false);
+                return Task.CompletedTask;
+            });
+    }
+
+    /// <summary>
+    /// Removes a group: its instances stay, ungrouped (another launcher's instance records "none" in Fluorite's notes).
+    /// Undo puts them back in it, with the group's settings (hidden, collapsed, kept while empty).
+    /// </summary>
+    public async Task RemoveGroupAsync(string name)
+    {
+        var s = settings.Current;
+        var members = _all.Where(i => SameName(i.Group, name)).ToList();
+        var before = members.Select(i => (Item: i, Group: i.Instance.Manifest.Group)).ToList();
+        var (created, hidden, collapsed) = (Drop(s.CreatedGroups, name), Drop(s.HiddenGroups, name), Drop(s.CollapsedGroups, name));
+        settings.Save();
+        foreach (var item in members)
+        {
+            item.Instance.Manifest.Group = item.IsExternal ? "" : null;
+            await SaveAsync(item);
+        }
+        ApplyFilter();
+        if (hidden)
+            UpdateJumpList();
+        OfferUndo(Loc.Format("Library_RemovedGroup", name), async () =>
+        {
+            if (created)
+                s.CreatedGroups.Add(name);
+            if (hidden)
+                s.HiddenGroups.Add(name);
+            if (collapsed)
+                s.CollapsedGroups.Add(name);
+            settings.Save();
+            foreach (var (item, group) in before)
+            {
+                item.Instance.Manifest.Group = group;
+                await SaveAsync(item);
+            }
+            ApplyFilter();
+            if (hidden)
+                UpdateJumpList();
+        });
+    }
+
+    /// <summary>Selects every instance of a section (opening it), for a move, hide or delete of them all.</summary>
+    public void SelectGroup(InstanceGroup group)
+    {
+        if (!group.IsExpanded)
+            ToggleGroup(group);
+        foreach (var item in group.Items)
+            item.IsSelected = true;
+        _anchor = group.Items.LastOrDefault() ?? _anchor;
+        UpdateSelection();
+    }
+
+    private void UpdateJumpList() => _ = jumpList.UpdateAsync(_all.Select(i => i.Instance).ToList());
+
+    /// <summary>One Undo at a time: a new one makes the last one final.</summary>
+    private void OfferUndo(string message, Func<Task> undo)
+    {
+        var offer = new UndoOffer(message, undo);
+        _ = PendingUndo?.CommitAsync();
+        offer.Finished += (_, _) =>
+        {
+            if (PendingUndo == offer)
+                PendingUndo = null;
+        };
+        PendingUndo = offer;
+    }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
@@ -78,13 +191,16 @@ public sealed partial class LibraryViewModel(
     [NotifyPropertyChangedFor(nameof(HasHidden), nameof(HiddenToggleText), nameof(HiddenCountText))]
     public partial int HiddenCount { get; set; }
 
-    public bool HasHidden => HiddenCount > 0 || ShowHidden;
+    public bool HasHidden => HiddenCount > 0 || ShowHidden || HasHiddenEmptyGroups;
+
+    /// <summary>A hidden group with nothing in it: no instance to count, but the toggle must still reach it.</summary>
+    private bool HasHiddenEmptyGroups { get; set; }
 
     /// <summary>"Show hidden (3)", in the Library's menu.</summary>
     public string HiddenToggleText => Loc.Format("Library_ShowHidden", HiddenCount);
 
-    /// <summary>The count on the eye-slash toggle by the search box.</summary>
-    public string HiddenCountText => HiddenCount.ToString(System.Globalization.CultureInfo.CurrentCulture);
+    /// <summary>The count on the eye-slash toggle by the search box (none when only empty groups are hidden).</summary>
+    public string HiddenCountText => HiddenCount > 0 ? HiddenCount.ToString(System.Globalization.CultureInfo.CurrentCulture) : "";
 
     /// <summary>Nothing shows, but hidden instances would: the empty state offers to show them.</summary>
     [ObservableProperty] public partial bool CanRevealHidden { get; set; }
@@ -96,13 +212,14 @@ public sealed partial class LibraryViewModel(
     [ObservableProperty] public partial UndoOffer? PendingUndo { get; set; }
 
     /// <summary>
-    /// Hides or shows instances. Hiding them out of sight offers Undo; another launcher's instance keeps the flag in
-    /// Fluorite's notes beside it.
+    /// Hides instances, or shows them: showing also shows the hidden groups they're in (the menu says so: "Show group
+    /// “X”"). Hiding them out of sight offers Undo; another launcher's instance keeps the flag in Fluorite's notes beside it.
     /// </summary>
     public async Task SetHiddenAsync(IReadOnlyList<InstanceItem> items, bool hidden, bool offerUndo = true)
     {
-        var changed = items.Where(i => i.IsHidden != hidden).ToList();
-        if (changed.Count == 0)
+        var changed = items.Where(i => i.Instance.Manifest.Hidden != hidden).ToList();
+        List<string> groups = hidden ? [] : items.Where(i => i.IsGroupHidden).Select(i => i.Group!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (changed.Count == 0 && groups.Count == 0)
             return;
         foreach (var item in changed)
         {
@@ -110,19 +227,18 @@ public sealed partial class LibraryViewModel(
             item.RefreshHidden();
             await SaveAsync(item);
         }
+        if (groups.Count > 0)
+        {
+            foreach (var g in groups)
+                Drop(settings.Current.HiddenGroups, g);
+            settings.Save();
+        }
         ApplyFilter();
-        _ = jumpList.UpdateAsync(_all.Select(i => i.Instance).ToList());
-        if (hidden && offerUndo && !ShowHidden) // While they show, they stay in sight (dimmed): nothing to undo from.
+        UpdateJumpList();
+        if (hidden && offerUndo && !ShowHidden && changed.Count > 0) // While they show, they stay in sight (dimmed): nothing to undo from.
         {
             var message = changed.Count == 1 ? Loc.Format("Library_HidOne", changed[0].Name) : Loc.Format("Library_HidMany", changed.Count);
-            var offer = new UndoOffer(message, () => SetHiddenAsync(changed, false));
-            _ = PendingUndo?.CommitAsync();
-            offer.Finished += (_, _) =>
-            {
-                if (PendingUndo == offer)
-                    PendingUndo = null;
-            };
-            PendingUndo = offer;
+            OfferUndo(message, () => SetHiddenAsync(changed.Where(i => i.Instance.Manifest.Hidden).ToList(), false, offerUndo: false));
         }
     }
 
@@ -185,6 +301,8 @@ public sealed partial class LibraryViewModel(
         var source = SourceIndex > 0 && SourceIndex < Sources.Count ? Sources[SourceIndex].RootId : null;
         // Every word somewhere in the name, version and loader, group or launcher: "fabric 1.21", "modded", "prism".
         var terms = SearchText.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var item in _all)
+            item.IsGroupHidden = settings.Current.IsGroupHidden(item.Group);
         var inSource = _all.Where(i => source is null || (i.Instance.RootId ?? "") == source).ToList();
         var matches = inSource.Where(i => terms.All(t => i.Name.Contains(t, StringComparison.OrdinalIgnoreCase)
                 || i.VersionText.Contains(t, StringComparison.OrdinalIgnoreCase)
@@ -224,19 +342,27 @@ public sealed partial class LibraryViewModel(
         };
     }
 
-    /// <summary>Sections in the sort order within each; while searching, collapsed groups open to show their matches.</summary>
+    /// <summary>
+    /// Sections in the sort order within each; while searching, collapsed groups open to show their matches. Groups made
+    /// with "New group…" that nothing is in yet show too (not while searching: they can't match).
+    /// </summary>
     private void RebuildGroups()
     {
         Groups.Clear();
-        var collapsed = settings.Current.CollapsedGroups;
+        var s = settings.Current;
+        var collapsed = s.CollapsedGroups;
         var searching = SearchText.Trim().Length > 0;
         var list = ViewIndex == 1;
-        foreach (var g in Instances.Where(i => i.Group is not null)
-                     .GroupBy(i => i.Group!, StringComparer.OrdinalIgnoreCase)
-                     .OrderBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase))
-        {
-            Groups.Add(new InstanceGroup(g.First().Group, g, hasHeader: true, searching || !collapsed.Contains(g.Key, StringComparer.OrdinalIgnoreCase), list));
-        }
+        var empty = s.CreatedGroups.Where(c => !_all.Any(i => SameName(i.Group, c))).ToList();
+        HasHiddenEmptyGroups = empty.Any(s.IsGroupHidden);
+        OnPropertyChanged(nameof(HasHidden));
+        var sections = Instances.Where(i => i.Group is not null)
+            .GroupBy(i => i.Group!, StringComparer.OrdinalIgnoreCase)
+            .Select(g => (Name: g.First().Group!, Items: g.ToList()))
+            .Concat(searching ? [] : empty.Where(e => ShowHidden || !s.IsGroupHidden(e)).Select(e => (Name: e.Trim(), Items: new List<InstanceItem>())))
+            .OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase);
+        foreach (var (name, items) in sections)
+            Groups.Add(new InstanceGroup(name, items, hasHeader: true, searching || !collapsed.Contains(name, StringComparer.OrdinalIgnoreCase), list, s.IsGroupHidden(name)));
         var ungrouped = Instances.Where(i => i.Group is null).ToList();
         if (ungrouped.Count > 0)
             Groups.Add(new InstanceGroup(null, ungrouped, hasHeader: Groups.Count > 0, searching || Groups.Count == 0 || !collapsed.Contains(""), list));
@@ -352,20 +478,34 @@ public sealed partial class LibraryViewModel(
         SelectionAllHidden = selected.Count > 0 && selected.All(i => i.IsHidden);
     }
 
-    /// <summary>Renames a group for every instance in it (null ungroups them all; the instances stay).</summary>
-    public async Task RenameGroupAsync(string from, string? to)
+    /// <summary>
+    /// Renames a group for every instance in it; it stays collapsed, hidden or kept-while-empty as it was. A name in use
+    /// already merges the two.
+    /// </summary>
+    public async Task RenameGroupAsync(string from, string to)
     {
-        foreach (var item in _all.Where(i => string.Equals(i.Group, from, StringComparison.OrdinalIgnoreCase)))
+        to = to.Trim();
+        if (to.Length == 0)
+            return;
+        foreach (var item in _all.Where(i => SameName(i.Group, from)))
         {
-            item.Instance.Manifest.Group = string.IsNullOrWhiteSpace(to) ? (item.IsExternal ? "" : null) : to.Trim();
+            item.Instance.Manifest.Group = to;
             await SaveAsync(item);
         }
-        var collapsed = settings.Current.CollapsedGroups;
-        if (collapsed.RemoveAll(k => string.Equals(k, from, StringComparison.OrdinalIgnoreCase)) > 0 && !string.IsNullOrWhiteSpace(to))
-            collapsed.Add(to.Trim());
+        var s = settings.Current;
+        foreach (var list in new[] { s.CollapsedGroups, s.CreatedGroups, s.HiddenGroups })
+        {
+            if (Drop(list, from) && !list.Contains(to, StringComparer.OrdinalIgnoreCase))
+                list.Add(to);
+        }
         settings.Save();
         ApplyFilter();
+        UpdateJumpList();
     }
+
+    /// <summary>A name for "New group…" that isn't taken: null if fine, else why not.</summary>
+    public string? CheckNewGroupName(string name) =>
+        GroupNames.FirstOrDefault(g => SameName(g, name)) is { } taken ? Loc.Format("Library_GroupExists", taken) : null;
 
     private async Task SaveAsync(InstanceItem item)
     {

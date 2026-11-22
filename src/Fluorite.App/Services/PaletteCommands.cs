@@ -36,6 +36,7 @@ internal static class PaletteCommands
     {
         var list = new List<PaletteCommand>();
         var runner = App.Get<GameRunner>();
+        var settings = App.Get<SettingsService>().Current;
 
         // Instances, most recently played first; the first few are suggested.
         IReadOnlyList<GameInstance> instances;
@@ -63,7 +64,7 @@ internal static class PaletteCommands
             else
             {
                 list.Add(new PaletteCommand("", Loc.Format("Palette_Play", instance.Name), version,
-                    () => window.OpenInstanceAsync(id, launch: true)) { Keywords = instance.Name, Suggested = !instance.Manifest.Hidden && recent++ < 3 });
+                    () => window.OpenInstanceAsync(id, launch: true)) { Keywords = instance.Name, Suggested = !settings.IsHidden(instance.Manifest) && recent++ < 3 });
             }
             list.Add(new PaletteCommand("", Loc.Format("Palette_Open", instance.Name), version,
                 () => window.OpenInstanceAsync(id, launch: false)) { Keywords = instance.Name });

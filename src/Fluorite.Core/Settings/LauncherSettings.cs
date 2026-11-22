@@ -104,6 +104,18 @@ public sealed class LauncherSettings
     /// <summary>Library groups the user collapsed; "" stands for the ungrouped instances.</summary>
     public List<string> CollapsedGroups { get; set; } = [];
 
+    /// <summary>Groups made with "New group…": kept (as an empty section) until removed, even with no instance in them.</summary>
+    public List<string> CreatedGroups { get; set; } = [];
+
+    /// <summary>Groups hidden in the Library: every instance in one counts as hidden, wherever it's listed.</summary>
+    public List<string> HiddenGroups { get; set; } = [];
+
+    /// <summary>Hidden itself, or in a hidden group: out of the Library (unless shown), Home, the tray and the jump list.</summary>
+    public bool IsHidden(Instances.InstanceManifest manifest) => manifest.Hidden || IsGroupHidden(manifest.Group);
+
+    public bool IsGroupHidden(string? group) =>
+        !string.IsNullOrWhiteSpace(group) && HiddenGroups.Contains(group.Trim(), StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Scan mods for missing dependencies, wrong loader/version, duplicates… before every launch.</summary>
     public bool CheckModsBeforeLaunch { get; set; } = true;
 

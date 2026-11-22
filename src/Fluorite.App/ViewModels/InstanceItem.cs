@@ -60,13 +60,33 @@ public sealed partial class InstanceItem(GameInstance instance) : ObservableObje
 
     public bool IsExternal => Instance.IsExternal;
 
-    /// <summary>Kept out of the Library unless "Show hidden" is on (where it shows dimmed), and out of recent lists.</summary>
-    public bool IsHidden => Instance.Manifest.Hidden;
+    /// <summary>
+    /// Kept out of the Library unless "Show hidden" is on (where it shows dimmed), and out of recent lists: hidden
+    /// itself, or in a hidden group.
+    /// </summary>
+    public bool IsHidden => Instance.Manifest.Hidden || IsGroupHidden;
 
-    /// <summary>"Hide" or "Show in Library", for its menu.</summary>
-    public string HideText => Loc.Get(IsHidden ? "Library_Unhide" : "Library_Hide");
+    /// <summary>Its group is hidden (set by the Library from the settings).</summary>
+    public bool IsGroupHidden
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                RefreshHidden();
+            }
+        }
+    }
 
-    /// <summary>After <see cref="InstanceManifest.Hidden"/> changed in place.</summary>
+    /// <summary>"Hide", "Show in Library", or "Show group “Old”" when only its group hides it.</summary>
+    public string HideText =>
+        Instance.Manifest.Hidden ? Loc.Get("Library_Unhide")
+        : IsGroupHidden ? Loc.Format("Library_ShowGroupNamed", Group ?? "")
+        : Loc.Get("Library_Hide");
+
+    /// <summary>After <see cref="InstanceManifest.Hidden"/> or <see cref="IsGroupHidden"/> changed.</summary>
     public void RefreshHidden()
     {
         OnPropertyChanged(nameof(IsHidden));

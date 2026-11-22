@@ -51,7 +51,7 @@
                 <MenuFlyoutItem Text="…" IsEnabled="False" />
             </MenuFlyoutSubItem>
             <!-- "Hide" or "Show in Library": set when the menu opens. -->
-            <MenuFlyoutItem AutomationProperties.AutomationId="Hide" Click="Hide_Click">
+            <MenuFlyoutItem AutomationProperties.AutomationId="Hide" Click="Hide_Click" KeyboardAcceleratorTextOverride="Ctrl+H">
                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xED1A;" /></MenuFlyoutItem.Icon>
             </MenuFlyoutItem>
             <MenuFlyoutItem x:Uid="Menu_Duplicate" AutomationProperties.AutomationId="Duplicate" Click="Duplicate_Click" KeyboardAcceleratorTextOverride="Ctrl+D">
@@ -223,6 +223,7 @@
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="A" Modifiers="Control" Invoked="SelectAll_Invoked" />
             <KeyboardAccelerator Key="Escape" Invoked="ClearSelection_Invoked" />
+            <KeyboardAccelerator Key="N" Modifiers="Control,Shift" Invoked="NewGroup_Invoked" />
         </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -353,6 +354,9 @@
                     <MenuFlyoutItem x:Uid="LibraryMenu_New" Click="NewInstance_Click" KeyboardAcceleratorTextOverride="Ctrl+N">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE710;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Uid="Library_NewGroupItem" Click="NewGroup_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+N">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8F4;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
                     <MenuFlyoutSubItem x:Uid="LibraryMenu_Import">
                         <MenuFlyoutSubItem.Icon><FontIcon Glyph="&#xE8B5;" /></MenuFlyoutSubItem.Icon>
                         <MenuFlyoutItem x:Uid="Library_ImportFile" Click="ImportFile_Click" KeyboardAcceleratorTextOverride="Ctrl+O">
@@ -401,7 +405,7 @@
             <!-- A background, so the gaps between cards take the right-click (and the wheel). -->
             <ScrollViewer Background="Transparent">
                 <!-- One section per group (a single, headerless one when there are no groups). -->
-                <ItemsControl ItemsSource="{x:Bind ViewModel.Groups}" Margin="0,0,0,36" IsTabStop="False">
+                <ItemsControl x:Name="GroupList" ItemsSource="{x:Bind ViewModel.Groups}" Margin="0,0,0,36" IsTabStop="False">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Spacing="20" />
@@ -420,10 +424,19 @@
                                             <MenuFlyoutItem x:Uid="Library_RenameGroup" Tag="{x:Bind}" Click="RenameGroup_Click" IsEnabled="{x:Bind IsNamed}" KeyboardAcceleratorTextOverride="F2">
                                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8AC;" /></MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
-                                            <MenuFlyoutItem x:Uid="Library_Ungroup" Tag="{x:Bind}" Click="Ungroup_Click" IsEnabled="{x:Bind IsNamed}">
+                                            <MenuFlyoutItem Text="{x:Bind HideText}" Tag="{x:Bind}" Click="HideGroup_Click" IsEnabled="{x:Bind IsNamed}" KeyboardAcceleratorTextOverride="Ctrl+H">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="{x:Bind HideGlyph}" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutItem x:Uid="Library_SelectGroup" Tag="{x:Bind}" Click="SelectGroup_Click" IsEnabled="{x:Bind HasItems}">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B3;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutItem x:Uid="Library_Ungroup" Tag="{x:Bind}" Click="Ungroup_Click" IsEnabled="{x:Bind IsNamed}" KeyboardAcceleratorTextOverride="Del">
                                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8E6;" /></MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
                                             <MenuFlyoutSeparator />
+                                            <MenuFlyoutItem x:Uid="Library_NewGroupItem" Click="NewGroup_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+N">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8F4;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
                                             <MenuFlyoutItem x:Uid="LibraryMenu_ExpandAll" Click="ExpandAll_Click">
                                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE70D;" /></MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
@@ -434,10 +447,19 @@
                                     </Button.ContextFlyout>
                                     <StackPanel Orientation="Horizontal" Spacing="10">
                                         <FontIcon Glyph="{x:Bind Chevron, Mode=OneWay}" FontSize="12" />
-                                        <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}" Opacity="{x:Bind local:Bind.DimIf(IsHidden)}" />
                                         <TextBlock Text="{x:Bind CountText}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                        <!-- A hidden group (shown while "Show hidden" is on). -->
+                                        <FontIcon Glyph="&#xED1A;" FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Visibility="{x:Bind local:Bind.Visible(IsHidden)}" />
                                     </StackPanel>
                                 </Button>
+                                <!-- A new group nothing is in yet: where to drop instances (it takes the drop too). -->
+                                <Grid Tag="{x:Bind}" Background="Transparent" AllowDrop="True" DragOver="GroupHeader_DragOver" Drop="GroupHeader_Drop" MinHeight="72"
+                                      Visibility="{x:Bind local:Bind.Visible(ShowEmpty), Mode=OneWay}">
+                                    <Rectangle RadiusX="8" RadiusY="8" Stroke="{ThemeResource ControlStrokeColorDefaultBrush}" StrokeThickness="1.5" StrokeDashArray="4,3" />
+                                    <TextBlock x:Uid="Library_EmptyGroup" Margin="16,12" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                               Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
                                 <!-- Tab enters a section once (at the card last used); arrows move between cards. -->
                                 <ItemsRepeater ItemsSource="{x:Bind Items}" ItemTemplate="{StaticResource InstanceCard}" Visibility="{x:Bind local:Bind.Visible(ShowGrid), Mode=OneWay}"
                                                TabFocusNavigation="Once" XYFocusKeyboardNavigation="Enabled">

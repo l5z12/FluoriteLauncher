@@ -51,13 +51,31 @@ public static class Dialogs
     /// <summary>
     /// Asks for one line of text: it opens with <paramref name="initial"/> selected, ready to type over, and the
     /// primary button waits for text that isn't blank or unchanged; Enter confirms. Returns the trimmed text, or null.
+    /// <paramref name="validate"/> says, as it's typed, why a text won't do (null: fine); the button waits for that too.
     /// </summary>
-    public static async Task<string?> PromptAsync(string title, string primary, string label, string? initial = null, string? placeholder = null)
+    public static async Task<string?> PromptAsync(string title, string primary, string label, string? initial = null, string? placeholder = null,
+        Func<string, string?>? validate = null)
     {
         var box = new TextBox { Text = initial ?? "", PlaceholderText = placeholder ?? "", MinWidth = 360, MaxLength = 100 };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(box, label);
-        var dialog = Create(title, box, primary);
-        void Update() => dialog.IsPrimaryButtonEnabled = box.Text.Trim() is { Length: > 0 } text && text != (initial ?? "").Trim();
+        var problem = new TextBlock
+        {
+            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
+            TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 360,
+            Visibility = Visibility.Collapsed,
+        };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetLiveSetting(problem, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        var content = new StackPanel { Spacing = 8, Children = { box, problem } };
+        var dialog = Create(title, content, primary);
+        void Update()
+        {
+            var text = box.Text.Trim();
+            var why = text.Length > 0 && validate is not null ? validate(text) : null;
+            problem.Text = why ?? "";
+            problem.Visibility = why is null ? Visibility.Collapsed : Visibility.Visible;
+            dialog.IsPrimaryButtonEnabled = text.Length > 0 && text != (initial ?? "").Trim() && why is null;
+        }
         box.TextChanged += (_, _) => Update();
         Update();
         dialog.Opened += (_, _) =>
