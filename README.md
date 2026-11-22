@@ -1,6 +1,16 @@
-# Fluorite Launcher
+<p align="center">
+  <img src="src/Fluorite.App/Assets/Logo.svg" alt="Fluorite Launcher logo: a block of banded green fluorite" width="128" height="128">
+</p>
 
-A Minecraft: Java Edition launcher for Windows.
+<h1 align="center">Fluorite Launcher</h1>
+
+<p align="center">A Minecraft: Java Edition launcher for Windows.</p>
+
+<p align="center">
+  <a href="https://github.com/l5z12/FluoriteLauncher/actions/workflows/ci.yml"><img src="https://github.com/l5z12/FluoriteLauncher/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License: GPL-3.0"></a>
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4" alt="Windows 10 and 11">
+</p>
 
 > NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
