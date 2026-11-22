@@ -66,10 +66,17 @@ public sealed class InstanceSidecar
     {
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, "sidecar.json");
-        var tmp = path + ".tmp";
-        await using (var fs = File.Create(tmp))
-            await JsonSerializer.SerializeAsync(fs, this, SidecarJsonContext.Default.InstanceSidecar, ct).ConfigureAwait(false);
-        File.Move(tmp, path, overwrite: true);
+        var json = JsonSerializer.SerializeToUtf8Bytes(this, SidecarJsonContext.Default.InstanceSidecar);
+        var tmp = $"{path}.{Guid.NewGuid():N}.tmp"; // No other save shares it.
+        try
+        {
+            await File.WriteAllBytesAsync(tmp, json, ct).ConfigureAwait(false);
+            File.Move(tmp, path, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(tmp); // Only there when the write or move failed.
+        }
     }
 
     /// <summary>Overlays this sidecar on a manifest built from the other launcher's metadata.</summary>

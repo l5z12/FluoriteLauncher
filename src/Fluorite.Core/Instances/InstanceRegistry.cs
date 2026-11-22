@@ -84,10 +84,32 @@ public sealed class InstanceRegistry(FluoriteLayout fluorite, Func<IReadOnlyList
         return await Fluorite.GetAsync(id, ct).ConfigureAwait(false);
     }
 
-    public Task SaveAsync(GameInstance instance, CancellationToken ct = default) =>
-        instance.RootId is { } rootId
-            ? (LayoutFor(rootId) ?? throw new InvalidOperationException($"'{instance.Name}' belongs to a folder that was removed from Fluorite.")).SaveAsync(instance, ct)
-            : Fluorite.SaveAsync(instance, ct);
+    /// <summary>
+    /// Saves one instance at a time: overlapping saves of it (the Library hiding it as its game exits, say) take turns,
+    /// so the last one asked for is the one on disk.
+    /// </summary>
+    public async Task SaveAsync(GameInstance instance, CancellationToken ct = default)
+    {
+        SemaphoreSlim? gate;
+        lock (_lock)
+        {
+            if (!_saving.TryGetValue(instance.Id, out gate))
+                _saving[instance.Id] = gate = new SemaphoreSlim(1, 1);
+        }
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await (instance.RootId is { } rootId
+                ? (LayoutFor(rootId) ?? throw new InvalidOperationException($"'{instance.Name}' belongs to a folder that was removed from Fluorite.")).SaveAsync(instance, ct)
+                : Fluorite.SaveAsync(instance, ct)).ConfigureAwait(false);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private readonly Dictionary<string, SemaphoreSlim> _saving = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Whether a change to <paramref name="instance"/> also reaches its own launcher (always, for Fluorite's).</summary>
     public bool WritesBack(GameInstance instance) => instance.RootId is not { } rootId || LayoutFor(rootId) is { WritesBack: true };
