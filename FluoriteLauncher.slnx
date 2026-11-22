@@ -18,8 +18,7 @@
     <Project Path="tools/Fluorite.Cli/Fluorite.Cli.csproj" />
     <File Path="tools/smoke-matrix.ps1" />
     <File Path="tools/loader-matrix.ps1" />
-    <File Path="tools/generate-assets.ps1" />
-    <File Path="tools/capture-window.ps1" />
+    <File Path="tools/generate-assets.py" />
     <File Path="tools/ui-drive.ps1" />
   </Folder>
   <Folder Name="/Solution Items/">

@@ -54,14 +54,14 @@ $cli = "tools\Fluorite.Cli\bin\Debug\net10.0-windows10.0.26100.0\fluorite.exe"
 & $cli account add-offline Steve --root .fluorite-dev   # dev only: skips the ownership check
 ```
 
-Regression scripts:
+Scripts:
 
-| Script | What it checks |
+| Script | What it does |
 |---|---|
-| `pwsh tools/smoke-matrix.ps1 -Root .fluorite-dev` | Every Minecraft era launches |
-| `pwsh tools/loader-matrix.ps1 -Root .fluorite-dev` | Every mod loader installs and launches |
-| `pwsh tools/layout-fixtures.ps1 -Root .fluorite-dev -Out .fluorite-dev\fixtures` | Builds Prism, official and HMCL folders for in-place tests |
+| `pwsh tools/smoke-matrix.ps1 -Root .fluorite-dev` | Checks that every Minecraft era launches |
+| `pwsh tools/loader-matrix.ps1 -Root .fluorite-dev` | Checks that every mod loader installs and launches |
 | `powershell -File tools/ui-drive.ps1 -Exe <FluoriteLauncher.exe> -Steps "invoke:Settings;expect:Behavior;capture:C:\tmp\settings.png"` | UI smoke checks through UI Automation |
+| `uv run tools/generate-assets.py` | Renders the logo into every app icon and logo in `src/Fluorite.App/Assets` |
 
 ## Project layout
 
