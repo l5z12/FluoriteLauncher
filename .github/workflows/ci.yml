@@ -26,9 +26,9 @@ jobs:
   build-test:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
@@ -50,39 +50,43 @@ jobs:
     runs-on: windows-latest
     needs: build-test
     strategy:
+      fail-fast: false
       matrix:
-        platform: [x64, ARM64]
+        include:
+          - platform: x64
+            rid: win-x64
+          - platform: ARM64
+            rid: win-arm64
+    env:
+      FLUORITE_CURSEFORGE_API_KEY: ${{ secrets.FLUORITE_CURSEFORGE_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-
-      - uses: microsoft/setup-msbuild@v2
 
       # Secrets can't be tested in `if:`, so check through env. Fork PRs never get secrets and always warn.
       - name: Check CurseForge API key
         shell: pwsh
-        env:
-          FLUORITE_CURSEFORGE_API_KEY: ${{ secrets.FLUORITE_CURSEFORGE_API_KEY }}
         run: |
           if (-not $env:FLUORITE_CURSEFORGE_API_KEY) {
             Write-Output "::warning title=No CurseForge API key::The FLUORITE_CURSEFORGE_API_KEY secret is not set, so this ${{ matrix.platform }} MSIX has CurseForge turned off (Modrinth only). Don't release it."
           }
 
+      # Release builds use Native AOT, which needs a runtime identifier; its MSVC link step calls vswhere.exe.
+      # The key goes through env so PowerShell never expands the `$` characters inside it.
       - name: Build MSIX (${{ matrix.platform }})
         shell: pwsh
-        run: >
-          msbuild src/Fluorite.App/Fluorite.App.csproj /restore /m
-          /p:Configuration=Release
-          /p:Platform=${{ matrix.platform }}
-          /p:GenerateAppxPackageOnBuild=true
-          /p:AppxPackageSigningEnabled=false
-          /p:AppxPackageDir=$PWD/artifacts/msix/
-          "/p:FluoriteCurseForgeApiKey=${{ secrets.FLUORITE_CURSEFORGE_API_KEY }}"
+        run: |
+          $env:PATH = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer;$env:PATH"
+          dotnet publish src/Fluorite.App/Fluorite.App.csproj -c Release `
+            -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} `
+            -p:GenerateAppxPackageOnBuild=true -p:AppxPackageSigningEnabled=false `
+            "-p:AppxPackageDir=$PWD/artifacts/msix/" `
+            "-p:FluoriteCurseForgeApiKey=$env:FLUORITE_CURSEFORGE_API_KEY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: msix-${{ matrix.platform }}
           path: artifacts/msix/**
@@ -93,8 +97,8 @@ jobs:
     needs: build-test
     runs-on: ${{ inputs.smoke_runner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
       - name: Smoke matrix (Official)
