@@ -32,6 +32,13 @@ jobs:
         with:
           global-json-file: global.json
 
+      # NuGet packages, keyed on every version that decides them (central package management + the projects).
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-build-test-${{ hashFiles('global.json', 'Directory.Packages.props', 'Directory.Build.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-build-test-
+
       - name: Build libraries, CLI and tests
         run: |
           dotnet build src/Fluorite.Core/Fluorite.Core.csproj -c Release
@@ -65,6 +72,14 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+
+      # One cache per runtime: each pulls its own runtime and Native AOT compiler packages, and the two jobs mustn't
+      # race to save the same key.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-package-${{ matrix.rid }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'Directory.Build.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-package-${{ matrix.rid }}-
 
       # Secrets can't be tested in `if:`, so check through env. Fork PRs never get secrets and always warn.
       - name: Check CurseForge API key
