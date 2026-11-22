@@ -1167,4 +1167,17 @@
   <data name="Review_Loader" xml:space="preserve"><value>Also update {0} from {1} to {2}</value></data>
   <data name="Review_LoaderNeededBy" xml:space="preserve"><value>Needed by {0}. The new version is installed the next time you play.</value></data>
   <data name="Review_WrongLoaderVersion" xml:space="preserve"><value>{0} needs {1} {2}.</value></data>
+  <data name="Library_Hide" xml:space="preserve"><value>Hide</value></data>
+  <data name="Library_Unhide" xml:space="preserve"><value>Show in Library</value></data>
+  <data name="Library_ShowHidden" xml:space="preserve"><value>Show hidden ({0})</value></data>
+  <data name="Library_ShowHiddenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Show the hidden instances too, dimmed</value></data>
+  <data name="Library_ShowHiddenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Show hidden instances</value></data>
+  <data name="Library_HidOne" xml:space="preserve"><value>Hid “{0}”.</value></data>
+  <data name="Library_HidMany" xml:space="preserve"><value>Hid {0} instances.</value></data>
+  <data name="Library_ItemHidden" xml:space="preserve"><value>hidden</value></data>
+  <data name="Library_NoMatchHiddenOne" xml:space="preserve"><value>No instances shown match “{0}”, but a hidden one does.</value></data>
+  <data name="Library_NoMatchHidden" xml:space="preserve"><value>No instances shown match “{0}”, but {1} hidden ones do.</value></data>
+  <data name="Library_AllHiddenOne" xml:space="preserve"><value>The only instance here is hidden.</value></data>
+  <data name="Library_AllHidden" xml:space="preserve"><value>All {0} instances here are hidden.</value></data>
+  <data name="Library_RevealHidden.Content" xml:space="preserve"><value>Show hidden instances</value></data>
 </root>

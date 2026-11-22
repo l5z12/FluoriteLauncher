@@ -22,6 +22,7 @@ public sealed class JumpListService(ILogger<JumpListService> logger, QuickPlaySu
         try
         {
             var recent = instances
+                .Where(i => !i.Manifest.Hidden)
                 .OrderByDescending(i => i.Manifest.Stats.LastPlayed ?? i.Manifest.Created)
                 .Take(6)
                 .ToList();

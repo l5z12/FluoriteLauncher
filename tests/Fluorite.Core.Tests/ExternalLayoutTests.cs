@@ -182,6 +182,28 @@ public class ExternalLayoutTests
     }
 
     [Fact]
+    public async Task Prism_Hidden_StaysInFluoritesSidecar()
+    {
+        using var tmp = new TempDir();
+        var root = MakePrism(tmp);
+        var cfg = Path.Combine(root, "instances", "Pack A", "instance.cfg");
+        var before = File.ReadAllText(cfg);
+        var layout = new MultiMCLayout(root, Context(tmp, "prism"));
+        var i = Assert.Single(await layout.GetInstancesAsync(TestContext.Current.CancellationToken));
+        Assert.False(i.Manifest.Hidden);
+        i.Manifest.Hidden = true;
+        await layout.SaveAsync(i, TestContext.Current.CancellationToken);
+
+        Assert.Equal(before, File.ReadAllText(cfg)); // Prism has no such flag: nothing to write there.
+        var again = Assert.Single(await new MultiMCLayout(root, Context(tmp, "prism")).GetInstancesAsync(TestContext.Current.CancellationToken));
+        Assert.True(again.Manifest.Hidden);
+
+        again.Manifest.Hidden = false;
+        await layout.SaveAsync(again, TestContext.Current.CancellationToken);
+        Assert.False(Assert.Single(await layout.GetInstancesAsync(TestContext.Current.CancellationToken)).Manifest.Hidden);
+    }
+
+    [Fact]
     public async Task Prism_WriteBack_UpdatesCfgAndPack()
     {
         using var tmp = new TempDir();

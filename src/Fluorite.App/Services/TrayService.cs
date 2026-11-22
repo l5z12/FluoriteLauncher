@@ -41,6 +41,7 @@ public sealed class TrayService(InstanceRegistry layout, GameRunner runner) : ID
         menu.Items.Add(open);
 
         var recent = (await layout.GetInstancesAsync())
+            .Where(i => !i.Manifest.Hidden)
             .OrderByDescending(i => i.Manifest.Stats.LastPlayed ?? i.Manifest.Created)
             .Take(5)
             .ToList();

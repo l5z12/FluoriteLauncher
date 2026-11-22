@@ -77,6 +77,14 @@ public sealed class InstanceManifest
     public string? IconKey { get; set; }
 
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// Kept out of the Library (until "Show hidden" is on), Home's recent instances, the tray and the jump list. Still
+    /// launchable from its shortcut, a <c>fluorite://</c> link or the command palette. Written only when set.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Hidden { get; set; }
+
     public DateTimeOffset Created { get; set; } = DateTimeOffset.Now;
     public List<ComponentRef> Components { get; set; } = [];
     public InstanceSettings Settings { get; set; } = new();

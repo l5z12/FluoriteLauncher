@@ -63,7 +63,7 @@ internal static class PaletteCommands
             else
             {
                 list.Add(new PaletteCommand("", Loc.Format("Palette_Play", instance.Name), version,
-                    () => window.OpenInstanceAsync(id, launch: true)) { Keywords = instance.Name, Suggested = recent++ < 3 });
+                    () => window.OpenInstanceAsync(id, launch: true)) { Keywords = instance.Name, Suggested = !instance.Manifest.Hidden && recent++ < 3 });
             }
             list.Add(new PaletteCommand("", Loc.Format("Palette_Open", instance.Name), version,
                 () => window.OpenInstanceAsync(id, launch: false)) { Keywords = instance.Name });

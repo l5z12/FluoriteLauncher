@@ -1167,4 +1167,17 @@
   <data name="Review_Loader" xml:space="preserve"><value>同时将 {0} 从 {1} 更新到 {2}</value></data>
   <data name="Review_LoaderNeededBy" xml:space="preserve"><value>{0} 需要。新版本将在下次启动游戏时安装。</value></data>
   <data name="Review_WrongLoaderVersion" xml:space="preserve"><value>{0} 需要 {1} {2}。</value></data>
+  <data name="Library_Hide" xml:space="preserve"><value>隐藏</value></data>
+  <data name="Library_Unhide" xml:space="preserve"><value>在游戏库中显示</value></data>
+  <data name="Library_ShowHidden" xml:space="preserve"><value>显示隐藏的实例 ({0})</value></data>
+  <data name="Library_ShowHiddenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>同时显示隐藏的实例（变暗）</value></data>
+  <data name="Library_ShowHiddenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>显示隐藏的实例</value></data>
+  <data name="Library_HidOne" xml:space="preserve"><value>已隐藏“{0}”。</value></data>
+  <data name="Library_HidMany" xml:space="preserve"><value>已隐藏 {0} 个实例。</value></data>
+  <data name="Library_ItemHidden" xml:space="preserve"><value>已隐藏</value></data>
+  <data name="Library_NoMatchHiddenOne" xml:space="preserve"><value>没有显示的实例与“{0}”匹配，但有 1 个隐藏的实例匹配。</value></data>
+  <data name="Library_NoMatchHidden" xml:space="preserve"><value>没有显示的实例与“{0}”匹配，但有 {1} 个隐藏的实例匹配。</value></data>
+  <data name="Library_AllHiddenOne" xml:space="preserve"><value>这里唯一的实例已隐藏。</value></data>
+  <data name="Library_AllHidden" xml:space="preserve"><value>这里的 {0} 个实例都已隐藏。</value></data>
+  <data name="Library_RevealHidden.Content" xml:space="preserve"><value>显示隐藏的实例</value></data>
 </root>

@@ -60,6 +60,19 @@ public sealed partial class InstanceItem(GameInstance instance) : ObservableObje
 
     public bool IsExternal => Instance.IsExternal;
 
+    /// <summary>Kept out of the Library unless "Show hidden" is on (where it shows dimmed), and out of recent lists.</summary>
+    public bool IsHidden => Instance.Manifest.Hidden;
+
+    /// <summary>"Hide" or "Show in Library", for its menu.</summary>
+    public string HideText => Loc.Get(IsHidden ? "Library_Unhide" : "Library_Hide");
+
+    /// <summary>After <see cref="InstanceManifest.Hidden"/> changed in place.</summary>
+    public void RefreshHidden()
+    {
+        OnPropertyChanged(nameof(IsHidden));
+        OnPropertyChanged(nameof(HideText));
+    }
+
     /// <summary>The Library group, or null. "" also means none: it's how another launcher's group is removed in Fluorite.</summary>
     public string? Group => string.IsNullOrWhiteSpace(Instance.Manifest.Group) ? null : Instance.Manifest.Group.Trim();
 

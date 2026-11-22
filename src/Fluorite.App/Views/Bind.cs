@@ -20,6 +20,21 @@ public static class Bind
 
     /// <summary>What Narrator adds after a picked card's name: "selected".</summary>
     public static string SelectedStatus(bool selected) => selected ? Services.Loc.Get("Library_ItemSelected") : "";
+    /// <summary>What Narrator adds to an instance card or row: "Selected", "Hidden", "Selected, Hidden".</summary>
+    public static string InstanceStatus(bool selected, bool hidden) => (selected, hidden) switch
+    {
+        (true, true) => Services.Loc.Get("Library_ItemSelected") + ", " + Services.Loc.Get("Library_ItemHidden"),
+        (true, false) => Services.Loc.Get("Library_ItemSelected"),
+        (false, true) => Services.Loc.Get("Library_ItemHidden"),
+        _ => "",
+    };
+
+    /// <summary>A hidden instance, shown while "Show hidden" is on.</summary>
+    public static double DimIf(bool dim) => dim ? 0.5 : 1.0;
+
+    /// <summary>Hide (eye-slash) or show (eye).</summary>
+    public static string HideGlyph(bool hidden) => hidden ? "" : "";
+
     public static Visibility VisibleIfZero(int value) => value == 0 ? Visibility.Visible : Visibility.Collapsed;
     public static bool Not(bool value) => !value;
     public static bool Any(bool a, bool b) => a || b;

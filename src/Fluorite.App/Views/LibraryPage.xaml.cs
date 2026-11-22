@@ -237,6 +237,25 @@ public sealed partial class LibraryPage : Page
             FillGroupMenu(menu.Items, ViewModel.Selection);
     }
 
+    /// <summary>Hides the selection, or shows it again when every one picked is hidden; the selection is done with.</summary>
+    private async void HideSelection_Click(object sender, RoutedEventArgs e)
+    {
+        var items = ViewModel.Selection;
+        if (items.Count == 0)
+            return;
+        var hide = !ViewModel.SelectionAllHidden;
+        ViewModel.ClearSelection();
+        await ViewModel.SetHiddenAsync(items, hide);
+    }
+
+    private async void Hide_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<InstanceItem>(sender) is { } item)
+            await ViewModel.SetHiddenAsync([item], !item.IsHidden);
+    }
+
+    private void MenuShowHidden_Click(object sender, RoutedEventArgs e) => ViewModel.ShowHidden = MenuShowHidden.IsChecked;
+
     private async void DeleteSelection_Click(object sender, RoutedEventArgs e)
     {
         var items = ViewModel.Selection;
@@ -321,6 +340,10 @@ public sealed partial class LibraryPage : Page
                 case "Group" when entry is MenuFlyoutSubItem groups:
                     FillGroupMenu(groups.Items, item);
                     break;
+                case "Hide" when entry is MenuFlyoutItem hide:
+                    hide.Text = item.HideText;
+                    hide.Icon = new FontIcon { Glyph = Bind.HideGlyph(item.IsHidden) };
+                    break;
             }
         }
         await LaunchAsMenu.FillSubmenuAsync(sender, ViewModel.PlayAs);
@@ -400,6 +423,9 @@ public sealed partial class LibraryPage : Page
     {
         Check(MenuView, ViewModel.ViewIndex);
         Check(MenuSort, ViewModel.SortIndex);
+        MenuShowHidden.IsChecked = ViewModel.ShowHidden;
+        MenuShowHidden.Visibility = ViewModel.HasHidden ? Visibility.Visible : Visibility.Collapsed;
+        MenuShowHidden.Text = ViewModel.HiddenToggleText;
         var headed = ViewModel.Groups.Where(g => g.HasHeader).ToList();
         MenuExpandAll.Visibility = headed.Any(g => !g.IsExpanded) ? Visibility.Visible : Visibility.Collapsed;
         MenuCollapseAll.Visibility = headed.Any(g => g.IsExpanded) ? Visibility.Visible : Visibility.Collapsed;

@@ -17,6 +17,9 @@ public sealed class InstanceSidecar
     public string? Group { get; set; }
     public string? Notes { get; set; }
 
+    /// <summary>Hidden in Fluorite (other launchers have no such flag, so it lives only here).</summary>
+    public bool Hidden { get; set; }
+
     /// <summary>The icon picked in Fluorite: an image file's path, or "" for none (the letter tile). Null: the launcher's.</summary>
     public string? Icon { get; set; }
 
@@ -75,6 +78,7 @@ public sealed class InstanceSidecar
         manifest.Name = Name ?? manifest.Name;
         manifest.Group = Group ?? manifest.Group;
         manifest.Notes = Notes ?? manifest.Notes;
+        manifest.Hidden |= Hidden;
         if (IconKey is not null)
             (manifest.Icon, manifest.IconKey) = (null, IconKey);
         else if (Icon == "")
@@ -108,6 +112,7 @@ public sealed class InstanceSidecar
             Name = effective.Name != native.Name ? effective.Name : null,
             Group = effective.Group != native.Group ? effective.Group : null,
             Notes = effective.Notes != native.Notes ? effective.Notes : null,
+            Hidden = effective.Hidden,
             Icon = sameIcon || effective.IconKey is not null ? null : effective.Icon ?? "",
             IconKey = sameIcon ? null : effective.IconKey,
             Settings = InstanceSettingsDiff.Diff(effective.Settings, native.Settings),

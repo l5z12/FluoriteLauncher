@@ -66,6 +66,66 @@ public sealed partial class LibraryViewModel(
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
+    /// <summary>Hidden instances show too (dimmed). For this session only: hidden is meant to stay out of the way.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHidden))]
+    public partial bool ShowHidden { get; set; }
+
+    partial void OnShowHiddenChanged(bool value) => ApplyFilter();
+
+    /// <summary>Hidden instances in the source shown; the "Hidden" toggle appears only when there are some.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHidden), nameof(HiddenToggleText), nameof(HiddenCountText))]
+    public partial int HiddenCount { get; set; }
+
+    public bool HasHidden => HiddenCount > 0 || ShowHidden;
+
+    /// <summary>"Show hidden (3)", in the Library's menu.</summary>
+    public string HiddenToggleText => Loc.Format("Library_ShowHidden", HiddenCount);
+
+    /// <summary>The count on the eye-slash toggle by the search box.</summary>
+    public string HiddenCountText => HiddenCount.ToString(System.Globalization.CultureInfo.CurrentCulture);
+
+    /// <summary>Nothing shows, but hidden instances would: the empty state offers to show them.</summary>
+    [ObservableProperty] public partial bool CanRevealHidden { get; set; }
+
+    [RelayCommand]
+    private void RevealHidden() => ShowHidden = true;
+
+    /// <summary>"Hid “X”. Undo".</summary>
+    [ObservableProperty] public partial UndoOffer? PendingUndo { get; set; }
+
+    /// <summary>
+    /// Hides or shows instances. Hiding them out of sight offers Undo; another launcher's instance keeps the flag in
+    /// Fluorite's notes beside it.
+    /// </summary>
+    public async Task SetHiddenAsync(IReadOnlyList<InstanceItem> items, bool hidden, bool offerUndo = true)
+    {
+        var changed = items.Where(i => i.IsHidden != hidden).ToList();
+        if (changed.Count == 0)
+            return;
+        foreach (var item in changed)
+        {
+            item.Instance.Manifest.Hidden = hidden;
+            item.RefreshHidden();
+            await SaveAsync(item);
+        }
+        ApplyFilter();
+        _ = jumpList.UpdateAsync(_all.Select(i => i.Instance).ToList());
+        if (hidden && offerUndo && !ShowHidden) // While they show, they stay in sight (dimmed): nothing to undo from.
+        {
+            var message = changed.Count == 1 ? Loc.Format("Library_HidOne", changed[0].Name) : Loc.Format("Library_HidMany", changed.Count);
+            var offer = new UndoOffer(message, () => SetHiddenAsync(changed, false));
+            _ = PendingUndo?.CommitAsync();
+            offer.Finished += (_, _) =>
+            {
+                if (PendingUndo == offer)
+                    PendingUndo = null;
+            };
+            PendingUndo = offer;
+        }
+    }
+
     partial void OnSortIndexChanged(int value)
     {
         settings.Current.LibrarySort = (LibrarySort)Math.Clamp(value, 0, 3);
@@ -125,11 +185,14 @@ public sealed partial class LibraryViewModel(
         var source = SourceIndex > 0 && SourceIndex < Sources.Count ? Sources[SourceIndex].RootId : null;
         // Every word somewhere in the name, version and loader, group or launcher: "fabric 1.21", "modded", "prism".
         var terms = SearchText.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        IEnumerable<InstanceItem> items = _all.Where(i => (source is null || (i.Instance.RootId ?? "") == source)
-            && terms.All(t => i.Name.Contains(t, StringComparison.OrdinalIgnoreCase)
+        var inSource = _all.Where(i => source is null || (i.Instance.RootId ?? "") == source).ToList();
+        var matches = inSource.Where(i => terms.All(t => i.Name.Contains(t, StringComparison.OrdinalIgnoreCase)
                 || i.VersionText.Contains(t, StringComparison.OrdinalIgnoreCase)
                 || (i.Group?.Contains(t, StringComparison.OrdinalIgnoreCase) ?? false)
-                || i.SourceLabel.Contains(t, StringComparison.OrdinalIgnoreCase)));
+                || i.SourceLabel.Contains(t, StringComparison.OrdinalIgnoreCase))).ToList();
+        HiddenCount = inSource.Count(i => i.IsHidden);
+        var hiddenMatches = ShowHidden ? 0 : matches.Count(i => i.IsHidden);
+        IEnumerable<InstanceItem> items = ShowHidden ? matches : matches.Where(i => !i.IsHidden);
 
         items = (LibrarySort)SortIndex switch
         {
@@ -149,7 +212,16 @@ public sealed partial class LibraryViewModel(
         RebuildGroups();
         IsEmpty = _all.Count == 0;
         IsNoMatch = !IsEmpty && Instances.Count == 0;
-        NoMatchText = SearchText.Trim() is { Length: > 0 } q ? Loc.Format("Library_NoMatch", q) : Loc.Get("Library_NoneHere");
+        CanRevealHidden = IsNoMatch && hiddenMatches > 0;
+        NoMatchText = (SearchText.Trim(), hiddenMatches) switch
+        {
+            ({ Length: > 0 } q, 0) => Loc.Format("Library_NoMatch", q),
+            ({ Length: > 0 } q, 1) => Loc.Format("Library_NoMatchHiddenOne", q),
+            ({ Length: > 0 } q, var n) => Loc.Format("Library_NoMatchHidden", q, n),
+            (_, 0) => Loc.Get("Library_NoneHere"),
+            (_, 1) => Loc.Get("Library_AllHiddenOne"),
+            (_, var n) => Loc.Format("Library_AllHidden", n),
+        };
     }
 
     /// <summary>Sections in the sort order within each; while searching, collapsed groups open to show their matches.</summary>
@@ -266,7 +338,19 @@ public sealed partial class LibraryViewModel(
         UpdateSelection();
     }
 
-    private void UpdateSelection() => SelectionCount = Instances.Count(i => i.IsSelected);
+    /// <summary>Every instance picked is hidden: the selection bar offers to show them instead of hiding.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectionHideText))]
+    public partial bool SelectionAllHidden { get; set; }
+
+    public string SelectionHideText => Loc.Get(SelectionAllHidden ? "Library_Unhide" : "Library_Hide");
+
+    private void UpdateSelection()
+    {
+        var selected = Instances.Where(i => i.IsSelected).ToList();
+        SelectionCount = selected.Count;
+        SelectionAllHidden = selected.Count > 0 && selected.All(i => i.IsHidden);
+    }
 
     /// <summary>Renames a group for every instance in it (null ungroups them all; the instances stay).</summary>
     public async Task RenameGroupAsync(string from, string? to)

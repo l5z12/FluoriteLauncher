@@ -69,6 +69,7 @@ public sealed class FluoriteLayout(string root) : IGameLayout
         manifest.Name = newName;
         manifest.Created = DateTimeOffset.Now;
         manifest.Stats = new InstanceStats();
+        manifest.Hidden = false; // A copy is made to be used: it shows.
         // Its own copy of the icon file, not the original's (which a later icon change there deletes).
         if (manifest.Icon is { } icon && Path.GetRelativePath(source.Directory, icon) is var rel && !rel.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(rel))
             manifest.Icon = Path.Combine(dir, rel);
