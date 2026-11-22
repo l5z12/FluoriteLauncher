@@ -1,0 +1,93 @@
+name: Bug report
+description: Something in Fluorite doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. One problem per report, please.
+        A game crash caused by a mod is usually the mod's issue: Fluorite's crash screen says what it found, and **Upload log** gives a link to share.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the Library
+        2. Right-click an instance, choose …
+        3. …
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Fluorite version
+      description: Shown under **Settings → Fluorite Launcher**. For a build from source, the commit.
+      placeholder: 0.1.0.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How Fluorite was installed
+      options:
+        - Microsoft Store
+        - MSIX from a CI build
+        - Built from source
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Press Win+R, run `winver`. Say if it's ARM64.
+      placeholder: Windows 11 24H2 (26100), x64
+    validations:
+      required: true
+
+  - type: dropdown
+    id: instance
+    attributes:
+      label: Whose instance is it?
+      description: If the problem is with one instance.
+      options:
+        - Not about an instance
+        - Fluorite's own
+        - Official launcher folder
+        - HMCL / PCL folder
+        - Prism Launcher / MultiMC folder
+        - Imported from another launcher or modpack
+
+  - type: input
+    id: game
+    attributes:
+      label: Minecraft version and mod loader
+      placeholder: 1.21.4, Fabric 0.16.10
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        For a game problem, the link from **Upload log** on the instance page or crash screen.
+        For a launcher problem, attach the newest `launcher-*.log` from `%LOCALAPPDATA%\FluoriteLauncher\logs` (or the `logs` folder of the data folder you set in Settings).
+        Look through it first: it can contain your Windows user name and folder paths.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the existing issues and this hasn't been reported.
+          required: true
