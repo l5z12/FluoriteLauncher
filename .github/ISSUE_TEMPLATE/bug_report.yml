@@ -82,7 +82,7 @@ body:
       description: |
         For a game problem, the link from **Upload log** on the instance page or crash screen.
         For a launcher problem, attach the newest `launcher-*.log` from `%LOCALAPPDATA%\FluoriteLauncher\logs` (or the `logs` folder of the data folder you set in Settings).
-        Look through it first: it can contain your Windows user name and folder paths.
+        Look through it first and replace what you don't want public: it records each launch, with your Minecraft player name and UUID, and it has your Windows user name in folder paths. (Access tokens are already masked.)
 
   - type: checkboxes
     id: checks
