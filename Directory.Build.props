@@ -1,0 +1,48 @@
+<Project>
+  <!-- Machine-local settings such as a CurseForge API key for testing. Git-ignored: never commit or share it. -->
+  <Import Project="Directory.Build.local.props" Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.local.props')" />
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+
+    <Company>FluoriteLauncher</Company>
+    <Product>Fluorite Launcher</Product>
+    <Copyright>Copyright © FluoriteLauncher contributors</Copyright>
+    <VersionPrefix>0.1.0</VersionPrefix>
+
+    <!-- Shared TFMs -->
+    <FluoriteCoreTfm>net10.0</FluoriteCoreTfm>
+    <FluoriteWindowsTfm>net10.0-windows10.0.26100.0</FluoriteWindowsTfm>
+    <FluoriteMinWindows>10.0.19041.0</FluoriteMinWindows>
+  </PropertyGroup>
+
+  <!--
+    The unpackaged dev flavor of the WinUI app (-p:Unpackaged=true) must not share obj/bin with the MSIX flavor:
+    a stale PRI from the packaged build lacks the merged WinUI resources and crashes at startup.
+  -->
+  <PropertyGroup Condition="'$(Unpackaged)' == 'true' and '$(MSBuildProjectName)' == 'Fluorite.App'">
+    <BaseIntermediateOutputPath>obj\unpackaged\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin\unpackaged\</BaseOutputPath>
+  </PropertyGroup>
+
+  <!-- The app ships with Native AOT: its libraries get the AOT/trim analyzers (reflection-free JSON, no dynamic code). -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Fluorite.Core' or '$(MSBuildProjectName)' == 'Fluorite.Auth' or '$(MSBuildProjectName)' == 'Fluorite.Modding' or '$(MSBuildProjectName)' == 'Fluorite.Platform.Windows'">
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <!-- Never glob generated sources from any obj/bin flavor into compilation. -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+</Project>

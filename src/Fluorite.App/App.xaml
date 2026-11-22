@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="Fluorite.App.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="FluoriteBrandBrush" Color="#6B3FD9" />
+                    <SolidColorBrush x:Key="FluoriteTealBrush" Color="#00897B" />
+                    <SolidColorBrush x:Key="LogTimestampBrush" Color="#7A7A7A" />
+                    <SolidColorBrush x:Key="FluoriteOnBrandBrush" Color="#FFFFFF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="FluoriteBrandBrush" Color="#B39DFF" />
+                    <SolidColorBrush x:Key="FluoriteTealBrush" Color="#1DE9B6" />
+                    <SolidColorBrush x:Key="LogTimestampBrush" Color="#8A8A8A" />
+                    <!-- Dark letters: white on the light purple was hard to read. -->
+                    <SolidColorBrush x:Key="FluoriteOnBrandBrush" Color="#1C1236" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="FluoriteBrandBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="FluoriteTealBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="LogTimestampBrush" Color="{ThemeResource SystemColorGrayTextColor}" />
+                    <SolidColorBrush x:Key="FluoriteOnBrandBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
+            <Style x:Key="CardBorderStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="16" />
+            </Style>
+
+            <!-- WinUI 3 doesn't apply the modern (rounded) dialog style to ContentDialogs by default. -->
+            <Style TargetType="ContentDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
+
+            <Style x:Key="PageTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
+                <Setter Property="Margin" Value="0,0,0,4" />
+                <Setter Property="AutomationProperties.HeadingLevel" Value="Level1" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

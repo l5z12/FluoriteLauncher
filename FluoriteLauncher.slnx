@@ -1,0 +1,32 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Fluorite.Core/Fluorite.Core.csproj" />
+    <Project Path="src/Fluorite.Auth/Fluorite.Auth.csproj" />
+    <Project Path="src/Fluorite.Modding/Fluorite.Modding.csproj" />
+    <Project Path="src/Fluorite.Platform.Windows/Fluorite.Platform.Windows.csproj" />
+    <Project Path="src/Fluorite.App/Fluorite.App.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Deploy />
+    </Project>
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Fluorite.Core.Tests/Fluorite.Core.Tests.csproj" />
+    <Project Path="tests/Fluorite.Auth.Tests/Fluorite.Auth.Tests.csproj" />
+    <Project Path="tests/Fluorite.Modding.Tests/Fluorite.Modding.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Fluorite.Cli/Fluorite.Cli.csproj" />
+    <File Path="tools/smoke-matrix.ps1" />
+    <File Path="tools/loader-matrix.ps1" />
+    <File Path="tools/generate-assets.ps1" />
+    <File Path="tools/capture-window.ps1" />
+    <File Path="tools/ui-drive.ps1" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path=".editorconfig" />
+    <File Path="README.md" />
+  </Folder>
+</Solution>

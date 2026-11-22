@@ -1,0 +1,1170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- 外壳 -->
+  <data name="AppTitle.Text" xml:space="preserve"><value>Fluorite Launcher</value></data>
+  <data name="NavHome.Content" xml:space="preserve"><value>主页</value></data>
+  <data name="NavLibrary.Content" xml:space="preserve"><value>游戏库</value></data>
+  <data name="NavBrowse.Content" xml:space="preserve"><value>浏览</value></data>
+  <data name="NavAccounts.Content" xml:space="preserve"><value>账户</value></data>
+  <data name="NavSettings.Content" xml:space="preserve"><value>设置</value></data>
+  <!-- 通用 -->
+  <data name="Common_Play.Text" xml:space="preserve"><value>启动</value></data>
+  <data name="Common_Stop.Text" xml:space="preserve"><value>停止</value></data>
+  <data name="Common_Save.Content" xml:space="preserve"><value>保存</value></data>
+  <data name="Common_Cancel.Content" xml:space="preserve"><value>取消</value></data>
+  <!-- 主页 -->
+  <data name="Home_Greeting" xml:space="preserve"><value>欢迎回来，{0}</value></data>
+  <data name="Home_GreetingAnonymous" xml:space="preserve"><value>欢迎使用 Fluorite</value></data>
+  <data name="Home_NeedsAccountBar.Title" xml:space="preserve"><value>添加账户后即可开始游戏</value></data>
+  <data name="Home_NeedsAccountBar.Message" xml:space="preserve"><value>请登录拥有《我的世界：Java 版》的 Microsoft 账户。</value></data>
+  <data name="Home_GoAccounts.Content" xml:space="preserve"><value>前往账户</value></data>
+  <data name="Home_ContinuePlaying.Text" xml:space="preserve"><value>继续游戏</value></data>
+  <data name="Home_Empty.Text" xml:space="preserve"><value>你还没有任何实例。实例是一份独立的游戏副本，拥有自己的版本、模组、存档和设置。</value></data>
+  <data name="Home_CreateFirst.Content" xml:space="preserve"><value>创建第一个实例</value></data>
+  <data name="Home_LatestRelease.Text" xml:space="preserve"><value>最新正式版</value></data>
+  <data name="Home_LatestSnapshot.Text" xml:space="preserve"><value>最新快照</value></data>
+  <data name="Home_Disclaimer.Text" xml:space="preserve"><value>本程序并非 Minecraft 官方产品，未经 Mojang 或 Microsoft 认可，亦与其无关。</value></data>
+  <!-- 游戏库 -->
+  <data name="Library_Title.Text" xml:space="preserve"><value>游戏库</value></data>
+  <data name="Library_Search.PlaceholderText" xml:space="preserve"><value>搜索实例</value></data>
+  <data name="Library_New.Text" xml:space="preserve"><value>新建实例</value></data>
+  <data name="Library_Refresh.Text" xml:space="preserve"><value>刷新</value></data>
+  <data name="Library_OpenFolder.Text" xml:space="preserve"><value>打开文件夹</value></data>
+  <data name="Library_Empty.Text" xml:space="preserve"><value>还没有实例。新建一个、导入整合包，或显示其他启动器中的实例。</value></data>
+  <data name="NewInstanceDialog.Title" xml:space="preserve"><value>新建实例</value></data>
+  <data name="NewInstanceDialog.PrimaryButtonText" xml:space="preserve"><value>创建</value></data>
+  <data name="NewInstanceDialog.CloseButtonText" xml:space="preserve"><value>取消</value></data>
+  <data name="NewInstance_Name.Header" xml:space="preserve"><value>名称</value></data>
+  <data name="NewInstance_Name.PlaceholderText" xml:space="preserve"><value>默认为版本号和模组加载器</value></data>
+  <data name="NewInstance_Version.Header" xml:space="preserve"><value>Minecraft 版本</value></data>
+  <data name="NewInstance_Snapshots.Content" xml:space="preserve"><value>快照</value></data>
+  <data name="NewInstance_Old.Content" xml:space="preserve"><value>远古 Beta 与 Alpha</value></data>
+  <data name="Instance_LastPlayed" xml:space="preserve"><value>上次游玩：{0}</value></data>
+  <data name="Instance_NeverPlayed" xml:space="preserve"><value>从未游玩</value></data>
+  <!-- 实例 -->
+  <data name="Instance_TabLog.Text" xml:space="preserve"><value>日志</value></data>
+  <data name="Instance_TabSettings.Text" xml:space="preserve"><value>设置</value></data>
+  <data name="Instance_CopyLog.Text" xml:space="preserve"><value>复制日志</value></data>
+  <data name="Instance_AutoScroll.Content" xml:space="preserve"><value>自动滚动</value></data>
+  <data name="Instance_RunningBadge.Text" xml:space="preserve"><value>运行中</value></data>
+  <data name="Instance_LogEmptyTitle.Text" xml:space="preserve"><value>暂无日志</value></data>
+  <data name="Instance_LogEmptyHint" xml:space="preserve"><value>启动此实例后，游戏输出会显示在这里。</value></data>
+  <data name="Instance_LogEmptyStarting" xml:space="preserve"><value>游戏启动后，输出会显示在这里。</value></data>
+  <data name="Instance_OpenLastLog.Content" xml:space="preserve"><value>打开上次游戏的日志</value></data>
+  <data name="Instance_SettingsHint.Text" xml:space="preserve"><value>留空则使用全局设置。</value></data>
+  <data name="Instance_MaxMemory.Header" xml:space="preserve"><value>最大内存（MB）</value></data>
+  <data name="Instance_JavaPath.Header" xml:space="preserve"><value>Java</value></data>
+  <data name="Instance_JavaPath.PlaceholderText" xml:space="preserve"><value>自动（推荐）</value></data>
+  <data name="Instance_JvmArgs.Header" xml:space="preserve"><value>附加 JVM 参数</value></data>
+  <data name="Instance_JvmArgs.PlaceholderText" xml:space="preserve"><value>追加在全局 JVM 参数之后</value></data>
+  <data name="Settings_Saved" xml:space="preserve"><value>已保存</value></data>
+  <!-- 启动 -->
+  <data name="Launch_Preparing" xml:space="preserve"><value>正在准备…</value></data>
+  <data name="Launch_NoAccount" xml:space="preserve"><value>未选择账户。请在“账户”页面添加。</value></data>
+  <data name="Launch_Resolving" xml:space="preserve"><value>正在读取版本信息…</value></data>
+  <data name="Launch_Java" xml:space="preserve"><value>正在选择 Java…</value></data>
+  <data name="Launch_InstallingJava" xml:space="preserve"><value>正在安装 Java…</value></data>
+  <data name="Launch_Libraries" xml:space="preserve"><value>正在下载游戏文件…</value></data>
+  <data name="Launch_Assets" xml:space="preserve"><value>正在下载资源文件…</value></data>
+  <data name="Launch_Natives" xml:space="preserve"><value>正在解压本地库…</value></data>
+  <data name="Launch_Starting" xml:space="preserve"><value>正在启动游戏…</value></data>
+  <data name="Launch_Running" xml:space="preserve"><value>运行中</value></data>
+  <data name="Launch_Exited" xml:space="preserve"><value>游戏已关闭。</value></data>
+  <data name="Launch_Crashed" xml:space="preserve"><value>游戏意外退出（退出代码 {0}）。</value></data>
+  <data name="Launch_Cancelled" xml:space="preserve"><value>已取消启动。</value></data>
+  <data name="Launch_Failed" xml:space="preserve"><value>启动失败：{0}</value></data>
+  <!-- 账户 -->
+  <data name="Accounts_Title.Text" xml:space="preserve"><value>账户</value></data>
+  <data name="Accounts_Use.Content" xml:space="preserve"><value>使用</value></data>
+  <data name="Accounts_AddMicrosoft.Text" xml:space="preserve"><value>Microsoft 账户</value></data>
+  <data name="Accounts_SignInMicrosoft.Content" xml:space="preserve"><value>使用 Microsoft 登录</value></data>
+  <data name="Accounts_SignInMicrosoft.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>选择已登录 Windows 的账户，或使用其他账户。右键单击可选择其他登录方式。</value></data>
+  <data name="Accounts_MethodWindows.Text" xml:space="preserve"><value>使用 Windows 账户登录</value></data>
+  <data name="Accounts_MethodBrowser.Text" xml:space="preserve"><value>在浏览器中登录</value></data>
+  <data name="Accounts_MethodCode.Text" xml:space="preserve"><value>使用代码登录</value></data>
+  <data name="Accounts_SignInCode.Content" xml:space="preserve"><value>改用代码登录</value></data>
+  <data name="Accounts_DeviceCodeHint.Text" xml:space="preserve"><value>请在浏览器中打开的页面上粘贴此代码（已复制到剪贴板，按 Ctrl+V 即可）：</value></data>
+  <data name="Accounts_AddOffline.Text" xml:space="preserve"><value>离线账户</value></data>
+  <data name="Accounts_OfflineLocked.Text" xml:space="preserve"><value>添加一个拥有《我的世界：Java 版》的 Microsoft 账户后，即可使用离线账户。</value></data>
+  <data name="Accounts_OfflineName.PlaceholderText" xml:space="preserve"><value>玩家名</value></data>
+  <data name="Accounts_AddOfflineButton.Content" xml:space="preserve"><value>添加</value></data>
+  <data name="Account_KindMicrosoft" xml:space="preserve"><value>Microsoft 账户</value></data>
+  <data name="Account_KindYggdrasil" xml:space="preserve"><value>第三方（authlib-injector）</value></data>
+  <data name="Account_KindOffline" xml:space="preserve"><value>离线</value></data>
+  <data name="Account_InvalidOfflineName" xml:space="preserve"><value>请使用 3–16 个字母、数字或下划线。</value></data>
+  <data name="Auth_Network" xml:space="preserve"><value>无法连接登录服务：{0}</value></data>
+  <data name="Auth_BrokerUnavailable" xml:space="preserve"><value>Windows 登录失败：{0}</value></data>
+  <data name="Auth_NoXbox" xml:space="preserve"><value>此 Microsoft 账户尚未创建 Xbox 个人资料。请先登录一次 xbox.com，然后重试。</value></data>
+  <data name="Auth_Region" xml:space="preserve"><value>此账户所在的国家或地区无法使用 Xbox Live。</value></data>
+  <data name="Auth_AdultVerification" xml:space="preserve"><value>此账户需要先在 Xbox 网站上完成成人验证才能登录。</value></data>
+  <data name="Auth_Child" xml:space="preserve"><value>这是儿童账户，需要由成人将其加入 Microsoft 家庭组后才能登录。</value></data>
+  <data name="Auth_NotOwned" xml:space="preserve"><value>此账户未拥有《我的世界：Java 版》。</value></data>
+  <data name="Auth_NoProfile" xml:space="preserve"><value>此账户已拥有游戏，但尚未创建 Minecraft 档案。请先打开一次官方启动器以选择玩家名。</value></data>
+  <data name="Auth_AppNotApproved" xml:space="preserve"><value>此版本使用的 Microsoft 应用 ID 尚未获得 Mojang 的 Minecraft 登录授权。</value></data>
+  <data name="Auth_InvalidCredentials" xml:space="preserve"><value>邮箱、角色名或密码错误。</value></data>
+  <data name="Auth_NotYggdrasil" xml:space="preserve"><value>该地址不是 authlib-injector 认证服务器。请查看皮肤站的帮助页面确认地址。</value></data>
+  <data name="Auth_Insecure" xml:space="preserve"><value>该服务器使用未加密的 HTTP，会泄露你的密码。请使用 https:// 地址。</value></data>
+  <data name="Auth_NoYggdrasilProfiles" xml:space="preserve"><value>此账户还没有角色。请先在皮肤站创建角色，然后重新登录。</value></data>
+  <data name="Auth_RateLimited" xml:space="preserve"><value>登录尝试过于频繁。请稍等一分钟后重试。</value></data>
+  <data name="Auth_SignInAgain" xml:space="preserve"><value>登录已过期，请重新登录。</value></data>
+  <data name="Accounts_AddYggdrasil.Text" xml:space="preserve"><value>外置登录（authlib-injector）</value></data>
+  <data name="Accounts_YggdrasilHint.Text" xml:space="preserve"><value>使用 LittleSkin、Ely.by 或其他 authlib-injector 认证服务器的账户。密码只会发送给该服务器，不会保存。</value></data>
+  <data name="Accounts_YggServer.Header" xml:space="preserve"><value>认证服务器</value></data>
+  <data name="Accounts_YggCustom" xml:space="preserve"><value>其他服务器…</value></data>
+  <data name="Accounts_YggAddress.Header" xml:space="preserve"><value>服务器地址</value></data>
+  <data name="Accounts_YggAddress.PlaceholderText" xml:space="preserve"><value>example.com 或 https://example.com/api/yggdrasil</value></data>
+  <data name="Accounts_YggLogin.Header" xml:space="preserve"><value>邮箱或角色名</value></data>
+  <data name="Accounts_YggPassword.Header" xml:space="preserve"><value>密码</value></data>
+  <data name="Accounts_YggSignIn.Content" xml:space="preserve"><value>登录</value></data>
+  <data name="Accounts_YggRegister.Content" xml:space="preserve"><value>注册账户</value></data>
+  <data name="Account_KindYggdrasilServer" xml:space="preserve"><value>{0} 账户</value></data>
+  <data name="Accounts_PickProfileTitle" xml:space="preserve"><value>选择角色</value></data>
+  <data name="Accounts_PickProfileHint" xml:space="preserve"><value>此账户有多个角色。请选择要使用的角色；如需添加其他角色，请再次登录。</value></data>
+  <data name="Accounts_PickProfileButton" xml:space="preserve"><value>添加</value></data>
+  <data name="Launch_PasswordTitle" xml:space="preserve"><value>登录 {0}</value></data>
+  <data name="Launch_PasswordHint" xml:space="preserve"><value>{0} 的登录已过期。请输入 {1} 的密码以启动游戏。</value></data>
+  <data name="Launch_PasswordButton" xml:space="preserve"><value>登录并启动</value></data>
+  <data name="Accounts_Skin.Content" xml:space="preserve"><value>皮肤</value></data>
+  <data name="Accounts_MoveUp.Text" xml:space="preserve"><value>上移</value></data>
+  <data name="Accounts_MoveDown.Text" xml:space="preserve"><value>下移</value></data>
+  <data name="Instance_LogCopySelected.Text" xml:space="preserve"><value>复制选中的行</value></data>
+  <data name="Instance_LogSelectAll.Text" xml:space="preserve"><value>全选</value></data>
+  <data name="Instance_LogCopyAll.Text" xml:space="preserve"><value>复制全部日志</value></data>
+  <data name="Menu_LaunchAs.Text" xml:space="preserve"><value>使用账户启动</value></data>
+  <data name="Menu_NoAccounts" xml:space="preserve"><value>还没有账户</value></data>
+  <data name="Menu_ManageAccounts" xml:space="preserve"><value>管理账户…</value></data>
+  <data name="Instance_LaunchAsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>使用账户启动…</value></data>
+  <data name="Instance_LaunchAsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>使用其他账户启动</value></data>
+  <data name="Discord_Playing" xml:space="preserve"><value>正在玩 {0}</value></data>
+  <data name="Discord_Version" xml:space="preserve"><value>Minecraft {0}</value></data>
+  <data name="Discord_VersionLoader" xml:space="preserve"><value>Minecraft {0} · {1}</value></data>
+  <data name="Settings_DiscordPresence.Header" xml:space="preserve"><value>在 Discord 上显示</value></data>
+  <data name="Settings_DiscordPresence.Description" xml:space="preserve"><value>让 Discord 好友看到你正在玩的实例和游玩时长。</value></data>
+  <data name="Skin_ModelClassic" xml:space="preserve"><value>经典</value></data>
+  <data name="Skin_ModelSlim" xml:space="preserve"><value>纤细</value></data>
+  <data name="Skin_Model.Header" xml:space="preserve"><value>手臂模型</value></data>
+  <data name="Skin_ModelClassicItem.Content" xml:space="preserve"><value>经典（Steve，4 像素手臂）</value></data>
+  <data name="Skin_ModelSlimItem.Content" xml:space="preserve"><value>纤细（Alex，3 像素手臂）</value></data>
+  <data name="Skin_NoCape" xml:space="preserve"><value>不显示披风</value></data>
+  <data name="Skin_ManageOn" xml:space="preserve"><value>{0} 账户的皮肤需要在 {0} 网站上更换。</value></data>
+  <data name="Skin_OpenSite.Content" xml:space="preserve"><value>打开网站</value></data>
+  <data name="Skin_NotASkin" xml:space="preserve"><value>该 PNG 不是 Minecraft 皮肤（应为 64×64 或 64×32 像素）。</value></data>
+  <data name="Skin_NameTaken" xml:space="preserve"><value>{0} 已被占用。</value></data>
+  <data name="Skin_NameNotAllowed" xml:space="preserve"><value>{0} 不能用作名称。</value></data>
+  <data name="Skin_NameChanged" xml:space="preserve"><value>名称已更改为 {0}。</value></data>
+  <data name="Skin_NameNextChange" xml:space="preserve"><value>你可以在 {0} 再次更改名称。</value></data>
+  <data name="Skin_Default.Text" xml:space="preserve"><value>默认皮肤</value></data>
+  <data name="Skin_DragHint.Text" xml:space="preserve"><value>拖动旋转 · 双击复位</value></data>
+  <data name="Skin_Walk.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>行走</value></data>
+  <data name="Skin_Walk.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>行走</value></data>
+  <data name="Skin_SkinHeader.Text" xml:space="preserve"><value>皮肤</value></data>
+  <data name="Skin_ChooseFile.Content" xml:space="preserve"><value>选择皮肤文件…</value></data>
+  <data name="Skin_Reset.Content" xml:space="preserve"><value>恢复默认</value></data>
+  <data name="Skin_CapeHeader.Text" xml:space="preserve"><value>披风</value></data>
+  <data name="Skin_NameHeader.Text" xml:space="preserve"><value>玩家名称</value></data>
+  <data name="Skin_NewName.PlaceholderText" xml:space="preserve"><value>新名称</value></data>
+  <data name="Skin_ChangeName.Content" xml:space="preserve"><value>更改名称</value></data>
+  <data name="Skin_LibraryHeader.Text" xml:space="preserve"><value>皮肤库</value></data>
+  <data name="Skin_LibraryEmpty.Text" xml:space="preserve"><value>在这里使用过的皮肤会保存下来，单击即可换回。</value></data>
+  <data name="Skin_RemoveFromLibrary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>从皮肤库移除</value></data>
+  <data name="Skin_RemoveFromLibrary.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>从皮肤库移除</value></data>
+  <!-- 设置 -->
+  <data name="Settings_Title.Text" xml:space="preserve"><value>设置</value></data>
+  <data name="Settings_RestartBar.Title" xml:space="preserve"><value>需要重启</value></data>
+  <data name="Settings_RestartBar.Message" xml:space="preserve"><value>部分更改将在 Fluorite 下次启动时生效。</value></data>
+  <data name="Settings_GroupGame.Text" xml:space="preserve"><value>游戏</value></data>
+  <data name="Settings_Memory.Header" xml:space="preserve"><value>最大内存（MB）</value></data>
+  <data name="Settings_Memory.Description" xml:space="preserve"><value>关闭自动分配内存时使用。大型整合包通常需要 6–8 GB，请为 Windows 预留足够内存。</value></data>
+  <data name="Settings_Resolution.Header" xml:space="preserve"><value>游戏窗口大小</value></data>
+  <data name="Settings_JvmArgs.Header" xml:space="preserve"><value>JVM 参数</value></data>
+  <data name="Settings_JvmArgs.Description" xml:space="preserve"><value>应用于所有实例。</value></data>
+  <data name="Settings_GroupJava.Text" xml:space="preserve"><value>Java</value></data>
+  <data name="Settings_Java.Header" xml:space="preserve"><value>Java 运行时</value></data>
+  <data name="Settings_Java.Description" xml:space="preserve"><value>Fluorite 会为每个版本自动选择并安装合适的 Java。仅在需要覆盖时选择。</value></data>
+  <data name="Settings_JavaPath.PlaceholderText" xml:space="preserve"><value>自动</value></data>
+  <data name="Settings_ScanJava.Content" xml:space="preserve"><value>扫描</value></data>
+  <data name="Settings_GroupDownloads.Text" xml:space="preserve"><value>下载</value></data>
+  <data name="Settings_Source.Header" xml:space="preserve"><value>下载源</value></data>
+  <data name="Settings_Source.Description" xml:space="preserve"><value>在中国大陆使用镜像通常更快。下载失败时会自动切换到另一个源。</value></data>
+  <data name="Settings_SourceOfficial.Content" xml:space="preserve"><value>官方</value></data>
+  <data name="Settings_SourceBmclapi.Content" xml:space="preserve"><value>BMCLAPI 镜像</value></data>
+  <data name="Settings_SourceAuto.Content" xml:space="preserve"><value>自动</value></data>
+  <data name="Settings_Parallel.Header" xml:space="preserve"><value>并行下载数</value></data>
+  <data name="Settings_DownloadDetails.Header" xml:space="preserve"><value>显示下载详情</value></data>
+  <data name="Settings_DownloadDetails.Description" xml:space="preserve"><value>正在下载的文件、剩余文件数、大小和速度</value></data>
+  <data name="Download_Checking" xml:space="preserve"><value>正在检查文件 {0}/{1}…</value></data>
+  <data name="Download_Files" xml:space="preserve"><value>{0}/{1} 个文件</value></data>
+  <data name="Download_Of" xml:space="preserve"><value>{0}/{1}</value></data>
+  <data name="Download_Speed" xml:space="preserve"><value>{0}/s</value></data>
+  <data name="Modpack_DownloadingFiles" xml:space="preserve"><value>正在下载模组和文件…</value></data>
+  <data name="Settings_GroupApp.Text" xml:space="preserve"><value>应用</value></data>
+  <data name="Settings_Theme.Header" xml:space="preserve"><value>主题</value></data>
+  <data name="Settings_ThemeSystem.Content" xml:space="preserve"><value>跟随系统</value></data>
+  <data name="Settings_ThemeLight.Content" xml:space="preserve"><value>浅色</value></data>
+  <data name="Settings_ThemeDark.Content" xml:space="preserve"><value>深色</value></data>
+  <data name="Settings_LauncherWindow.Header" xml:space="preserve"><value>启动器窗口大小</value></data>
+  <data name="Settings_LauncherWindow.Description" xml:space="preserve"><value>Fluorite 打开时的窗口大小。之后仍可随意调整。</value></data>
+  <data name="Settings_LauncherWindowRemember.Content" xml:space="preserve"><value>记住上次的大小</value></data>
+  <data name="Settings_LauncherWindowCustom.Content" xml:space="preserve"><value>自定义大小</value></data>
+  <data name="Settings_LauncherWindowMaximized.Content" xml:space="preserve"><value>最大化</value></data>
+  <data name="Settings_LauncherSize.Header" xml:space="preserve"><value>大小</value></data>
+  <data name="Settings_LauncherSize.Description" xml:space="preserve"><value>按 100% 缩放计算的像素。留空则使用默认值。</value></data>
+  <data name="Settings_LauncherWidth.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>启动器窗口宽度</value></data>
+  <data name="Settings_LauncherHeight.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>启动器窗口高度</value></data>
+  <data name="Settings_UseCurrentSize" xml:space="preserve"><value>使用当前大小（{0} × {1}）</value></data>
+  <data name="Settings_ResetSize.Content" xml:space="preserve"><value>重置大小</value></data>
+  <data name="Settings_ResetSizeTip" xml:space="preserve"><value>恢复为 {0} × {1}，并在屏幕中央显示</value></data>
+  <data name="Settings_DataRoot.Header" xml:space="preserve"><value>数据文件夹</value></data>
+  <data name="Settings_OpenFolder.Content" xml:space="preserve"><value>打开</value></data>
+  <data name="Settings_ChangeFolder.Content" xml:space="preserve"><value>更改…</value></data>
+  <data name="Settings_GroupAbout.Text" xml:space="preserve"><value>关于</value></data>
+  <data name="Settings_About.Header" xml:space="preserve"><value>Fluorite Launcher</value></data>
+  <!-- 浏览 -->
+  <data name="Browse_Title.Text" xml:space="preserve"><value>浏览</value></data>
+  <data name="Browse_ComingSoon.Text" xml:space="preserve"><value>来自 Modrinth 和 CurseForge 的模组、整合包、资源包、光影包和数据包将显示在这里。</value></data>
+  <!-- M2：外壳、活动、新闻 -->
+  <data name="NavActivity.Content" xml:space="preserve"><value>活动</value></data>
+  <data name="Common_Ok" xml:space="preserve"><value>确定</value></data>
+  <data name="Common_PlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>启动</value></data>
+  <data name="Common_OpenFolderButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>打开文件夹</value></data>
+  <data name="Home_PatchNotes.Text" xml:space="preserve"><value>更新日志</value></data>
+  <data name="Home_News.Text" xml:space="preserve"><value>新闻</value></data>
+  <data name="News_Release" xml:space="preserve"><value>正式版</value></data>
+  <data name="News_Snapshot" xml:space="preserve"><value>快照</value></data>
+  <data name="Activity_Title.Text" xml:space="preserve"><value>活动</value></data>
+  <data name="Activity_ClearFinished.Content" xml:space="preserve"><value>清除已结束</value></data>
+  <data name="Activity_Empty.Text" xml:space="preserve"><value>当前没有正在下载或运行的任务。</value></data>
+  <data name="Activity_ViewLog.Content" xml:space="preserve"><value>查看日志</value></data>
+  <data name="Activity_Stop.Content" xml:space="preserve"><value>停止</value></data>
+  <data name="Modpack_ComingSoonTitle" xml:space="preserve"><value>整合包导入即将推出</value></data>
+  <data name="Modpack_ComingSoonBody" xml:space="preserve"><value>Fluorite 暂时还不能导入“{0}”。整合包导入将在后续更新中提供。</value></data>
+  <!-- 游戏库操作 -->
+  <data name="Library_Sort.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>排序实例</value></data>
+  <data name="Library_SortLastPlayed.Content" xml:space="preserve"><value>最近游玩</value></data>
+  <data name="Library_SortName.Content" xml:space="preserve"><value>名称</value></data>
+  <data name="Library_SortCreated.Content" xml:space="preserve"><value>最近创建</value></data>
+  <data name="Library_SortMostPlayed.Content" xml:space="preserve"><value>游玩时长</value></data>
+  <data name="Menu_Play.Text" xml:space="preserve"><value>启动</value></data>
+  <data name="Menu_Open.Text" xml:space="preserve"><value>打开</value></data>
+  <data name="Menu_Rename.Text" xml:space="preserve"><value>重命名</value></data>
+  <data name="Menu_ChangeIcon.Text" xml:space="preserve"><value>更改图标…</value></data>
+  <data name="Instance_IconButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>更改图标</value></data>
+  <data name="Instance_IconButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>更改图标</value></data>
+  <data name="IconDialog_Title" xml:space="preserve"><value>更改图标</value></data>
+  <data name="IconDialog_Save" xml:space="preserve"><value>保存</value></data>
+  <data name="IconDialog_Browse" xml:space="preserve"><value>选择图片…</value></data>
+  <data name="IconDialog_None" xml:space="preserve"><value>不使用图标</value></data>
+  <data name="IconDialog_Hint" xml:space="preserve"><value>支持 PNG、JPG、SVG、WebP、GIF 和 ICO，也可以把图片拖到这里。双击内置图标即可直接使用。</value></data>
+  <data name="IconDialog_BuiltIn" xml:space="preserve"><value>内置图标</value></data>
+  <data name="IconDialog_DropCaption" xml:space="preserve"><value>用作图标</value></data>
+  <data name="IconDialog_NotImage" xml:space="preserve"><value>这不是 Fluorite 可用的图片。请选择 PNG、JPG、SVG、WebP、GIF 或 ICO 文件。</value></data>
+  <data name="IconDialog_TooLarge" xml:space="preserve"><value>图片超过 8 MB，请选择更小的图片。</value></data>
+  <data name="IconDialog_Unreadable" xml:space="preserve"><value>无法读取该图片，文件可能已损坏，或实际格式与扩展名不符。</value></data>
+  <data name="IconDialog_FluoriteOnly" xml:space="preserve"><value>仅在 Fluorite 中显示，{0} 中的图标不变。</value></data>
+  <data name="IconDialog_AlsoSaved" xml:space="preserve"><value>也会保存到 {0}，在那里同样显示。</value></data>
+  <data name="IconDialog_Failed" xml:space="preserve"><value>无法更改图标</value></data>
+  <data name="Menu_Duplicate.Text" xml:space="preserve"><value>创建副本</value></data>
+  <data name="Menu_Shortcut.Text" xml:space="preserve"><value>创建桌面快捷方式</value></data>
+  <data name="Menu_OpenFolder.Text" xml:space="preserve"><value>打开文件夹</value></data>
+  <data name="Menu_Delete.Text" xml:space="preserve"><value>删除</value></data>
+  <data name="RenameDialog.Title" xml:space="preserve"><value>重命名实例</value></data>
+  <data name="RenameDialog.PrimaryButtonText" xml:space="preserve"><value>重命名</value></data>
+  <data name="RenameDialog.CloseButtonText" xml:space="preserve"><value>取消</value></data>
+  <data name="DeleteDialog.PrimaryButtonText" xml:space="preserve"><value>移到回收站</value></data>
+  <data name="DeleteDialog.CloseButtonText" xml:space="preserve"><value>取消</value></data>
+  <data name="Delete_Title" xml:space="preserve"><value>删除“{0}”？</value></data>
+  <data name="Delete_Body" xml:space="preserve"><value>该实例及其存档、模组和设置将被移到回收站。</value></data>
+  <data name="Delete_Running" xml:space="preserve"><value>请先停止游戏，再删除此实例。</value></data>
+  <data name="Duplicate_Suffix" xml:space="preserve"><value>{0}（副本）</value></data>
+  <data name="Shortcut_Created" xml:space="preserve"><value>已为“{0}”创建桌面快捷方式。</value></data>
+  <!-- 实例 -->
+  <data name="Instance_CrashBar.Title" xml:space="preserve"><value>游戏意外退出</value></data>
+  <data name="Instance_CopyLogButton.Content" xml:space="preserve"><value>复制日志</value></data>
+  <data name="Instance_Account.Header" xml:space="preserve"><value>账户</value></data>
+  <data name="Instance_CreateShortcut.Content" xml:space="preserve"><value>创建桌面快捷方式</value></data>
+  <data name="Account_UseSelected" xml:space="preserve"><value>使用当前选择的账户</value></data>
+  <!-- 设置：行为与语言 -->
+  <data name="Settings_GroupBehavior.Text" xml:space="preserve"><value>行为</value></data>
+  <data name="Settings_OnGameStart.Header" xml:space="preserve"><value>游戏启动后</value></data>
+  <data name="Settings_OnGameStart.Description" xml:space="preserve"><value>即使关闭启动器，游戏也会继续运行。</value></data>
+  <data name="Settings_OnStartKeep.Content" xml:space="preserve"><value>保持启动器打开</value></data>
+  <data name="Settings_OnStartMinimize.Content" xml:space="preserve"><value>最小化启动器</value></data>
+  <data name="Settings_OnStartHide.Content" xml:space="preserve"><value>隐藏到通知区域</value></data>
+  <data name="Settings_OnStartClose.Content" xml:space="preserve"><value>关闭启动器</value></data>
+  <data name="Settings_HomeLoading.Header" xml:space="preserve"><value>主页加载时</value></data>
+  <data name="Settings_HomeLoading.Description" xml:space="preserve"><value>最新版本和新闻来自互联网：在它们加载完成前显示什么。启动窗口会在加载完成后（最多 6 秒）打开 Fluorite。</value></data>
+  <data name="Settings_HomeLoadingWindow.Content" xml:space="preserve"><value>显示启动窗口</value></data>
+  <data name="Settings_HomeLoadingIndicator.Content" xml:space="preserve"><value>显示加载指示器</value></data>
+  <data name="Settings_HomeLoadingHide.Content" xml:space="preserve"><value>加载完成前隐藏卡片</value></data>
+  <data name="LaunchWindow_Starting" xml:space="preserve"><value>正在启动 Fluorite</value></data>
+  <data name="Home_LoadingVersions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>正在加载最新版本</value></data>
+  <data name="Home_LoadingNews.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>正在加载更新日志和新闻</value></data>
+  <data name="Settings_CloseToTray.Header" xml:space="preserve"><value>关闭窗口时保留在通知区域</value></data>
+  <data name="Settings_CloseToTray.Description" xml:space="preserve"><value>通过托盘图标重新打开或退出 Fluorite。</value></data>
+  <data name="Settings_ShowLogOnCrash.Header" xml:space="preserve"><value>游戏崩溃时显示日志</value></data>
+  <data name="Settings_NotifyExit.Header" xml:space="preserve"><value>游戏关闭时通知我</value></data>
+  <data name="Settings_NotifyExit.Description" xml:space="preserve"><value>仅在启动器不在前台时通知。</value></data>
+  <data name="Settings_Language.Header" xml:space="preserve"><value>语言</value></data>
+  <data name="Settings_Language.Description" xml:space="preserve"><value>重启 Fluorite 后生效。</value></data>
+  <data name="Settings_LangSystem.Content" xml:space="preserve"><value>使用 Windows 语言</value></data>
+  <!-- 通知、托盘、跳转列表 -->
+  <data name="Toast_CrashedTitle" xml:space="preserve"><value>{0} 已崩溃</value></data>
+  <data name="Toast_CrashedBody" xml:space="preserve"><value>游戏以退出代码 {0} 结束。</value></data>
+  <data name="Toast_ViewLog" xml:space="preserve"><value>查看日志</value></data>
+  <data name="Toast_ClosedTitle" xml:space="preserve"><value>{0} 已关闭</value></data>
+  <data name="Toast_ClosedBody" xml:space="preserve"><value>本次游玩了 {0} 分钟。</value></data>
+  <data name="Tray_Open" xml:space="preserve"><value>打开 Fluorite</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>退出</value></data>
+  <data name="JumpList_Recent" xml:space="preserve"><value>最近的实例</value></data>
+  <data name="JumpList_Play" xml:space="preserve"><value>启动 {0}</value></data>
+  <!-- 首次运行 -->
+  <data name="WelcomeDialog.Title" xml:space="preserve"><value>欢迎使用 Fluorite Launcher</value></data>
+  <data name="WelcomeDialog.PrimaryButtonText" xml:space="preserve"><value>添加账户</value></data>
+  <data name="WelcomeDialog.CloseButtonText" xml:space="preserve"><value>开始使用</value></data>
+  <data name="Welcome_Intro.Text" xml:space="preserve"><value>Fluorite 可以安装并运行任意版本的《我的世界：Java 版》，每套配置都保存在独立的实例中。</value></data>
+  <data name="Welcome_DataFolder.Text" xml:space="preserve"><value>数据文件夹</value></data>
+  <data name="Welcome_DataFolderHint.Text" xml:space="preserve"><value>游戏文件、Java 运行时和实例都存放在这里。可以在“设置”中更改。</value></data>
+  <data name="Welcome_Detected.Text" xml:space="preserve"><value>此电脑上的其他启动器</value></data>
+  <data name="Welcome_DetectedHint.Text" xml:space="preserve"><value>开启后，其实例会显示在你的库中。Fluorite 会直接在原位置运行它们，不会复制。之后可以在设置中更改。</value></data>
+  <data name="Detected_Versions" xml:space="preserve"><value>{0} 个版本</value></data>
+  <data name="Detected_Instances" xml:space="preserve"><value>{0} 个实例</value></data>
+  <data name="Launcher_Official" xml:space="preserve"><value>Minecraft 启动器（官方）</value></data>
+  <data name="Launcher_PrismLauncher" xml:space="preserve"><value>Prism Launcher</value></data>
+  <data name="Launcher_MultiMC" xml:space="preserve"><value>MultiMC</value></data>
+  <data name="Launcher_Hmcl" xml:space="preserve"><value>HMCL</value></data>
+  <data name="Launcher_Pcl" xml:space="preserve"><value>PCL</value></data>
+  <data name="Launcher_CurseForge" xml:space="preserve"><value>CurseForge</value></data>
+  <data name="Launcher_ModrinthApp" xml:space="preserve"><value>Modrinth App</value></data>
+  <data name="Launcher_GDLauncher" xml:space="preserve"><value>GDLauncher</value></data>
+  <data name="Launcher_ATLauncher" xml:space="preserve"><value>ATLauncher</value></data>
+  <!-- M3：模组加载器 -->
+  <data name="Loader_None" xml:space="preserve"><value>无（原版）</value></data>
+  <data name="Loader_Picker.Header" xml:space="preserve"><value>模组加载器</value></data>
+  <data name="Loader_VersionPicker.Header" xml:space="preserve"><value>加载器版本</value></data>
+  <data name="Loader_RecommendedTag.Text" xml:space="preserve"><value>推荐</value></data>
+  <data name="Loader_NotAvailable" xml:space="preserve"><value>{0} 不支持 Minecraft {1}。</value></data>
+  <data name="Loader_Unavailable" xml:space="preserve"><value>不可用</value></data>
+  <data name="Loader_ListFailed" xml:space="preserve"><value>无法获取加载器版本：{0}</value></data>
+  <data name="Loader_PickVersion" xml:space="preserve"><value>请选择加载器版本，或将模组加载器设为“无”。</value></data>
+  <data name="Launch_InstallingLoader" xml:space="preserve"><value>正在安装 {0}…</value></data>
+  <data name="Instance_TabVersion.Text" xml:space="preserve"><value>版本</value></data>
+  <data name="Version_Hint.Text" xml:space="preserve"><value>更改 Minecraft 版本或模组加载器。加载器将在下次启动时安装。切换到较旧版本前请先备份存档。</value></data>
+  <data name="Version_Minecraft.Header" xml:space="preserve"><value>Minecraft 版本</value></data>
+  <data name="Version_InstalledAs.Text" xml:space="preserve"><value>已安装的配置：</value></data>
+  <data name="Version_Apply.Content" xml:space="preserve"><value>应用</value></data>
+  <data name="Version_Applied" xml:space="preserve"><value>已保存。更改将在下次启动时安装。</value></data>
+  <data name="Version_StopFirst" xml:space="preserve"><value>请先停止游戏，再更改版本。</value></data>
+  <data name="Library_NewButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>新建实例</value></data>
+  <data name="Library_RefreshButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>刷新</value></data>
+  <data name="Library_OpenFolderButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>打开实例文件夹</value></data>
+  <data name="Common_StopButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>停止</value></data>
+  <data name="Instance_CopyLogA11y.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>复制日志</value></data>
+  <data name="Common_CancelLabel" xml:space="preserve"><value>取消</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>关闭</value></data>
+  <data name="Common_Delete" xml:space="preserve"><value>删除</value></data>
+  <data name="TitleBar_BackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>返回</value></data>
+  <data name="TitleBar_BackButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>返回 (Alt+左方向键)</value></data>
+  <data name="Browse_InstallToLabel.Text" xml:space="preserve"><value>安装到</value></data>
+  <data name="Project_InstallTo.Header" xml:space="preserve"><value>安装到</value></data>
+  <data name="Browse_InstallTo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>安装到</value></data>
+  <data name="Browse_PlatformA11y.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>平台</value></data>
+  <data name="Browse_KindA11y.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>内容类型</value></data>
+  <data name="Browse_KindMods.Content" xml:space="preserve"><value>模组</value></data>
+  <data name="Browse_KindResourcePacks.Content" xml:space="preserve"><value>资源包</value></data>
+  <data name="Browse_KindShaders.Content" xml:space="preserve"><value>光影</value></data>
+  <data name="Browse_KindDataPacks.Content" xml:space="preserve"><value>数据包</value></data>
+  <data name="Browse_Search.PlaceholderText" xml:space="preserve"><value>搜索</value></data>
+  <data name="Browse_Search.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>搜索</value></data>
+  <data name="Browse_VersionFilter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Minecraft 版本</value></data>
+  <data name="Browse_LoaderFilter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>模组加载器</value></data>
+  <data name="Browse_CategoryFilter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>分类</value></data>
+  <data name="Browse_Sort.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>排序方式</value></data>
+  <data name="Browse_SortRelevance.Content" xml:space="preserve"><value>相关性</value></data>
+  <data name="Browse_SortDownloads.Content" xml:space="preserve"><value>下载量</value></data>
+  <data name="Browse_SortFollows.Content" xml:space="preserve"><value>关注量</value></data>
+  <data name="Browse_SortNewest.Content" xml:space="preserve"><value>最新发布</value></data>
+  <data name="Browse_SortUpdated.Content" xml:space="preserve"><value>最近更新</value></data>
+  <data name="Browse_InstallButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>安装</value></data>
+  <data name="Browse_Install.Text" xml:space="preserve"><value>安装</value></data>
+  <data name="Browse_Installed.Text" xml:space="preserve"><value>已安装</value></data>
+  <data name="Browse_LoadMore.Content" xml:space="preserve"><value>加载更多</value></data>
+  <data name="Browse_ByAuthor" xml:space="preserve"><value>作者：{0}</value></data>
+  <data name="Browse_Downloads" xml:space="preserve"><value>{0} 次下载</value></data>
+  <data name="Browse_Updated" xml:space="preserve"><value>更新于{0}</value></data>
+  <data name="Browse_AnyLoader" xml:space="preserve"><value>任意加载器</value></data>
+  <data name="Browse_NoInstance" xml:space="preserve"><value>不选择实例（仅浏览）</value></data>
+  <data name="Browse_AnyVersion" xml:space="preserve"><value>任意版本</value></data>
+  <data name="Browse_TargetHint" xml:space="preserve"><value>显示适用于 {0} 的内容。</value></data>
+  <data name="Browse_AllCategories" xml:space="preserve"><value>所有分类</value></data>
+  <data name="Browse_ResultCount" xml:space="preserve"><value>{0} 个结果</value></data>
+  <data name="Browse_Failed" xml:space="preserve"><value>搜索失败：{0}</value></data>
+  <data name="Browse_PickInstanceTitle" xml:space="preserve"><value>选择实例</value></data>
+  <data name="Browse_PickInstance" xml:space="preserve"><value>请在右上角的“安装到”中选择要安装到的实例。</value></data>
+  <data name="Project_Website.Content" xml:space="preserve"><value>网站</value></data>
+  <data name="Project_Source.Content" xml:space="preserve"><value>源代码</value></data>
+  <data name="Project_Issues.Content" xml:space="preserve"><value>问题反馈</value></data>
+  <data name="Project_Wiki.Content" xml:space="preserve"><value>Wiki</value></data>
+  <data name="Project_InstallLatestButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>安装最新的兼容版本</value></data>
+  <data name="Project_InstallLatest.Text" xml:space="preserve"><value>安装</value></data>
+  <data name="Project_TabDescription.Text" xml:space="preserve"><value>介绍</value></data>
+  <data name="Project_TabVersions.Text" xml:space="preserve"><value>版本</value></data>
+  <data name="Project_OnlyCompatible.Content" xml:space="preserve"><value>仅显示适用于所选实例的版本</value></data>
+  <data name="Project_Changelog.Content" xml:space="preserve"><value>更新日志</value></data>
+  <data name="Project_InstallVersion.Content" xml:space="preserve"><value>安装</value></data>
+  <data name="Project_InstalledVersion" xml:space="preserve"><value>已安装：{0}</value></data>
+  <data name="Changelog_Title" xml:space="preserve"><value>更新日志：{0}</value></data>
+  <data name="Channel_Release" xml:space="preserve"><value>正式版</value></data>
+  <data name="Channel_Beta" xml:space="preserve"><value>测试版</value></data>
+  <data name="Channel_Alpha" xml:space="preserve"><value>早期测试版</value></data>
+  <data name="Ago_Today" xml:space="preserve"><value>今天</value></data>
+  <data name="Ago_Yesterday" xml:space="preserve"><value>昨天</value></data>
+  <data name="Ago_Days" xml:space="preserve"><value>{0} 天前</value></data>
+  <data name="Ago_Month" xml:space="preserve"><value>1 个月前</value></data>
+  <data name="Ago_Months" xml:space="preserve"><value>{0} 个月前</value></data>
+  <data name="Ago_Year" xml:space="preserve"><value>1 年前</value></data>
+  <data name="Ago_Years" xml:space="preserve"><value>{0} 年前</value></data>
+  <data name="Instance_TabMods.Text" xml:space="preserve"><value>模组</value></data>
+  <data name="Instance_TabResourcePacks.Text" xml:space="preserve"><value>资源包</value></data>
+  <data name="Instance_TabShaders.Text" xml:space="preserve"><value>光影</value></data>
+  <data name="Instance_TabDataPacks.Text" xml:space="preserve"><value>数据包</value></data>
+  <data name="Content_BrowseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>浏览 Modrinth 和 CurseForge</value></data>
+  <data name="Content_Browse.Text" xml:space="preserve"><value>浏览</value></data>
+  <data name="Content_AddFilesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>添加文件</value></data>
+  <data name="Content_AddFiles.Text" xml:space="preserve"><value>添加文件</value></data>
+  <data name="Content_CheckUpdatesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>检查更新</value></data>
+  <data name="Content_CheckUpdates.Text" xml:space="preserve"><value>检查更新</value></data>
+  <data name="Content_UpdateAllButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>全部更新</value></data>
+  <data name="Content_UpdateAll.Text" xml:space="preserve"><value>全部更新</value></data>
+  <data name="Content_World.PlaceholderText" xml:space="preserve"><value>世界</value></data>
+  <data name="Content_World.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>世界</value></data>
+  <data name="Content_Filter.PlaceholderText" xml:space="preserve"><value>筛选</value></data>
+  <data name="Content_Filter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>筛选</value></data>
+  <data name="Content_RefreshButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>刷新</value></data>
+  <data name="Content_NoLoaderBar.Title" xml:space="preserve"><value>未安装模组加载器</value></data>
+  <data name="Content_NoLoaderBar.Message" xml:space="preserve"><value>模组需要模组加载器才能加载。请在“版本”选项卡中选择一个。</value></data>
+  <data name="Content_EnableSelected.Text" xml:space="preserve"><value>启用</value></data>
+  <data name="Content_DisableSelected.Text" xml:space="preserve"><value>禁用</value></data>
+  <data name="Content_DeleteSelected.Text" xml:space="preserve"><value>删除</value></data>
+  <data name="Content_PinnedIcon.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>已暂停更新</value></data>
+  <data name="Content_EnabledToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>启用</value></data>
+  <data name="Content_MoreButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>更多</value></data>
+  <data name="Content_OpenProject.Text" xml:space="preserve"><value>打开项目页面</value></data>
+  <data name="Content_Changelog.Text" xml:space="preserve"><value>查看更新日志</value></data>
+  <data name="Content_ShowInFolder.Text" xml:space="preserve"><value>在文件夹中显示</value></data>
+  <data name="Content_ModInfo.Text" xml:space="preserve"><value>模组信息</value></data>
+  <data name="Content_EditManifest.Text" xml:space="preserve"><value>编辑元数据…</value></data>
+  <data name="ModInfo_Title" xml:space="preserve"><value>模组信息</value></data>
+  <data name="ModInfo_Edited" xml:space="preserve"><value>此模组的元数据已在 Fluorite 中修改。可在“编辑元数据 › 恢复原文件”中还原。</value></data>
+  <data name="ModInfo_Loader" xml:space="preserve"><value>加载器</value></data>
+  <data name="ModInfo_Id" xml:space="preserve"><value>模组 ID</value></data>
+  <data name="ModInfo_Version" xml:space="preserve"><value>版本</value></data>
+  <data name="ModInfo_Authors" xml:space="preserve"><value>作者</value></data>
+  <data name="ModInfo_Side" xml:space="preserve"><value>运行环境</value></data>
+  <data name="ModInfo_SideClient" xml:space="preserve"><value>仅客户端</value></data>
+  <data name="ModInfo_SideServer" xml:space="preserve"><value>仅服务端</value></data>
+  <data name="ModInfo_SideBoth" xml:space="preserve"><value>客户端和服务端</value></data>
+  <data name="ModInfo_Provides" xml:space="preserve"><value>同时提供</value></data>
+  <data name="ModInfo_License" xml:space="preserve"><value>许可证</value></data>
+  <data name="ModInfo_Links" xml:space="preserve"><value>链接</value></data>
+  <data name="ModInfo_LinkHomepage" xml:space="preserve"><value>主页</value></data>
+  <data name="ModInfo_LinkSources" xml:space="preserve"><value>源代码</value></data>
+  <data name="ModInfo_LinkIssues" xml:space="preserve"><value>问题反馈</value></data>
+  <data name="ModInfo_LinkWiki" xml:space="preserve"><value>Wiki</value></data>
+  <data name="ModInfo_LinkEmail" xml:space="preserve"><value>电子邮件</value></data>
+  <data name="ModInfo_Dependencies" xml:space="preserve"><value>依赖</value></data>
+  <data name="ModInfo_NoMetadata" xml:space="preserve"><value>此文件没有模组元数据（没有 fabric.mod.json、mods.toml 或 mcmod.info）。</value></data>
+  <data name="ModInfo_Bundled" xml:space="preserve"><value>内置模组（{0}）</value></data>
+  <data name="ModInfo_File" xml:space="preserve"><value>文件</value></data>
+  <data name="ModInfo_FileName" xml:space="preserve"><value>名称</value></data>
+  <data name="ModInfo_Size" xml:space="preserve"><value>大小</value></data>
+  <data name="ModInfo_Source" xml:space="preserve"><value>来源</value></data>
+  <data name="ModInfo_EditManifest" xml:space="preserve"><value>编辑元数据…</value></data>
+  <data name="ModInfo_OpenProject" xml:space="preserve"><value>打开项目页面</value></data>
+  <data name="ModInfo_AnyVersion" xml:space="preserve"><value>任意版本</value></data>
+  <data name="ModInfo_Have" xml:space="preserve"><value>（此实例：{0}）</value></data>
+  <data name="ModInfo_DepRequired" xml:space="preserve"><value>必需</value></data>
+  <data name="ModInfo_DepOptional" xml:space="preserve"><value>可选</value></data>
+  <data name="ModInfo_DepIncompatible" xml:space="preserve"><value>不兼容</value></data>
+  <data name="ModInfo_DepDiscouraged" xml:space="preserve"><value>不建议同时使用</value></data>
+  <data name="Manifest_Title" xml:space="preserve"><value>编辑元数据</value></data>
+  <data name="Manifest_TitleFor" xml:space="preserve"><value>编辑元数据：{0}</value></data>
+  <data name="Manifest_None" xml:space="preserve"><value>此文件没有 Fluorite 可编辑的模组元数据（fabric.mod.json、quilt.mod.json、mods.toml、neoforge.mods.toml、mcmod.info 或 litemod.json）。</value></data>
+  <data name="Manifest_FilePicker" xml:space="preserve"><value>元数据文件</value></data>
+  <data name="Manifest_Save" xml:space="preserve"><value>保存</value></data>
+  <data name="Manifest_Restore" xml:space="preserve"><value>恢复原文件</value></data>
+  <data name="Manifest_Allow" xml:space="preserve"><value>允许 {0} {1}</value></data>
+  <data name="Manifest_AllowHint" xml:space="preserve"><value>将此版本加入模组接受的版本范围。保存前请检查下方的修改。</value></data>
+  <data name="Manifest_Note" xml:space="preserve"><value>保存会将内容写入模组的 jar 文件。Fluorite 会保留原文件，可在此处恢复。更新模组后会改用新版本自带的元数据。</value></data>
+  <data name="Manifest_NoteSigned" xml:space="preserve"><value>保存会将内容写入模组的 jar 文件。Fluorite 会保留原文件，可在此处恢复。更新模组后会改用新版本自带的元数据。此 jar 带有签名：任何修改都会使签名失效，因此保存时会移除签名。</value></data>
+  <data name="Manifest_Saved" xml:space="preserve"><value>已保存 {0} 的元数据。原文件已保留，可在“编辑元数据 › 恢复原文件”中还原。</value></data>
+  <data name="Manifest_SavedUnsigned" xml:space="preserve"><value>已保存 {0} 的元数据，并移除了因修改而失效的签名。原文件已保留，可在“编辑元数据 › 恢复原文件”中还原。</value></data>
+  <data name="Manifest_Restored" xml:space="preserve"><value>已恢复 {0} 的原文件。</value></data>
+  <data name="Manifest_NoMod" xml:space="preserve"><value>修改后该文件不再声明任何模组，请检查模组 ID 是否还在。</value></data>
+  <data name="Manifest_InUse" xml:space="preserve"><value>无法写入 {0}：文件正在使用中。如果游戏正在运行，请先关闭游戏。</value></data>
+  <data name="Content_Delete.Text" xml:space="preserve"><value>删除</value></data>
+  <data name="Content_Pin" xml:space="preserve"><value>不再更新</value></data>
+  <data name="Content_Unpin" xml:space="preserve"><value>允许更新</value></data>
+  <data name="Content_Folder" xml:space="preserve"><value>文件夹</value></data>
+  <data name="Content_Local" xml:space="preserve"><value>本地文件</value></data>
+  <data name="Content_UpdateTo" xml:space="preserve"><value>更新到 {0}</value></data>
+  <data name="Content_EmptyMods" xml:space="preserve"><value>还没有模组。浏览 Modrinth 和 CurseForge，或将 .jar 文件拖到这里。</value></data>
+  <data name="Content_EmptyResourcePacks" xml:space="preserve"><value>还没有资源包。点击浏览，或将 .zip 文件拖到这里。</value></data>
+  <data name="Content_EmptyShaders" xml:space="preserve"><value>还没有光影包。光影需要 Iris（Fabric/Quilt）、Oculus（Forge）或 OptiFine。</value></data>
+  <data name="Content_EmptyDataPacks" xml:space="preserve"><value>这个世界还没有数据包。点击浏览，或将 .zip 文件拖到这里。</value></data>
+  <data name="Content_Summary" xml:space="preserve"><value>共 {0} 项 · {1} 项已启用</value></data>
+  <data name="Content_IssueSummary" xml:space="preserve"><value>发现 {0} 个错误和 {1} 个警告，详情见各模组下方。</value></data>
+  <data name="Content_UpToDate" xml:space="preserve"><value>全部为最新版本。</value></data>
+  <data name="Content_UpdatesFound" xml:space="preserve"><value>有 {0} 个可用更新。</value></data>
+  <data name="Content_UnknownFiles" xml:space="preserve"><value>{0} 个文件不在 Modrinth 或 CurseForge 上，无法检查更新。</value></data>
+  <data name="Content_Updated" xml:space="preserve"><value>已更新 {0} 项。</value></data>
+  <data name="Content_DropCaption" xml:space="preserve"><value>添加到实例</value></data>
+  <data name="Content_Imported" xml:space="preserve"><value>已添加 {0} 个文件。</value></data>
+  <data name="Content_ImportNothing" xml:space="preserve"><value>未添加任何文件：不支持的文件类型。</value></data>
+  <data name="Content_NoChangelog" xml:space="preserve"><value>未提供更新日志。</value></data>
+  <data name="Content_FindingVersion" xml:space="preserve"><value>正在查找兼容的版本…</value></data>
+  <data name="Content_NoCompatibleVersion" xml:space="preserve"><value>{0} 没有适用于 {1} 的版本。</value></data>
+  <data name="Content_InstallFailedTitle" xml:space="preserve"><value>无法安装</value></data>
+  <data name="Content_ResolvingDependencies" xml:space="preserve"><value>正在解析前置…</value></data>
+  <data name="Content_ConfirmTitle" xml:space="preserve"><value>安装 {0}？</value></data>
+  <data name="Content_ConfirmUpdateTitle" xml:space="preserve"><value>更新 {0} 项？</value></data>
+  <data name="Content_Cancelled" xml:space="preserve"><value>已取消</value></data>
+  <data name="Content_UpdatingN" xml:space="preserve"><value>{0} 项更新</value></data>
+  <data name="Content_Downloading" xml:space="preserve"><value>正在下载…</value></data>
+  <data name="Content_Installed" xml:space="preserve"><value>已安装</value></data>
+  <data name="Content_Preparing" xml:space="preserve"><value>正在准备…</value></data>
+  <data name="Content_AlsoInstalls" xml:space="preserve"><value>同时安装以下必需前置：</value></data>
+  <data name="Content_OptionalNotInstalled" xml:space="preserve"><value>可选前置（不会安装）：</value></data>
+  <data name="Content_ManualNeeded" xml:space="preserve"><value>以下文件需要从 CurseForge 网站手动下载：{0}。Fluorite 会引导你完成。</value></data>
+  <data name="Content_IncompatibleWith" xml:space="preserve"><value>声明与已安装的内容不兼容：{0}</value></data>
+  <data name="Content_Unresolved" xml:space="preserve"><value>找不到兼容版本：{0}</value></data>
+  <data name="Content_Install" xml:space="preserve"><value>安装</value></data>
+  <data name="DataPack_NoWorldsTitle" xml:space="preserve"><value>还没有世界</value></data>
+  <data name="DataPack_NoWorlds" xml:space="preserve"><value>数据包需要添加到世界中。请先进入游戏创建一个世界。</value></data>
+  <data name="DataPack_World" xml:space="preserve"><value>世界</value></data>
+  <data name="DataPack_PickWorldTitle" xml:space="preserve"><value>将数据包添加到哪个世界？</value></data>
+  <data name="Manual_Title" xml:space="preserve"><value>从 CurseForge 下载</value></data>
+  <data name="Manual_Body" xml:space="preserve"><value>这些文件的作者只允许从 CurseForge 网站下载。请打开每个下载页面；Fluorite 会监视 {0}，文件下载完成后会自动安装。</value></data>
+  <data name="Manual_OpenPage" xml:space="preserve"><value>打开下载页面</value></data>
+  <data name="Manual_Skip" xml:space="preserve"><value>跳过剩余</value></data>
+  <data name="Manual_Waiting" xml:space="preserve"><value>等待下载…</value></data>
+  <data name="Manual_Checking" xml:space="preserve"><value>正在校验…</value></data>
+  <data name="Manual_Installed" xml:space="preserve"><value>已安装 ✓</value></data>
+  <data name="Manual_Mismatch" xml:space="preserve"><value>该文件与预期不符，继续等待…</value></data>
+  <data name="ModIssues_Title" xml:space="preserve"><value>模组存在问题</value></data>
+  <data name="ModIssues_Body" xml:space="preserve"><value>Fluorite 在 {0} 的模组中发现了问题，游戏很可能会崩溃。</value></data>
+  <data name="ModIssues_Errors" xml:space="preserve"><value>错误</value></data>
+  <data name="ModIssues_Warnings" xml:space="preserve"><value>警告</value></data>
+  <data name="ModIssues_LaunchAnyway" xml:space="preserve"><value>仍然启动</value></data>
+  <data name="ModIssue_NoLoader" xml:space="preserve"><value>已安装 {0} 等模组，但此实例没有模组加载器。</value></data>
+  <data name="ModIssue_WrongLoader" xml:space="preserve"><value>{0} 适用于 {2}，无法在此实例的加载器上加载。</value></data>
+  <data name="ModIssue_WrongMinecraftVersion" xml:space="preserve"><value>{0} 需要 Minecraft {2}。</value></data>
+  <data name="ModIssue_WrongLoaderVersion" xml:space="preserve"><value>{0} 需要 {1} {2}。请在“版本”选项卡中更新加载器。</value></data>
+  <data name="ModIssue_Duplicate" xml:space="preserve"><value>{0} 重复安装（另见 {1}）。</value></data>
+  <data name="ModIssue_MissingDependency" xml:space="preserve"><value>{0} 需要前置“{1}”，但未安装。</value></data>
+  <data name="ModIssue_DependencyVersion" xml:space="preserve"><value>{0} 需要不同版本的 {1}（{2}）。</value></data>
+  <data name="ModIssue_Incompatible" xml:space="preserve"><value>{0} 与 {1} 不兼容。</value></data>
+  <data name="ModIssue_Discouraged" xml:space="preserve"><value>{0} 与 {1} 同时使用可能出现问题。</value></data>
+  <data name="ModIssue_OptiFineNeedsOptiFabric" xml:space="preserve"><value>在 Fabric 或 Quilt 上运行 OptiFine 需要 OptiFabric。</value></data>
+  <data name="ModIssue_KnownConflict" xml:space="preserve"><value>OptiFine 与 {1} 不兼容。</value></data>
+  <data name="Launch_CheckingMods" xml:space="preserve"><value>正在检查模组…</value></data>
+  <data name="Settings_CheckMods.Header" xml:space="preserve"><value>启动前检查模组</value></data>
+  <data name="Settings_CheckMods.Description" xml:space="preserve"><value>检查缺失的前置、错误的加载器或 Minecraft 版本，以及重复的模组。</value></data>
+  <data name="Settings_LoaderAvailability.Header" xml:space="preserve"><value>标出支持所选版本的模组加载器</value></data>
+  <data name="Settings_LoaderAvailability.Description" xml:space="preserve"><value>选择加载器时，不支持所选 Minecraft 版本的加载器会显示为灰色。需要联网检查。</value></data>
+  <data name="Content_AlreadyInstalled" xml:space="preserve"><value>此版本已安装。</value></data>
+  <data name="Content_SummaryOne" xml:space="preserve"><value>共 1 项 · {1} 项已启用</value></data>
+  <data name="Launcher_FtbApp" xml:space="preserve"><value>FTB App</value></data>
+  <data name="Library_Import.Text" xml:space="preserve"><value>导入</value></data>
+  <data name="Library_ImportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>导入整合包或实例</value></data>
+  <data name="Library_ImportFile.Text" xml:space="preserve"><value>整合包文件（.mrpack、.zip）…</value></data>
+  <data name="Library_ImportLink.Text" xml:space="preserve"><value>从链接导入…</value></data>
+  <data name="Library_ImportLauncher.Text" xml:space="preserve"><value>从其他启动器导入…</value></data>
+  <data name="Library_Source.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>显示来源</value></data>
+  <data name="Library_SourceAll" xml:space="preserve"><value>所有启动器</value></data>
+  <data name="Library_RootError" xml:space="preserve"><value>无法读取 {0} 文件夹：{1}</value></data>
+  <data name="Menu_CopyToFluorite.Text" xml:space="preserve"><value>复制到 Fluorite</value></data>
+  <data name="Delete_External" xml:space="preserve"><value>此实例属于其他启动器。Fluorite 不会删除其他启动器的文件；如需隐藏，请在“设置 › 其他启动器”中移除该文件夹。</value></data>
+  <data name="Import_LinkTitle" xml:space="preserve"><value>从链接安装整合包</value></data>
+  <data name="Import_LinkHint" xml:space="preserve"><value>粘贴 Modrinth、CurseForge、FTB 或 Technic 整合包页面链接、packwiz 的 pack.toml 地址，或 .mrpack / .zip 的直链。</value></data>
+  <data name="Import_LinkPlaceholder" xml:space="preserve"><value>https://modrinth.com/modpack/…</value></data>
+  <data name="Import_LinkButton" xml:space="preserve"><value>继续</value></data>
+  <data name="Import_DropCaption" xml:space="preserve"><value>安装整合包</value></data>
+  <data name="Modpack_ReadingTitle" xml:space="preserve"><value>正在读取整合包</value></data>
+  <data name="Modpack_Reading" xml:space="preserve"><value>正在获取 {0}…</value></data>
+  <data name="Modpack_ReadFailedTitle" xml:space="preserve"><value>无法读取整合包</value></data>
+  <data name="Modpack_InstallTitle" xml:space="preserve"><value>安装整合包</value></data>
+  <data name="Modpack_InstanceName" xml:space="preserve"><value>实例名称</value></data>
+  <data name="Modpack_Contents" xml:space="preserve"><value>需下载 {0} 个文件，整合包内含 {1} 个文件。</value></data>
+  <data name="Modpack_IncludeOptional" xml:space="preserve"><value>包含 {0} 个可选文件</value></data>
+  <data name="Modpack_ManualNeeded" xml:space="preserve"><value>有 {0} 个文件不允许启动器下载；Fluorite 会为你打开它们的下载页面。</value></data>
+  <data name="Modpack_Installing" xml:space="preserve"><value>正在安装…</value></data>
+  <data name="Modpack_Downloading" xml:space="preserve"><value>正在下载 {0}/{1}…</value></data>
+  <data name="Modpack_Installed" xml:space="preserve"><value>已安装</value></data>
+  <data name="Modpack_InstallFailedTitle" xml:space="preserve"><value>无法安装整合包</value></data>
+  <data name="Modpack_CheckingTitle" xml:space="preserve"><value>正在检查更新</value></data>
+  <data name="Modpack_Checking" xml:space="preserve"><value>正在查找 {0} 的新版本…</value></data>
+  <data name="Modpack_UpToDateTitle" xml:space="preserve"><value>已是最新</value></data>
+  <data name="Modpack_UpToDate" xml:space="preserve"><value>{0} {1} 已是最新版本。</value></data>
+  <data name="Modpack_UpdateFailedTitle" xml:space="preserve"><value>无法更新整合包</value></data>
+  <data name="Modpack_UpdateTitle" xml:space="preserve"><value>更新整合包</value></data>
+  <data name="Modpack_UpdateButton" xml:space="preserve"><value>更新</value></data>
+  <data name="Modpack_UpdatingTo" xml:space="preserve"><value>{0} → {1}</value></data>
+  <data name="Modpack_Updated" xml:space="preserve"><value>已更新</value></data>
+  <data name="Modpack_MinecraftChange" xml:space="preserve"><value>Minecraft 将更改为 {0}。</value></data>
+  <data name="Modpack_LoaderChange" xml:space="preserve"><value>{0} 将更改为 {1}。</value></data>
+  <data name="Modpack_ChangeSummary" xml:space="preserve"><value>新增 {0} 个文件，更新 {1} 个，移除 {2} 个；{3} 个未变。</value></data>
+  <data name="Modpack_YourChanges" xml:space="preserve"><value>你修改过的文件</value></data>
+  <data name="Modpack_YourChangesHint" xml:space="preserve"><value>这些文件将保持你的版本。勾选文件可改用整合包中的版本。</value></data>
+  <data name="Modpack_ModifiedChanged" xml:space="preserve"><value>你修改过此文件，新版整合包也修改了它。</value></data>
+  <data name="Modpack_ModifiedRemoved" xml:space="preserve"><value>你修改过此文件；新版整合包已移除它。</value></data>
+  <data name="Modpack_Conflict" xml:space="preserve"><value>整合包新增了此文件，但你已有自己的版本。</value></data>
+  <data name="Modpack_AllChanges" xml:space="preserve"><value>其他所有更改</value></data>
+  <data name="Modpack_AndMore" xml:space="preserve"><value>…以及另外 {0} 项</value></data>
+  <data name="Modpack_KindAdd" xml:space="preserve"><value>新增</value></data>
+  <data name="Modpack_KindReplace" xml:space="preserve"><value>更新</value></data>
+  <data name="Modpack_KindRemove" xml:space="preserve"><value>移除</value></data>
+  <data name="Export_Title" xml:space="preserve"><value>导出 {0}</value></data>
+  <data name="Export_Format" xml:space="preserve"><value>格式</value></data>
+  <data name="Export_FormatModrinth" xml:space="preserve"><value>Modrinth（.mrpack）</value></data>
+  <data name="Export_FormatCurseForge" xml:space="preserve"><value>CurseForge（.zip）</value></data>
+  <data name="Export_FormatPrism" xml:space="preserve"><value>Prism Launcher / MultiMC（.zip）</value></data>
+  <data name="Export_FormatPackwiz" xml:space="preserve"><value>packwiz（文件夹）</value></data>
+  <data name="Export_Name" xml:space="preserve"><value>整合包名称</value></data>
+  <data name="Export_Version" xml:space="preserve"><value>整合包版本</value></data>
+  <data name="Export_Include" xml:space="preserve"><value>包含内容</value></data>
+  <data name="Export_Hint" xml:space="preserve"><value>Modrinth 或 CurseForge 上的模组和资源包会以链接形式引用，不会复制；其他文件会打包进整合包。存档和个人设置默认不包含，除非你勾选。</value></data>
+  <data name="Export_Button" xml:space="preserve"><value>导出</value></data>
+  <data name="Export_JobTitle" xml:space="preserve"><value>导出 {0}</value></data>
+  <data name="Export_Exporting" xml:space="preserve"><value>正在导出…</value></data>
+  <data name="Export_Done" xml:space="preserve"><value>已导出：{0} 个链接，{1} 个文件</value></data>
+  <data name="Export_FailedTitle" xml:space="preserve"><value>无法导出</value></data>
+  <data name="Instance_UpdatePack.Text" xml:space="preserve"><value>检查更新</value></data>
+  <data name="Instance_UpdatePackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>检查整合包更新</value></data>
+  <data name="Instance_UpdatePackButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>检查此整合包是否有新版本</value></data>
+  <data name="Instance_ExportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>导出为整合包</value></data>
+  <data name="Instance_ExportButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>导出为整合包</value></data>
+  <data name="Instance_ExternalTitle" xml:space="preserve"><value>来自 {0}</value></data>
+  <data name="Instance_ExternalSidecar" xml:space="preserve"><value>Fluorite 直接从 {0} 启动它。你在 Fluorite 中更改的设置会单独保存，不会影响其他启动器。</value></data>
+  <data name="Instance_ExternalWriteBack" xml:space="preserve"><value>Fluorite 直接从 {0} 启动它，并把更改保存到该启动器自己的文件中。</value></data>
+  <data name="Instance_WarningsBar.Title" xml:space="preserve"><value>此实例的部分内容不受支持</value></data>
+  <data name="Instance_PackInfo" xml:space="preserve"><value>整合包：{0} {1}（{2}）</value></data>
+  <data name="Version_LockedBar.Title" xml:space="preserve"><value>由其他启动器管理</value></data>
+  <data name="Version_LockedBar.Message" xml:space="preserve"><value>此实例的版本来自其他启动器的文件。请在该启动器中修改，或复制到 Fluorite，或（Prism/MultiMC）在设置中允许 Fluorite 写入其文件。</value></data>
+  <data name="Settings_GroupLaunchers.Text" xml:space="preserve"><value>其他启动器</value></data>
+  <data name="Settings_OtherLaunchers.Header" xml:space="preserve"><value>直接使用的文件夹</value></data>
+  <data name="Settings_OtherLaunchers.Description" xml:space="preserve"><value>这些 Prism、MultiMC、官方启动器、HMCL 或 PCL 文件夹中的实例会显示在库中，并直接原地启动。除非你允许写入，Fluorite 只会读取它们的文件。</value></data>
+  <data name="Settings_FindLaunchers.Content" xml:space="preserve"><value>在此电脑上查找…</value></data>
+  <data name="Settings_AddLauncherFolder.Content" xml:space="preserve"><value>添加文件夹…</value></data>
+  <data name="Settings_NoLauncherFolders.Text" xml:space="preserve"><value>还没有文件夹。Fluorite 可以帮你找到 Prism、官方启动器、HMCL 和 PCL。</value></data>
+  <data name="Settings_LauncherEnabled.OnContent" xml:space="preserve"><value>显示</value></data>
+  <data name="Settings_LauncherEnabled.OffContent" xml:space="preserve"><value>隐藏</value></data>
+  <data name="Settings_LauncherWriteBack.OnContent" xml:space="preserve"><value>可写入</value></data>
+  <data name="Settings_LauncherWriteBack.OffContent" xml:space="preserve"><value>只读</value></data>
+  <data name="Settings_LauncherWriteBack.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>允许 Fluorite 将名称、图标、设置、版本和游戏时长保存到 instance.cfg / mmc-pack.json</value></data>
+  <data name="Settings_RemoveLauncherFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>停止使用此文件夹</value></data>
+  <data name="Settings_RemoveLauncherFolder.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>停止使用此文件夹（不会删除任何文件）</value></data>
+  <data name="Launchers_DialogTitle" xml:space="preserve"><value>其他启动器</value></data>
+  <data name="Launchers_InPlaceHeader" xml:space="preserve"><value>添加或复制</value></data>
+  <data name="Launchers_InPlaceHint" xml:space="preserve"><value>添加：其中的实例会显示在库中，并从原文件夹启动，不会复制任何文件。复制：选择实例，把它（模组、配置、存档）复制到 Fluorite 自己的文件夹。</value></data>
+  <data name="Launchers_CopyHeader" xml:space="preserve"><value>复制到 Fluorite</value></data>
+  <data name="Launchers_CopyHint" xml:space="preserve"><value>这些启动器的文件夹无法直接使用；Fluorite 会把实例（模组、配置、存档）复制过来。</value></data>
+  <data name="Launchers_NoneFound" xml:space="preserve"><value>未找到。</value></data>
+  <data name="Launchers_Add" xml:space="preserve"><value>添加</value></data>
+  <data name="Launchers_CopyFrom" xml:space="preserve"><value>复制…</value></data>
+  <data name="Launchers_CopyFromTitle" xml:space="preserve"><value>从 {0} 复制</value></data>
+  <data name="Launchers_CopyFromHint" xml:space="preserve"><value>选择要复制到 Fluorite 自己文件夹的实例（模组、配置、存档）。{0} 中的文件不会改动。</value></data>
+  <data name="Launchers_CopyCount" xml:space="preserve"><value>复制 {0} 个</value></data>
+  <data name="Launchers_CopyingMany" xml:space="preserve"><value>正在复制 {0} 个实例…</value></data>
+  <data name="Launchers_Back" xml:space="preserve"><value>返回</value></data>
+  <data name="Launchers_Added" xml:space="preserve"><value>已添加</value></data>
+  <data name="Launchers_Copy" xml:space="preserve"><value>复制</value></data>
+  <data name="Launchers_UnknownVersion" xml:space="preserve"><value>版本未知</value></data>
+  <data name="Launchers_AddFolder" xml:space="preserve"><value>添加其他文件夹…</value></data>
+  <data name="Launchers_NotRecognizedTitle" xml:space="preserve"><value>不是启动器文件夹</value></data>
+  <data name="Launchers_NotRecognized" xml:space="preserve"><value>{0} 看起来不是 Prism/MultiMC、官方启动器、HMCL 或 PCL 的文件夹。</value></data>
+  <data name="Launchers_AlreadyAddedTitle" xml:space="preserve"><value>已添加</value></data>
+  <data name="Launchers_AlreadyAdded" xml:space="preserve"><value>{0} 已在库中。</value></data>
+  <data name="Launchers_NeedVersionTitle" xml:space="preserve"><value>这是哪个版本？</value></data>
+  <data name="Launchers_NeedVersion" xml:space="preserve"><value>其他启动器的文件没有说明“{0}”使用的 Minecraft 版本和加载器。</value></data>
+  <data name="Launchers_MinecraftVersion" xml:space="preserve"><value>Minecraft 版本</value></data>
+  <data name="Launchers_Loader" xml:space="preserve"><value>模组加载器</value></data>
+  <data name="Launchers_CopyingTitle" xml:space="preserve"><value>正在复制实例</value></data>
+  <data name="Launchers_Copying" xml:space="preserve"><value>正在复制 {0}…</value></data>
+  <data name="Launchers_CopyFailedTitle" xml:space="preserve"><value>无法复制实例</value></data>
+  <data name="Browse_KindModpacks.Content" xml:space="preserve"><value>整合包</value></data>
+  <data name="Welcome_ShowInLibrary.OnContent" xml:space="preserve"><value>显示</value></data>
+  <data name="Welcome_ShowInLibrary.OffContent" xml:space="preserve"><value>隐藏</value></data>
+  <data name="Welcome_ShowInLibrary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>在 Fluorite 中显示其实例</value></data>
+  <data name="Import_LinkField" xml:space="preserve"><value>整合包链接</value></data>
+  <data name="Instance_TabWorlds.Text" xml:space="preserve"><value>世界</value></data>
+  <data name="Instance_TabServers.Text" xml:space="preserve"><value>服务器</value></data>
+  <data name="Instance_TabScreenshots.Text" xml:space="preserve"><value>截图</value></data>
+  <data name="Settings_AutoBackup.Header" xml:space="preserve"><value>游戏结束后备份世界</value></data>
+  <data name="Settings_AutoBackup.Description" xml:space="preserve"><value>游戏关闭时，将本次游玩过的世界压缩保存到实例的 backups 文件夹，与游戏内创建的备份放在一起。</value></data>
+  <data name="Settings_AutoBackupKeep.Header" xml:space="preserve"><value>每个世界保留的自动备份数</value></data>
+  <data name="Settings_AutoBackupKeep.Description" xml:space="preserve"><value>更早的自动备份会被删除。手动创建的备份不会被删除。</value></data>
+  <data name="Worlds_ImportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>导入世界</value></data>
+  <data name="Worlds_Import.Text" xml:space="preserve"><value>导入</value></data>
+  <data name="Worlds_BackupsFolderButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>打开备份文件夹</value></data>
+  <data name="Worlds_BackupsFolder.Text" xml:space="preserve"><value>备份文件夹</value></data>
+  <data name="Worlds_RunningBar.Title" xml:space="preserve"><value>游戏正在运行</value></data>
+  <data name="Worlds_RunningBar.Message" xml:space="preserve"><value>关闭游戏后才能重命名、删除或替换世界。现在备份将包含最近一次存档的内容。</value></data>
+  <data name="Worlds_NoQuickPlayBar.Title" xml:space="preserve"><value>直接进入世界需要 Minecraft 23w14a 或更高版本</value></data>
+  <data name="Worlds_NoQuickPlayBar.Message" xml:space="preserve"><value>此版本会从标题画面启动，请在“单人游戏”中选择世界。</value></data>
+  <data name="Worlds_PlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>进入此世界</value></data>
+  <data name="Worlds_BackupButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>备份</value></data>
+  <data name="Worlds_BackupButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>备份 (Ctrl+B)</value></data>
+  <data name="Worlds_RenameItem.Text" xml:space="preserve"><value>重命名</value></data>
+  <data name="Worlds_CopyItem.Text" xml:space="preserve"><value>创建副本</value></data>
+  <data name="Worlds_DataPacksItem.Text" xml:space="preserve"><value>数据包</value></data>
+  <data name="Worlds_CopySeedItem.Text" xml:space="preserve"><value>复制种子</value></data>
+  <data name="Worlds_ShortcutItem.Text" xml:space="preserve"><value>创建桌面快捷方式</value></data>
+  <data name="Worlds_Empty.Text" xml:space="preserve"><value>还没有世界。可以在游戏中创建，或将世界 .zip 文件或文件夹拖到这里。</value></data>
+  <data name="Worlds_BackUpNow.Content" xml:space="preserve"><value>立即备份</value></data>
+  <data name="Worlds_Restore.Content" xml:space="preserve"><value>还原</value></data>
+  <data name="Worlds_NoBackups.Text" xml:space="preserve"><value>还没有备份。</value></data>
+  <data name="Worlds_DropCaption" xml:space="preserve"><value>添加世界</value></data>
+  <data name="Worlds_Unreadable" xml:space="preserve"><value>无法读取 level.dat：{0}</value></data>
+  <data name="Worlds_Hardcore" xml:space="preserve"><value>极限</value></data>
+  <data name="Worlds_ModeSurvival" xml:space="preserve"><value>生存</value></data>
+  <data name="Worlds_ModeCreative" xml:space="preserve"><value>创造</value></data>
+  <data name="Worlds_ModeAdventure" xml:space="preserve"><value>冒险</value></data>
+  <data name="Worlds_ModeSpectator" xml:space="preserve"><value>旁观</value></data>
+  <data name="Worlds_Cheats" xml:space="preserve"><value>允许作弊</value></data>
+  <data name="Worlds_LastPlayed" xml:space="preserve"><value>{0}游玩</value></data>
+  <data name="Worlds_Folder" xml:space="preserve"><value>文件夹：{0}</value></data>
+  <data name="Worlds_BackupAutomatic" xml:space="preserve"><value>自动</value></data>
+  <data name="Worlds_Backups" xml:space="preserve"><value>备份</value></data>
+  <data name="Worlds_BackupsOf" xml:space="preserve"><value>{0} 的备份</value></data>
+  <data name="Worlds_StopFirst" xml:space="preserve"><value>请先关闭游戏。</value></data>
+  <data name="Worlds_BackedUp" xml:space="preserve"><value>已备份 {0}（{1}）。</value></data>
+  <data name="Worlds_BackupFailed" xml:space="preserve"><value>备份失败：{0}</value></data>
+  <data name="Worlds_RestoreTitle" xml:space="preserve"><value>还原 {0}？</value></data>
+  <data name="Worlds_RestoreBody" xml:space="preserve"><value>要用 {0} 的备份替换此世界吗？当前世界会移到回收站。也可以将备份还原为一个单独的世界。</value></data>
+  <data name="Worlds_RestoreReplace" xml:space="preserve"><value>替换</value></data>
+  <data name="Worlds_RestoreAsCopy" xml:space="preserve"><value>还原为副本</value></data>
+  <data name="Worlds_Restored" xml:space="preserve"><value>已还原 {0} 的备份。</value></data>
+  <data name="Worlds_RestoreFailed" xml:space="preserve"><value>无法还原备份：{0}</value></data>
+  <data name="Worlds_RenameTitle" xml:space="preserve"><value>重命名世界</value></data>
+  <data name="Worlds_Rename" xml:space="preserve"><value>重命名</value></data>
+  <data name="Worlds_CopyTitle" xml:space="preserve"><value>创建副本</value></data>
+  <data name="Worlds_CopyName" xml:space="preserve"><value>{0} - 副本</value></data>
+  <data name="Worlds_Copy" xml:space="preserve"><value>复制</value></data>
+  <data name="Worlds_Copied" xml:space="preserve"><value>已创建 {0}。</value></data>
+  <data name="Worlds_ImportFailed" xml:space="preserve"><value>无法导入 {0}：{1}</value></data>
+  <data name="Worlds_ImportedOne" xml:space="preserve"><value>已添加 1 个世界。</value></data>
+  <data name="Worlds_Imported" xml:space="preserve"><value>已添加 {0} 个世界。</value></data>
+  <data name="Worlds_SeedCopied" xml:space="preserve"><value>已复制种子 {0}。</value></data>
+  <data name="Worlds_BackingUp" xml:space="preserve"><value>正在备份 {0}…</value></data>
+  <data name="Worlds_AutoBackedUp" xml:space="preserve"><value>已备份世界 {0}。</value></data>
+  <data name="Worlds_AutoBackupFailed" xml:space="preserve"><value>自动备份世界失败：{0}</value></data>
+  <data name="JumpList_RecentWorlds" xml:space="preserve"><value>最近的世界</value></data>
+  <data name="JumpList_PlayWorld" xml:space="preserve"><value>在 {1} 中进入 {0}</value></data>
+  <data name="Servers_AddButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>添加服务器</value></data>
+  <data name="Servers_Add.Text" xml:space="preserve"><value>添加服务器</value></data>
+  <data name="Servers_RefreshButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>刷新状态</value></data>
+  <data name="Servers_Refresh.Text" xml:space="preserve"><value>刷新</value></data>
+  <data name="Servers_RunningBar.Title" xml:space="preserve"><value>游戏正在运行</value></data>
+  <data name="Servers_RunningBar.Message" xml:space="preserve"><value>游戏会自行保存此列表，因此需要等游戏关闭后才能编辑。仍可查看服务器状态。</value></data>
+  <data name="Servers_JoinButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>加入服务器</value></data>
+  <data name="Servers_Join.Text" xml:space="preserve"><value>加入</value></data>
+  <data name="Servers_EditItem.Text" xml:space="preserve"><value>编辑</value></data>
+  <data name="Servers_CopyAddressItem.Text" xml:space="preserve"><value>复制地址</value></data>
+  <data name="Servers_Empty.Text" xml:space="preserve"><value>还没有服务器。可以在这里添加，或在游戏的“多人游戏”界面添加。</value></data>
+  <data name="Servers_ReorderHint.Text" xml:space="preserve"><value>拖动服务器可调整顺序，游戏中会以相同顺序显示。</value></data>
+  <data name="Servers_Players" xml:space="preserve"><value>{0} / {1} 名玩家</value></data>
+  <data name="Servers_Latency" xml:space="preserve"><value>{0} 毫秒</value></data>
+  <data name="Servers_ReadFailed" xml:space="preserve"><value>无法读取 servers.dat：{0}</value></data>
+  <data name="Servers_BadResponse" xml:space="preserve"><value>服务器返回了无法识别的响应</value></data>
+  <data name="Servers_Unreachable" xml:space="preserve"><value>无法连接到服务器</value></data>
+  <data name="Servers_AddTitle" xml:space="preserve"><value>添加服务器</value></data>
+  <data name="Servers_EditTitle" xml:space="preserve"><value>编辑服务器</value></data>
+  <data name="Servers_DefaultName" xml:space="preserve"><value>Minecraft 服务器</value></data>
+  <data name="Servers_GameRunning" xml:space="preserve"><value>请关闭游戏后再修改服务器列表。</value></data>
+  <data name="Servers_SaveFailed" xml:space="preserve"><value>无法保存 servers.dat：{0}</value></data>
+  <data name="Servers_AddressCopied" xml:space="preserve"><value>已复制 {0}。</value></data>
+  <data name="Servers_Name" xml:space="preserve"><value>名称</value></data>
+  <data name="Servers_Address" xml:space="preserve"><value>地址</value></data>
+  <data name="Servers_ResourcePacks" xml:space="preserve"><value>服务器资源包</value></data>
+  <data name="Servers_PacksPrompt" xml:space="preserve"><value>询问</value></data>
+  <data name="Servers_PacksEnabled" xml:space="preserve"><value>启用</value></data>
+  <data name="Servers_PacksDisabled" xml:space="preserve"><value>禁用</value></data>
+  <data name="Screenshots_Hint.Text" xml:space="preserve"><value>在游戏中按 F2 截图。</value></data>
+  <data name="Screenshots_CopyItem.Text" xml:space="preserve"><value>复制</value></data>
+  <data name="Screenshots_ShareItem.Text" xml:space="preserve"><value>共享</value></data>
+  <data name="Screenshots_OpenItem.Text" xml:space="preserve"><value>打开</value></data>
+  <data name="Screenshots_Empty.Text" xml:space="preserve"><value>还没有截图。</value></data>
+  <data name="Screenshots_Previous" xml:space="preserve"><value>上一张</value></data>
+  <data name="Screenshots_Next" xml:space="preserve"><value>下一张</value></data>
+  <data name="Screenshots_SummaryOne" xml:space="preserve"><value>1 张截图 · {1}</value></data>
+  <data name="Screenshots_Summary" xml:space="preserve"><value>{0} 张截图 · {1}</value></data>
+  <data name="Screenshots_CopiedOne" xml:space="preserve"><value>已复制截图。</value></data>
+  <data name="Screenshots_Copied" xml:space="preserve"><value>已复制 {0} 张截图。</value></data>
+  <data name="Screenshots_ShareTitle" xml:space="preserve"><value>{0} 张截图</value></data>
+  <data name="Crash_JavaTooOld_Title" xml:space="preserve"><value>Java 版本过旧</value></data>
+  <data name="Crash_JavaTooOld_Advice" xml:space="preserve"><value>游戏的某部分需要 Java {0} 或更新版本。在实例的“设置”选项卡中清空 Java 路径，让 Fluorite 自动选择合适的 Java，或选择 Java {0} 或更新版本。</value></data>
+  <data name="Crash_JavaTooNew_Title" xml:space="preserve"><value>Java 版本对此版本过新</value></data>
+  <data name="Crash_JavaTooNew_Advice" xml:space="preserve"><value>此 Minecraft 版本或模组加载器无法在新版 Java 上运行；旧版 Forge 和 LaunchWrapper 需要 Java 8。在实例的“设置”选项卡中清空 Java 路径，让 Fluorite 自动选择合适的 Java，或选择 Java 8。</value></data>
+  <data name="Crash_ForgeNeedsOlderJava8_Title" xml:space="preserve"><value>此 Forge 版本与当前 Java 不兼容</value></data>
+  <data name="Crash_ForgeNeedsOlderJava8_Advice" xml:space="preserve"><value>此 Forge 版本在较新的 Java 8 更新上存在缺陷。请在“版本”选项卡中将 Forge 更新到此 Minecraft 版本的最新版本。</value></data>
+  <data name="Crash_OpenJ9_Title" xml:space="preserve"><value>不支持 OpenJ9 Java</value></data>
+  <data name="Crash_OpenJ9_Advice" xml:space="preserve"><value>Minecraft 模组无法在 OpenJ9 虚拟机上运行。在实例的“设置”选项卡中清空 Java 路径，或选择 HotSpot Java（如 Microsoft、Adoptium 或 Zulu）。</value></data>
+  <data name="Crash_Java32Bit_Title" xml:space="preserve"><value>32 位 Java 无法使用足够的内存</value></data>
+  <data name="Crash_Java32Bit_Advice" xml:space="preserve"><value>32 位 Java 最多只能使用约 1 GB 内存。请安装 64 位 Java，或在实例的“设置”选项卡中清空 Java 路径，让 Fluorite 自动安装。</value></data>
+  <data name="Crash_HeapReserveFailed_Title" xml:space="preserve"><value>Java 无法获得分配的内存</value></data>
+  <data name="Crash_HeapReserveFailed_Advice" xml:space="preserve"><value>Windows 无法为 Java 预留设定的最大内存。请调低最大内存（或在设置中开启自动分配内存）、关闭其他程序，或增大页面文件。</value></data>
+  <data name="Crash_SystemOutOfMemory_Title" xml:space="preserve"><value>Windows 内存不足</value></data>
+  <data name="Crash_SystemOutOfMemory_Advice" xml:space="preserve"><value>游戏运行时电脑内存耗尽。请调低最大内存，为 Windows 留出足够空间，关闭其他程序，或增大页面文件。</value></data>
+  <data name="Crash_OutOfMemory_Title" xml:space="preserve"><value>游戏内存不足</value></data>
+  <data name="Crash_OutOfMemory_Advice" xml:space="preserve"><value>Minecraft 用完了分配给它的内存。请在实例的“设置”选项卡中调高最大内存（或在设置中开启自动分配内存），或移除部分模组、光影包或高分辨率资源包。</value></data>
+  <data name="Crash_GcConflict_Title" xml:space="preserve"><value>选择了多个垃圾回收器</value></data>
+  <data name="Crash_GcConflict_Advice" xml:space="preserve"><value>JVM 参数中指定了不止一个垃圾回收器。请从 JVM 参数中删除多余的 -XX:+Use…GC 参数。</value></data>
+  <data name="Crash_JvmOptionInvalid_Title" xml:space="preserve"><value>Java 不接受某个 JVM 参数</value></data>
+  <data name="Crash_JvmOptionInvalid_Advice" xml:space="preserve"><value>此 Java 无法识别“{0}”。请将其从 JVM 参数（设置或实例的“设置”选项卡）中删除。</value></data>
+  <data name="Crash_FabricIncompatibleMods_Title" xml:space="preserve"><value>加载器无法同时加载这些模组</value></data>
+  <data name="Crash_FabricIncompatibleMods_Advice" xml:space="preserve"><value>部分模组缺少前置、需要其他版本或互相冲突。加载器给出的建议：</value></data>
+  <data name="Crash_MissingDependencies_Title" xml:space="preserve"><value>模组缺少前置</value></data>
+  <data name="Crash_MissingDependencies_Advice" xml:space="preserve"><value>部分模组需要尚未安装的其他模组（或其他版本）。加载器报告：</value></data>
+  <data name="Crash_DuplicateMods_Title" xml:space="preserve"><value>模组重复安装</value></data>
+  <data name="Crash_DuplicateMods_Advice" xml:space="preserve"><value>mods 文件夹中同一个模组出现了多次（通常是两个版本）。每个模组只保留一份；“模组”选项卡会标记重复项。</value></data>
+  <data name="Crash_LoaderTooOld_Title" xml:space="preserve"><value>模组需要更新的加载器</value></data>
+  <data name="Crash_LoaderTooOld_Advice" xml:space="preserve"><value>某个模组是为更新的 Forge 或 NeoForge 制作的（需要 {0}）。请在“版本”选项卡中更新加载器，或安装适用于当前加载器的模组版本。</value></data>
+  <data name="Crash_ModCrashedLoading_Title" xml:space="preserve"><value>模组在加载时崩溃</value></data>
+  <data name="Crash_ModCrashedLoading_Advice" xml:space="preserve"><value>{0} 在游戏启动过程中出错。请更新它，确认它适用于此 Minecraft 版本和模组加载器，或暂时移除它以排查。</value></data>
+  <data name="Crash_MixinFailed_Title" xml:space="preserve"><value>模组无法修改游戏</value></data>
+  <data name="Crash_MixinFailed_Advice" xml:space="preserve"><value>{0} 无法将改动应用到 Minecraft。通常是它适用于其他 Minecraft 或加载器版本，或与其他模组冲突。请更新或移除它。</value></data>
+  <data name="Crash_OptiFineNeoForge_Title" xml:space="preserve"><value>OptiFine 不支持 NeoForge</value></data>
+  <data name="Crash_OptiFineNeoForge_Advice" xml:space="preserve"><value>请移除 OptiFine。在 NeoForge 上可以使用 Embeddium 或 Sodium 搭配 Oculus 或 Iris 获得相同功能。</value></data>
+  <data name="Crash_OptiFineIncompatible_Title" xml:space="preserve"><value>OptiFine 与当前环境不兼容</value></data>
+  <data name="Crash_OptiFineIncompatible_Advice" xml:space="preserve"><value>此 OptiFine 版本与 Forge 版本或其他模组不匹配。请使用为此 Forge 版本制作的 OptiFine（见 OptiFine 更新日志），或改用 Embeddium 或 Sodium 搭配 Oculus 或 Iris。</value></data>
+  <data name="Crash_RtssSodium_Title" xml:space="preserve"><value>RivaTuner 与 Sodium 不兼容</value></data>
+  <data name="Crash_RtssSodium_Advice" xml:space="preserve"><value>RivaTuner Statistics Server（常随 MSI Afterburner 安装）正在运行，Sodium 无法与其同时运行。请关闭它，或在其中为 javaw.exe 添加例外。</value></data>
+  <data name="Crash_GraphicsDriver_Title" xml:space="preserve"><value>显卡驱动无法运行 Minecraft</value></data>
+  <data name="Crash_GraphicsDriver_Advice" xml:space="preserve"><value>显卡驱动不支持 Minecraft 所需的 OpenGL 功能，或者已经过旧。请从显卡厂商（Intel、AMD 或 NVIDIA）官网安装最新驱动，而不是通过 Windows 更新。在有两块显卡的电脑上，请在设置中将“显卡”设为“高性能”。</value></data>
+  <data name="Crash_GpuDriverCrash_Title" xml:space="preserve"><value>显卡驱动崩溃</value></data>
+  <data name="Crash_GpuDriverCrash_Advice" xml:space="preserve"><value>游戏在显卡驱动（{0}）中崩溃。请从显卡厂商官网更新驱动。如果仍然出现，请逐个移除光影包或渲染类模组（Sodium、Iris、OptiFine）以找出原因。</value></data>
+  <data name="Crash_NativeLibrary_Title" xml:space="preserve"><value>本地库无法加载</value></data>
+  <data name="Crash_NativeLibrary_Advice" xml:space="preserve"><value>某个包含本地代码的库（如 LWJGL）未能加载，通常是因为 Java 的架构（x64 或 ARM64）与它不匹配，或被杀毒软件删除。删除实例文件夹中的 natives 文件夹后重新启动；如果仍无效，请清空 Java 路径，让 Fluorite 选择匹配的 Java。</value></data>
+  <data name="Crash_CorruptFile_Title" xml:space="preserve"><value>文件已损坏</value></data>
+  <data name="Crash_CorruptFile_Advice" xml:space="preserve"><value>某个游戏、库或模组文件不完整或已损坏。如果是模组，请重新下载；否则删除下方列出的文件并重新启动，让它重新下载。</value></data>
+  <data name="Crash_SignatureMismatch_Title" xml:space="preserve"><value>已签名的文件被修改</value></data>
+  <data name="Crash_SignatureMismatch_Advice" xml:space="preserve"><value>带签名的文件被修改过，通常是因为把模组复制进了游戏 jar。请撤销这些改动，或删除该版本的文件夹让它重新下载。</value></data>
+  <data name="Crash_ConfigCorrupt_Title" xml:space="preserve"><value>模组配置文件已损坏</value></data>
+  <data name="Crash_ConfigCorrupt_Advice" xml:space="preserve"><value>某个配置文件无法读取，通常是之前的崩溃使它变成了空文件。请从 config 文件夹删除下方列出的文件，模组会重新生成。</value></data>
+  <data name="Crash_ExtractedMods_Title" xml:space="preserve"><value>模组被解压了</value></data>
+  <data name="Crash_ExtractedMods_Advice" xml:space="preserve"><value>mods 文件夹中有解压后的模组文件夹。请直接把 .jar 文件放进 mods 文件夹，不要解压。</value></data>
+  <data name="Crash_IncompleteLoader_Title" xml:space="preserve"><value>模组加载器安装不完整</value></data>
+  <data name="Crash_IncompleteLoader_Advice" xml:space="preserve"><value>Forge 或 NeoForge 安装的文件缺失。请重新安装加载器：在“版本”选项卡中重新选择加载器版本并应用。</value></data>
+  <data name="Crash_MainClassMissing_Title" xml:space="preserve"><value>找不到游戏的入口</value></data>
+  <data name="Crash_MainClassMissing_Advice" xml:space="preserve"><value>Java 找不到 {0}，说明该版本的文件不完整。请在“版本”选项卡中重新安装模组加载器，或重新应用 Minecraft 版本。</value></data>
+  <data name="Crash_InvalidModuleName_Title" xml:space="preserve"><value>模组文件名无法使用</value></data>
+  <data name="Crash_InvalidModuleName_Advice" xml:space="preserve"><value>Forge 无法加载文件名中没有拉丁字母或数字的模组。请重命名 mods 文件夹中的该 .jar 文件（例如改为模组的英文名）。</value></data>
+  <data name="Crash_IdLimit_Title" xml:space="preserve"><value>方块或物品过多</value></data>
+  <data name="Crash_IdLimit_Advice" xml:space="preserve"><value>此 Minecraft 版本能容纳的方块和物品数量有限，而模组添加的超出了上限。请移除部分模组，或添加解除上限的模组（如 JustEnoughIDs 或 RoughlyEnoughIDs）。</value></data>
+  <data name="Crash_TickingEntity_Title" xml:space="preserve"><value>某个实体导致世界崩溃</value></data>
+  <data name="Crash_TickingEntity_Advice" xml:space="preserve"><value>位于 {1} 的实体 {0} 每次加载世界都会使游戏崩溃。请恢复世界的备份（“世界”选项卡），或用 MCA Selector 等世界编辑器删除该实体。</value></data>
+  <data name="Crash_TickingBlockEntity_Title" xml:space="preserve"><value>某个方块导致世界崩溃</value></data>
+  <data name="Crash_TickingBlockEntity_Advice" xml:space="preserve"><value>位于 {1} 的方块 {0} 每次加载世界都会使游戏崩溃。请恢复世界的备份（“世界”选项卡），或用 MCA Selector 等世界编辑器删除该方块。</value></data>
+  <data name="Crash_ManualCrash_Title" xml:space="preserve"><value>手动触发的崩溃</value></data>
+  <data name="Crash_ManualCrash_Advice" xml:space="preserve"><value>此崩溃由调试按键触发（按住 F3 + C 10 秒）。没有任何问题。</value></data>
+  <data name="Crash_SuspectedMods_Title" xml:space="preserve"><value>Minecraft 怀疑这些模组</value></data>
+  <data name="Crash_SuspectedMods_Advice" xml:space="preserve"><value>崩溃报告指出了 {0}。请尝试更新或移除它们。</value></data>
+  <data name="Crash_NativeCrash_Title" xml:space="preserve"><value>Java 在本地代码中崩溃</value></data>
+  <data name="Crash_NativeCrash_Advice" xml:space="preserve"><value>Java 本身崩溃了，通常发生在显卡驱动、悬浮窗（Discord、RivaTuner、MSI Afterburner、录屏软件）或包含本地代码的模组中。请更新显卡驱动并关闭悬浮窗；Java 的崩溃日志中有详细信息。</value></data>
+  <data name="Crash_CodeMissing_Title" xml:space="preserve"><value>游戏要找的代码不存在</value></data>
+  <data name="Crash_CodeMissing_Advice" xml:space="preserve"><value>有代码调用了不存在的内容（{0}）。通常是某个模组适用于其他版本的 Minecraft、模组加载器或它依赖的前置模组。请检查最近添加或更新的模组。</value></data>
+  <data name="Crash_NonAsciiPath_Title" xml:space="preserve"><value>游戏文件夹路径包含非英文字符</value></data>
+  <data name="Crash_NonAsciiPath_Advice" xml:space="preserve"><value>一些旧版本和模组在路径包含非英文字符时会出错（{0}）。如果没有其他原因能解释此崩溃，请把实例移到纯英文路径的文件夹。</value></data>
+  <data name="Crash_Possible.Text" xml:space="preserve"><value>可能的原因</value></data>
+  <data name="Crash_NoFindings.Text" xml:space="preserve"><value>Fluorite 没能识别崩溃原因。可以上传日志或保存诊断信息来寻求帮助。</value></data>
+  <data name="Crash_UploadLog.Text" xml:space="preserve"><value>上传日志</value></data>
+  <data name="Crash_SaveDiagnostics.Text" xml:space="preserve"><value>保存诊断信息…</value></data>
+  <data name="Crash_OpenReport.Content" xml:space="preserve"><value>打开崩溃报告</value></data>
+  <data name="Instance_UploadLog.Text" xml:space="preserve"><value>上传日志</value></data>
+  <data name="Instance_UploadLogA11y.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>上传日志到 mclo.gs</value></data>
+  <data name="Diag_UploadTitle" xml:space="preserve"><value>上传日志到 mclo.gs</value></data>
+  <data name="Diag_UploadConfirm" xml:space="preserve"><value>日志将上传到 mclo.gs（一个分享 Minecraft 日志的网站）。任何拿到链接的人都能查看。</value></data>
+  <data name="Diag_UploadRedacted" xml:space="preserve"><value>上传前会移除你的访问令牌和 Windows 用户名。玩家名和模组列表会保留。</value></data>
+  <data name="Diag_UploadButton" xml:space="preserve"><value>上传</value></data>
+  <data name="Diag_Uploading" xml:space="preserve"><value>正在上传…</value></data>
+  <data name="Diag_UploadFailed" xml:space="preserve"><value>无法上传：{0}</value></data>
+  <data name="Diag_Uploaded" xml:space="preserve"><value>已上传。链接已复制，可以直接粘贴：</value></data>
+  <data name="Diag_ZipFiles" xml:space="preserve"><value>ZIP 压缩文件</value></data>
+  <data name="Diag_SaveTitle" xml:space="preserve"><value>保存诊断信息</value></data>
+  <data name="Diag_SaveFailed" xml:space="preserve"><value>无法保存：{0}</value></data>
+  <data name="Launch_Analyzing" xml:space="preserve"><value>正在查找原因…</value></data>
+  <data name="Launch_Stopped" xml:space="preserve"><value>已停止。</value></data>
+  <data name="Launch_AutoMemory" xml:space="preserve"><value>内存：{0} MB（自动：{1} 个模组，{2} GB 内存）</value></data>
+  <data name="Toast_CrashedCause" xml:space="preserve"><value>{0}（退出代码 {1}）</value></data>
+  <data name="Settings_MemoryAuto.Header" xml:space="preserve"><value>自动分配内存</value></data>
+  <data name="Settings_AutoMemoryHint" xml:space="preserve"><value>根据电脑内存（{0} GB）和每个实例的模组数量分配：原版 {1} MB，100 个模组时 {2} MB。实例也可以单独设置。</value></data>
+  <data name="Settings_GroupPerformance.Text" xml:space="preserve"><value>性能</value></data>
+  <data name="Settings_JvmPreset.Header" xml:space="preserve"><value>垃圾回收器</value></data>
+  <data name="Settings_JvmPreset.Description" xml:space="preserve"><value>Java 回收内存的方式。“均衡”适合大多数玩家；“低延迟”（Java 21 及以上）帧时间最平稳，但占用更多内存。</value></data>
+  <data name="Settings_JvmPresetNone.Content" xml:space="preserve"><value>Java 默认</value></data>
+  <data name="Settings_JvmPresetBalanced.Content" xml:space="preserve"><value>均衡 (G1)</value></data>
+  <data name="Settings_JvmPresetLowLatency.Content" xml:space="preserve"><value>低延迟 (ZGC)</value></data>
+  <data name="Settings_Gpu.Header" xml:space="preserve"><value>显卡</value></data>
+  <data name="Settings_Gpu.Description" xml:space="preserve"><value>在有两块显卡的电脑上，Windows 用哪块显卡运行游戏。此设置保存在 Windows 的图形设置中（针对 Java 程序）。</value></data>
+  <data name="Settings_GpuDefault.Content" xml:space="preserve"><value>由 Windows 决定</value></data>
+  <data name="Settings_GpuPowerSaving.Content" xml:space="preserve"><value>节能</value></data>
+  <data name="Settings_GpuHigh.Content" xml:space="preserve"><value>高性能</value></data>
+  <data name="Settings_Priority.Header" xml:space="preserve"><value>游戏优先级</value></data>
+  <data name="Settings_Priority.Description" xml:space="preserve"><value>Windows 在游戏与其他程序之间分配处理器的方式。</value></data>
+  <data name="Settings_PriorityBelowNormal.Content" xml:space="preserve"><value>低于正常</value></data>
+  <data name="Settings_PriorityNormal.Content" xml:space="preserve"><value>正常</value></data>
+  <data name="Settings_PriorityAboveNormal.Content" xml:space="preserve"><value>高于正常</value></data>
+  <data name="Settings_PriorityHigh.Content" xml:space="preserve"><value>高</value></data>
+  <data name="Java_Automatic" xml:space="preserve"><value>自动（推荐）</value></data>
+  <data name="Java_Browse" xml:space="preserve"><value>浏览…</value></data>
+  <data name="Java_NotJava" xml:space="preserve"><value>无法将 {0} 作为 Java 运行。请选择 Java 安装目录下 bin 文件夹中的 java.exe 或 javaw.exe。</value></data>
+  <data name="Java_AutomaticDetail" xml:space="preserve"><value>为每个 Minecraft 版本使用所需的 Java，缺少时自动安装</value></data>
+  <data name="Java_CustomPath" xml:space="preserve"><value>自定义路径</value></data>
+  <data name="Java_NotJavaTitle" xml:space="preserve"><value>不是 Java 运行时</value></data>
+  <data name="Java_UseGlobal" xml:space="preserve"><value>使用全局设置</value></data>
+  <data name="Palette_Search.PlaceholderText" xml:space="preserve"><value>搜索实例、页面、设置和操作</value></data>
+  <data name="Palette_Search.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>命令面板</value></data>
+  <data name="Palette_Results.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>结果</value></data>
+  <data name="Palette_Hint.Text" xml:space="preserve"><value>↑ ↓ 选择 · Enter 运行 · Esc 关闭</value></data>
+  <data name="Palette_TitleText.Text" xml:space="preserve"><value>搜索</value></data>
+  <data name="Palette_TitleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>搜索 (Ctrl+K)</value></data>
+  <data name="Palette_TitleButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>搜索实例、页面、设置和操作 (Ctrl+K)</value></data>
+  <data name="Palette_Play" xml:space="preserve"><value>启动 {0}</value></data>
+  <data name="Palette_Stop" xml:space="preserve"><value>停止 {0}</value></data>
+  <data name="Palette_Open" xml:space="preserve"><value>打开 {0}</value></data>
+  <data name="Palette_OpenFolder" xml:space="preserve"><value>打开 {0} 的文件夹</value></data>
+  <data name="Palette_NewInstance" xml:space="preserve"><value>新建实例</value></data>
+  <data name="Palette_ImportFile" xml:space="preserve"><value>导入整合包文件</value></data>
+  <data name="Palette_ImportLink" xml:space="preserve"><value>从链接导入整合包</value></data>
+  <data name="Palette_ImportLaunchers" xml:space="preserve"><value>从其他启动器导入</value></data>
+  <data name="Palette_AddAccount" xml:space="preserve"><value>添加账户</value></data>
+  <data name="Palette_OpenDataFolder" xml:space="preserve"><value>打开 Fluorite 数据文件夹</value></data>
+  <data name="Palette_UseAccount" xml:space="preserve"><value>切换到 {0}</value></data>
+  <data name="Palette_Action" xml:space="preserve"><value>操作</value></data>
+  <data name="Palette_Page" xml:space="preserve"><value>页面</value></data>
+  <data name="Palette_BrowseMods" xml:space="preserve"><value>浏览模组</value></data>
+  <data name="Palette_BrowseModpacks" xml:space="preserve"><value>浏览整合包</value></data>
+  <data name="Palette_BrowseResourcePacks" xml:space="preserve"><value>浏览资源包</value></data>
+  <data name="Palette_BrowseShaders" xml:space="preserve"><value>浏览光影</value></data>
+  <data name="Palette_BrowseDataPacks" xml:space="preserve"><value>浏览数据包</value></data>
+  <data name="Palette_SearchMods" xml:space="preserve"><value>搜索模组：“{0}”</value></data>
+  <data name="Palette_SearchModpacks" xml:space="preserve"><value>搜索整合包：“{0}”</value></data>
+  <data name="Palette_Failed" xml:space="preserve"><value>操作未能完成</value></data>
+  <data name="Accounts_RemoveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>移除账户</value></data>
+  <data name="Accounts_RemoveButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>移除账户</value></data>
+  <data name="Common_OpenFolderButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>打开文件夹</value></data>
+  <data name="Instance_Arm64Mode.Header" xml:space="preserve"><value>在此 ARM 电脑上</value></data>
+  <data name="Instance_Arm64Auto.Content" xml:space="preserve"><value>尽可能原生运行（推荐）</value></data>
+  <data name="Instance_Arm64Emulate.Content" xml:space="preserve"><value>始终使用 x64 模拟</value></data>
+  <data name="Instance_Arm64Info.Title" xml:space="preserve"><value>Windows on ARM</value></data>
+  <data name="Arm64_Native" xml:space="preserve"><value>Minecraft {0} 提供 ARM64 版本，会使用 ARM64 Java 原生运行。</value></data>
+  <data name="Arm64_Swapped" xml:space="preserve"><value>Minecraft {0} 发布时，其图形库（LWJGL）尚无 ARM64 版本。Fluorite 会换用 Minecraft 1.19 自带的 LWJGL 3.3.1，使其通过 ARM64 Java 原生运行。如果游戏运行异常，请在上方选择 x64 模拟。</value></data>
+  <data name="Arm64_Emulated" xml:space="preserve"><value>Minecraft {0} 使用的 LWJGL 2 没有 ARM64 版本，因此会通过 Windows 的模拟运行 x64 Java。可以正常游玩，但比原生运行慢。</value></data>
+  <data name="Arm64_EmulateChosen" xml:space="preserve"><value>按照上方的选择，此实例会通过 Windows 的模拟运行 x64 Java，比原生运行慢。</value></data>
+  <data name="Arm64_Unknown" xml:space="preserve"><value>Fluorite 会尽可能原生运行各个 Minecraft 版本，无法原生运行时则通过模拟运行 x64 Java。下载该版本的信息后会在此显示具体情况。</value></data>
+  <data name="Crash_UploadLogButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>上传日志</value></data>
+  <data name="Crash_SaveDiagnosticsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>保存诊断信息</value></data>
+  <data name="Flags_Title" xml:space="preserve"><value>启动参数</value></data>
+  <data name="Flags_Intro" xml:space="preserve"><value>使用这些参数启动 Fluorite 来测试各项功能，例如：FluoriteLauncher.exe --fresh --lang zh-Hans。大多数参数也可以用环境变量设置。</value></data>
+  <data name="Flags_StartupOnly" xml:space="preserve"><value>其中一些参数只在 Fluorite 启动时生效，此窗口已忽略它们。请关闭 Fluorite，然后带上这些参数重新启动。</value></data>
+  <data name="Flags_Welcome" xml:space="preserve"><value>再次显示欢迎界面。你的数据和设置保持不变，也不会预先勾选任何启动器文件夹。</value></data>
+  <data name="Flags_Fresh" xml:space="preserve"><value>像全新安装一样启动：使用一个空的临时数据文件夹（位于 %TEMP%\FluoriteFresh），因此会显示欢迎界面，没有实例和账户。你的真实数据不受影响，并且会与平常的窗口同时打开。</value></data>
+  <data name="Flags_Root" xml:space="preserve"><value>本次运行使用此数据文件夹，不更改已保存的选择。</value></data>
+  <data name="Flags_Lang" xml:space="preserve"><value>本次运行使用此显示语言，例如 zh-Hans 或 en-US。</value></data>
+  <data name="Flags_Theme" xml:space="preserve"><value>本次运行使用浅色、深色或系统主题。</value></data>
+  <data name="Flags_PretendArm64" xml:space="preserve"><value>像在 ARM 电脑上一样，在实例页面显示 Windows on ARM 的说明和选项。游戏仍按常规方式启动。</value></data>
+  <data name="Flags_Verbose" xml:space="preserve"><value>在启动器日志中写入更多细节（数据文件夹中的 logs\launcher-*.log）。</value></data>
+  <data name="Flags_TraceExceptions" xml:space="preserve"><value>把每个错误（包括 Fluorite 已自行处理的）写入 logs\exceptions.log。</value></data>
+  <data name="Flags_Page" xml:space="preserve"><value>打开页面：Home、Library、Browse、Activity、Accounts 或 Settings。</value></data>
+  <data name="Flags_Launch" xml:space="preserve"><value>启动实例（使用快捷方式中的 ID）。加上 --world &lt;文件夹&gt; 或 --server &lt;地址&gt; 可直接进入。</value></data>
+  <data name="Flags_Install" xml:space="preserve"><value>从链接或文件安装整合包。</value></data>
+  <data name="Flags_Flags" xml:space="preserve"><value>显示此列表（也可用 --help）。</value></data>
+  <data name="Flags_DevOffline" xml:space="preserve"><value>无需 Microsoft 账户即可使用离线账户。仅限调试版本。</value></data>
+  <data name="Flags_TitleFresh" xml:space="preserve"><value>全新启动（临时数据）</value></data>
+  <data name="Flags_TitlePretendArm64" xml:space="preserve"><value>模拟 ARM 电脑</value></data>
+  <data name="Palette_Flags" xml:space="preserve"><value>显示启动参数</value></data>
+  <data name="Palette_Welcome" xml:space="preserve"><value>显示欢迎界面</value></data>
+  <data name="Flags_CurseForgeKey" xml:space="preserve"><value>使用此 CurseForge API 密钥，而不是内置密钥。</value></data>
+  <data name="Flags_DiscordAppId" xml:space="preserve"><value>通过此 Discord 应用显示 Discord 动态。</value></data>
+  <data name="Welcome_Language.Text" xml:space="preserve"><value>语言</value></data>
+  <data name="Welcome_LanguageBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>语言</value></data>
+  <data name="Welcome_LanguageHint.Text" xml:space="preserve"><value>Fluorite 会以你选择的语言重新启动并回到此界面。之后可以在设置中更改。</value></data>
+  <data name="Settings_RestartNow.Content" xml:space="preserve"><value>立即重启</value></data>
+  <data name="Settings_RestartGameTitle" xml:space="preserve"><value>游戏正在运行</value></data>
+  <data name="Settings_RestartGameRunning" xml:space="preserve"><value>游戏会继续运行，但重启后 Fluorite 将不再跟踪它：本次游戏不会有日志、崩溃检查和游戏时长记录。</value></data>
+  <data name="Settings_RestartAnyway" xml:space="preserve"><value>仍然重启</value></data>
+  <data name="Restart_FailedTitle" xml:space="preserve"><value>无法重启</value></data>
+  <data name="Restart_Failed" xml:space="preserve"><value>请关闭 Fluorite 并重新打开，以使更改生效。</value></data>
+  <data name="Settings_Resolution.Description" xml:space="preserve"><value>留空则使用 Minecraft 的默认值。</value></data>
+  <data name="Settings_ResolutionWidth.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>窗口宽度</value></data>
+  <data name="Settings_ResolutionHeight.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>窗口高度</value></data>
+  <data name="Instance_WindowSize.Text" xml:space="preserve"><value>窗口大小</value></data>
+  <data name="Ago_JustNow" xml:space="preserve"><value>刚刚</value></data>
+  <data name="Ago_Minute" xml:space="preserve"><value>1 分钟前</value></data>
+  <data name="Ago_Minutes" xml:space="preserve"><value>{0} 分钟前</value></data>
+  <data name="Ago_Hour" xml:space="preserve"><value>1 小时前</value></data>
+  <data name="Ago_Hours" xml:space="preserve"><value>{0} 小时前</value></data>
+  <data name="Duration_HoursMinutes" xml:space="preserve"><value>{0} 小时 {1} 分钟</value></data>
+  <data name="Duration_Minutes" xml:space="preserve"><value>{0} 分钟</value></data>
+  <data name="Instance_PlayTime" xml:space="preserve"><value>已玩 {0}</value></data>
+  <data name="Library_EmptyNew.Content" xml:space="preserve"><value>新建实例</value></data>
+  <data name="Library_EmptyImport.Content" xml:space="preserve"><value>导入整合包</value></data>
+  <data name="Library_EmptyLaunchers.Content" xml:space="preserve"><value>从其他启动器导入</value></data>
+  <data name="Library_NoMatch" xml:space="preserve"><value>没有与“{0}”匹配的实例。</value></data>
+  <data name="Library_NoneHere" xml:space="preserve"><value>此文件夹中没有实例。</value></data>
+  <data name="Library_ClearSearch.Content" xml:space="preserve"><value>清除搜索</value></data>
+  <data name="Library_NewButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>新建实例 (Ctrl+N)</value></data>
+  <data name="RenameText.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>实例名称</value></data>
+  <data name="Instance_MemoryAutomatic" xml:space="preserve"><value>自动</value></data>
+  <data name="Settings_MemoryOf" xml:space="preserve"><value>{0}，共 {1} GB</value></data>
+  <data name="Settings_MemoryBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>最大内存（MB）</value></data>
+  <data name="Settings_ParallelBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>并行下载数</value></data>
+  <data name="Account_OfflineNoSpaces" xml:space="preserve"><value>玩家名不能包含空格。</value></data>
+  <data name="Account_OfflineBadChar" xml:space="preserve"><value>玩家名不能包含“{0}”。</value></data>
+  <data name="Accounts_OfflineName.Description" xml:space="preserve"><value>3–16 个字母、数字或下划线</value></data>
+  <data name="Common_Copied" xml:space="preserve"><value>已复制</value></data>
+  <data name="Worlds_PlayButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>进入此世界 (Enter)</value></data>
+  <data name="Servers_JoinButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>加入服务器 (Enter)</value></data>
+  <data name="Library_Ungrouped" xml:space="preserve"><value>未分组</value></data>
+  <data name="Library_GroupExpanded" xml:space="preserve"><value>{0}，{1} 个实例，已展开</value></data>
+  <data name="Library_GroupExpandedOne" xml:space="preserve"><value>{0}，1 个实例，已展开</value></data>
+  <data name="Library_GroupCollapsed" xml:space="preserve"><value>{0}，{1} 个实例，已折叠</value></data>
+  <data name="Library_GroupCollapsedOne" xml:space="preserve"><value>{0}，1 个实例，已折叠</value></data>
+  <data name="Library_RenameGroup.Text" xml:space="preserve"><value>重命名分组…</value></data>
+  <data name="Library_Ungroup.Text" xml:space="preserve"><value>取消分组</value></data>
+  <data name="Menu_MoveToGroup.Text" xml:space="preserve"><value>移到分组</value></data>
+  <data name="Library_NewGroup" xml:space="preserve"><value>新建分组…</value></data>
+  <data name="Library_NewGroupTitle" xml:space="preserve"><value>新建分组</value></data>
+  <data name="Library_NewGroupButton" xml:space="preserve"><value>创建</value></data>
+  <data name="Library_GroupName" xml:space="preserve"><value>分组名称</value></data>
+  <data name="Library_GroupNamePlaceholder" xml:space="preserve"><value>例如：模组、和朋友一起</value></data>
+  <data name="Library_RemoveFromGroup" xml:space="preserve"><value>移出分组</value></data>
+  <data name="Library_RenameGroupTitle" xml:space="preserve"><value>重命名分组</value></data>
+  <data name="Library_ViewA11y.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>视图</value></data>
+  <data name="Library_ViewGrid.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>卡片</value></data>
+  <data name="Library_ViewGrid.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>卡片</value></data>
+  <data name="Library_ViewList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>列表</value></data>
+  <data name="Library_ViewList.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>列表</value></data>
+  <data name="NewInstance_Group.Header" xml:space="preserve"><value>分组</value></data>
+  <data name="NewInstance_Group.PlaceholderText" xml:space="preserve"><value>无</value></data>
+  <data name="Content_Cancelling" xml:space="preserve"><value>正在取消…</value></data>
+  <data name="Content_CancelledNothingChanged" xml:space="preserve"><value>已取消，实例中没有任何更改。</value></data>
+  <data name="Activity_CancelJob.Content" xml:space="preserve"><value>取消</value></data>
+  <data name="Activity_RetryJob.Content" xml:space="preserve"><value>重试</value></data>
+  <data name="Browse_TryAgain.Content" xml:space="preserve"><value>重试</value></data>
+  <data name="Browse_NoResults" xml:space="preserve"><value>没有找到结果。</value></data>
+  <data name="Browse_NoResultsFor" xml:space="preserve"><value>没有找到与“{0}”相关的结果。</value></data>
+  <data name="Browse_NoResultsForInstance" xml:space="preserve"><value>只显示适用于 {0} 的内容。要查看全部，请在顶部选择“不选择实例（仅浏览）”。</value></data>
+  <data name="Browse_ClearFilters.Content" xml:space="preserve"><value>清除搜索和筛选</value></data>
+  <data name="Export_SelectAll" xml:space="preserve"><value>全选</value></data>
+  <data name="Export_SelectNone" xml:space="preserve"><value>全不选</value></data>
+  <data name="Export_SelectedCount" xml:space="preserve"><value>已选 {0}/{1}</value></data>
+  <data name="LibraryMenu_New.Text" xml:space="preserve"><value>新建实例…</value></data>
+  <data name="LibraryMenu_Import.Text" xml:space="preserve"><value>导入</value></data>
+  <data name="LibraryMenu_View.Text" xml:space="preserve"><value>视图</value></data>
+  <data name="LibraryMenu_ViewCards.Text" xml:space="preserve"><value>卡片</value></data>
+  <data name="LibraryMenu_ViewList.Text" xml:space="preserve"><value>列表</value></data>
+  <data name="LibraryMenu_Sort.Text" xml:space="preserve"><value>排序方式</value></data>
+  <data name="LibraryMenu_SortLastPlayed.Text" xml:space="preserve"><value>最近游玩</value></data>
+  <data name="LibraryMenu_SortName.Text" xml:space="preserve"><value>名称</value></data>
+  <data name="LibraryMenu_SortCreated.Text" xml:space="preserve"><value>最近创建</value></data>
+  <data name="LibraryMenu_SortMostPlayed.Text" xml:space="preserve"><value>游玩时长</value></data>
+  <data name="LibraryMenu_ExpandAll.Text" xml:space="preserve"><value>展开所有分组</value></data>
+  <data name="LibraryMenu_CollapseAll.Text" xml:space="preserve"><value>折叠所有分组</value></data>
+  <data name="LibraryMenu_Refresh.Text" xml:space="preserve"><value>刷新</value></data>
+  <data name="LibraryMenu_OpenFolder.Text" xml:space="preserve"><value>打开实例文件夹</value></data>
+  <data name="Library_RefreshButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>刷新 (F5)</value></data>
+  <data name="Library_OpenFolderButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>打开实例文件夹</value></data>
+  <data name="Content_AddFilesButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>添加文件</value></data>
+  <data name="Content_CheckUpdatesButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>检查更新</value></data>
+  <data name="Content_UpdateAllButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>全部更新</value></data>
+  <data name="Common_Undo" xml:space="preserve"><value>撤销</value></data>
+  <data name="Common_UndoTip" xml:space="preserve"><value>撤销 (Ctrl+Z)</value></data>
+  <data name="Undo_RemovedOne" xml:space="preserve"><value>已移除“{0}”。</value></data>
+  <data name="Undo_RemovedMany" xml:space="preserve"><value>已移除 {0} 项。</value></data>
+  <data name="Menu_Refresh.Text" xml:space="preserve"><value>刷新</value></data>
+  <data name="WorldsMenu_Import.Text" xml:space="preserve"><value>导入世界…</value></data>
+  <data name="WorldsMenu_OpenFolder.Text" xml:space="preserve"><value>打开存档文件夹</value></data>
+  <data name="WorldsMenu_BackupsFolder.Text" xml:space="preserve"><value>打开备份文件夹</value></data>
+  <data name="ContentMenu_Browse.Text" xml:space="preserve"><value>浏览…</value></data>
+  <data name="ContentMenu_AddFiles.Text" xml:space="preserve"><value>添加文件…</value></data>
+  <data name="Content_RefreshButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>刷新 (F5)</value></data>
+  <data name="Servers_RefreshButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>刷新状态 (F5)</value></data>
+  <data name="Library_SelectedOne" xml:space="preserve"><value>已选择 1 个</value></data>
+  <data name="Library_Selected" xml:space="preserve"><value>已选择 {0} 个</value></data>
+  <data name="Library_ItemSelected" xml:space="preserve"><value>已选择</value></data>
+  <data name="Library_SelectionGroup.Text" xml:space="preserve"><value>移到分组</value></data>
+  <data name="Library_SelectionGroupButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>将所选实例移到分组</value></data>
+  <data name="Library_SelectionDelete.Text" xml:space="preserve"><value>删除</value></data>
+  <data name="Library_SelectionDeleteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>删除所选实例</value></data>
+  <data name="Library_SelectionDeleteButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>删除 (Del)</value></data>
+  <data name="Library_SelectionClear.Content" xml:space="preserve"><value>取消选择</value></data>
+  <data name="Library_SelectionClear.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>取消选择 (Esc)</value></data>
+  <data name="Library_DeleteManyTitle" xml:space="preserve"><value>删除 {0} 个实例？</value></data>
+  <data name="Library_DeleteManyBody" xml:space="preserve"><value>这些实例及其存档、模组和设置将被移到回收站。</value></data>
+  <data name="Library_DeleteKept" xml:space="preserve"><value>{0} 个未删除：游戏正在运行，或它们属于其他启动器。</value></data>
+  <data name="Library_DropToGroup" xml:space="preserve"><value>移到“{0}”</value></data>
+  <data name="Library_UpdateOne" xml:space="preserve"><value>1 个更新</value></data>
+  <data name="Library_Updates" xml:space="preserve"><value>{0} 个更新</value></data>
+  <data name="Library_UpdatesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>有模组更新。打开模组标签页</value></data>
+  <data name="Library_UpdatesButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>有模组更新。打开模组标签页</value></data>
+  <data name="Instance_TabSnapshots.Text" xml:space="preserve"><value>快照</value></data>
+  <data name="Snapshots_Take.Text" xml:space="preserve"><value>创建快照</value></data>
+  <data name="Snapshots_TakeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>创建快照</value></data>
+  <data name="Snapshots_Hint.Text" xml:space="preserve"><value>快照会保存此实例的模组、配置、资源包和光影包，以及 Minecraft 和加载器版本，更新出问题后可以恢复。世界不包含在内，它们有自己的备份。</value></data>
+  <data name="Snapshots_Empty.Text" xml:space="preserve"><value>还没有快照。Fluorite 会在每次更新模组、整合包或版本前自动创建快照，你也可以手动创建。</value></data>
+  <data name="Snapshots_RestoreButton.Content" xml:space="preserve"><value>恢复</value></data>
+  <data name="Snapshots_RestoreButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>恢复此快照</value></data>
+  <data name="SnapshotsMenu_Take.Text" xml:space="preserve"><value>创建快照…</value></data>
+  <data name="Snapshot_Untitled" xml:space="preserve"><value>快照</value></data>
+  <data name="Snapshot_OneMod" xml:space="preserve"><value>1 个模组</value></data>
+  <data name="Snapshot_Mods" xml:space="preserve"><value>{0} 个模组</value></data>
+  <data name="Snapshot_Automatic" xml:space="preserve"><value>自动</value></data>
+  <data name="Snapshot_Note" xml:space="preserve"><value>备注</value></data>
+  <data name="Snapshot_NotePlaceholder" xml:space="preserve"><value>可选，例如：添加光影前</value></data>
+  <data name="Snapshot_TakeTitle" xml:space="preserve"><value>创建快照</value></data>
+  <data name="Snapshot_TakeBody" xml:space="preserve"><value>保存当前的模组、配置、资源包和光影包，以及 Minecraft 和加载器版本。</value></data>
+  <data name="Snapshot_Take" xml:space="preserve"><value>创建快照</value></data>
+  <data name="Snapshot_Taken" xml:space="preserve"><value>已创建快照：{0}。</value></data>
+  <data name="Snapshot_StopFirst" xml:space="preserve"><value>请先停止游戏，再恢复快照。</value></data>
+  <data name="Snapshot_RestoreTitle" xml:space="preserve"><value>恢复{0}的快照？</value></data>
+  <data name="Snapshot_RestoreBody" xml:space="preserve"><value>模组、配置、资源包、光影包以及 Minecraft 和加载器版本将恢复到当时的状态。当前状态会先保存为快照，可以随时恢复。</value></data>
+  <data name="Snapshot_Restore" xml:space="preserve"><value>恢复</value></data>
+  <data name="Snapshot_Restored" xml:space="preserve"><value>已恢复“{0}”。</value></data>
+  <data name="Snapshot_BeforeRestore" xml:space="preserve"><value>恢复快照前</value></data>
+  <data name="Snapshot_Taking" xml:space="preserve"><value>正在创建快照…</value></data>
+  <data name="Snapshot_BeforeUpdateOne" xml:space="preserve"><value>更新 {0} 前</value></data>
+  <data name="Snapshot_BeforeUpdateMany" xml:space="preserve"><value>{0} 项更新前</value></data>
+  <data name="Snapshot_BeforePackUpdate" xml:space="preserve"><value>整合包更新前（{0} → {1}）</value></data>
+  <data name="Snapshot_BeforeVersion" xml:space="preserve"><value>更改版本前</value></data>
+  <data name="Settings_SnapshotBeforeUpdates.Header" xml:space="preserve"><value>更新前创建快照</value></data>
+  <data name="Settings_SnapshotBeforeUpdates.Description" xml:space="preserve"><value>更新实例的模组、整合包或版本前保存快照，以便恢复（每个实例保留最新 5 个）。</value></data>
+  <data name="Content_Checking" xml:space="preserve"><value>正在检查新版本能否与其他模组一起使用…</value></data>
+  <data name="Content_InstalledSkipped" xml:space="preserve"><value>已安装 · 跳过 {0} 项无法使用的内容</value></data>
+  <data name="Content_LoaderChanged" xml:space="preserve"><value>{0} 已更新到 {1}</value></data>
+  <data name="Content_UpdatedSkipped" xml:space="preserve"><value>已更新 {0} 项。跳过了 {1} 项无法在此实例中使用的更新。</value></data>
+  <data name="Review_Update" xml:space="preserve"><value>更新</value></data>
+  <data name="Review_UpdateAnyway" xml:space="preserve"><value>仍然更新</value></data>
+  <data name="Review_InstallAnyway" xml:space="preserve"><value>仍然安装</value></data>
+  <data name="Review_SkipN" xml:space="preserve"><value>跳过 {0} 项，更新其余</value></data>
+  <data name="Review_SkipLeavesOut" xml:space="preserve"><value>跳过后以下内容保持不变：{0}</value></data>
+  <data name="Review_Problems" xml:space="preserve"><value>以下内容无法在此实例中使用：</value></data>
+  <data name="Review_AlsoUpdates" xml:space="preserve"><value>同时更新（新版本需要）：</value></data>
+  <data name="Review_AlsoEnables" xml:space="preserve"><value>同时重新启用（新版本需要）：</value></data>
+  <data name="Review_For" xml:space="preserve"><value>{0}（{1} 需要）</value></data>
+  <data name="Review_Loader" xml:space="preserve"><value>同时将 {0} 从 {1} 更新到 {2}</value></data>
+  <data name="Review_LoaderNeededBy" xml:space="preserve"><value>{0} 需要。新版本将在下次启动游戏时安装。</value></data>
+  <data name="Review_WrongLoaderVersion" xml:space="preserve"><value>{0} 需要 {1} {2}。</value></data>
+</root>

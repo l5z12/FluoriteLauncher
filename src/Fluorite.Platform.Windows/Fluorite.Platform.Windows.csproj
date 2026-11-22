@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(FluoriteWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(FluoriteMinWindows)</SupportedOSPlatformVersion>
+    <RootNamespace>Fluorite.Platform.Windows</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>AnyCPU;x64;ARM64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fluorite.Core\Fluorite.Core.csproj" />
+    <ProjectReference Include="..\Fluorite.Auth\Fluorite.Auth.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Microsoft sign-in through WAM, the Windows account broker (Security/WamAccountBroker). -->
+    <PackageReference Include="Microsoft.Identity.Client" />
+    <PackageReference Include="Microsoft.Identity.Client.Broker" />
+  </ItemGroup>
+
+</Project>

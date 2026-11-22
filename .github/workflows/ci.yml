@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      smoke:
+        description: "Run the Minecraft launch smoke matrix (needs a runner with OpenGL)"
+        type: boolean
+        default: false
+      smoke_runner:
+        description: "Runner label for the smoke matrix"
+        type: string
+        default: self-hosted
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Build libraries, CLI and tests
+        run: |
+          dotnet build src/Fluorite.Core/Fluorite.Core.csproj -c Release
+          dotnet build src/Fluorite.Auth/Fluorite.Auth.csproj -c Release
+          dotnet build src/Fluorite.Modding/Fluorite.Modding.csproj -c Release
+          dotnet build src/Fluorite.Platform.Windows/Fluorite.Platform.Windows.csproj -c Release
+          dotnet build tools/Fluorite.Cli/Fluorite.Cli.csproj -c Release
+
+      - name: Unit tests
+        run: |
+          dotnet test --project tests/Fluorite.Core.Tests/Fluorite.Core.Tests.csproj -c Release
+          dotnet test --project tests/Fluorite.Auth.Tests/Fluorite.Auth.Tests.csproj -c Release
+          dotnet test --project tests/Fluorite.Modding.Tests/Fluorite.Modding.Tests.csproj -c Release
+
+  package:
+    runs-on: windows-latest
+    needs: build-test
+    strategy:
+      matrix:
+        platform: [x64, ARM64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: microsoft/setup-msbuild@v2
+
+      # Secrets can't be tested in `if:`, so check through env. Fork PRs never get secrets and always warn.
+      - name: Check CurseForge API key
+        shell: pwsh
+        env:
+          FLUORITE_CURSEFORGE_API_KEY: ${{ secrets.FLUORITE_CURSEFORGE_API_KEY }}
+        run: |
+          if (-not $env:FLUORITE_CURSEFORGE_API_KEY) {
+            Write-Output "::warning title=No CurseForge API key::The FLUORITE_CURSEFORGE_API_KEY secret is not set, so this ${{ matrix.platform }} MSIX has CurseForge turned off (Modrinth only). Don't release it."
+          }
+
+      - name: Build MSIX (${{ matrix.platform }})
+        shell: pwsh
+        run: >
+          msbuild src/Fluorite.App/Fluorite.App.csproj /restore /m
+          /p:Configuration=Release
+          /p:Platform=${{ matrix.platform }}
+          /p:GenerateAppxPackageOnBuild=true
+          /p:AppxPackageSigningEnabled=false
+          /p:AppxPackageDir=$PWD/artifacts/msix/
+          "/p:FluoriteCurseForgeApiKey=${{ secrets.FLUORITE_CURSEFORGE_API_KEY }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: msix-${{ matrix.platform }}
+          path: artifacts/msix/**
+          if-no-files-found: error
+
+  smoke:
+    if: github.event_name == 'workflow_dispatch' && inputs.smoke
+    needs: build-test
+    runs-on: ${{ inputs.smoke_runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Smoke matrix (Official)
+        shell: pwsh
+        run: ./tools/smoke-matrix.ps1 -Root "$env:RUNNER_TEMP/fluorite-smoke" -Source Official
+      - name: Smoke matrix (BMCLAPI)
+        shell: pwsh
+        run: ./tools/smoke-matrix.ps1 -Root "$env:RUNNER_TEMP/fluorite-smoke" -Source Bmclapi -Versions "26.3,1.12.2,1.7.10"
+      - name: Loader matrix
+        shell: pwsh
+        run: ./tools/loader-matrix.ps1 -Root "$env:RUNNER_TEMP/fluorite-smoke"

@@ -1,0 +1,393 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Fluorite.App.Views.InstancePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:vm="using:Fluorite.App.ViewModels"
+    xmlns:services="using:Fluorite.App.Services"
+    xmlns:logging="using:Fluorite.Core.Logging">
+
+    <Grid Padding="36,24,36,24" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <!-- The instance's icon; click to change it. (Back is the title bar's button.) -->
+            <Button Click="ChangeIcon_Click" Style="{StaticResource SubtleButtonStyle}" Padding="4" Margin="-4,0,0,0" VerticalAlignment="Center" x:Uid="Instance_IconButton">
+                <Border Width="48" Height="48" CornerRadius="8">
+                    <Grid>
+                        <Border Background="{ThemeResource FluoriteBrandBrush}" Visibility="{x:Bind local:Bind.Collapsed(ViewModel.Item.HasIcon), Mode=OneWay, FallbackValue=Visible}">
+                            <TextBlock Text="{x:Bind ViewModel.Item.Initial, Mode=OneWay}" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource FluoriteOnBrandBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <Image Source="{x:Bind ViewModel.Item.Icon, Mode=OneWay}" Stretch="Uniform" />
+                    </Grid>
+                </Border>
+            </Button>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="{x:Bind ViewModel.Item.Name, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.HeadingLevel="Level1" />
+                    <Border VerticalAlignment="Center" Margin="0,4,0,0" Padding="8,2,10,3" CornerRadius="10"
+                            Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
+                            Visibility="{x:Bind local:Bind.Visible(ViewModel.IsGameRunning), Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorSuccessBrush}" />
+                            <TextBlock x:Uid="Instance_RunningBadge" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                <TextBlock Text="{x:Bind ViewModel.Item.VersionText, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <!-- Play, with an attached ▾ for "Launch as" (WinUI has no accent split button). -->
+                <StackPanel Orientation="Horizontal" Spacing="1" Visibility="{x:Bind local:Bind.Visible(ViewModel.CanPlay), Mode=OneWay}">
+                    <Button Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.PlayCommand}" CornerRadius="4,0,0,4"
+                            MinWidth="104" x:Uid="Common_PlayButton">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE768;" FontSize="14" />
+                            <TextBlock x:Uid="Common_Play" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource AccentButtonStyle}" CornerRadius="0,4,4,0" Padding="8,0" VerticalAlignment="Stretch" x:Uid="Instance_LaunchAsButton">
+                        <FontIcon Glyph="&#xE70D;" FontSize="12" />
+                        <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight" Opening="LaunchAs_Opening">
+                                <MenuFlyoutItem Text="…" IsEnabled="False" />
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+                <Button Command="{x:Bind ViewModel.StopCommand}"
+                        Visibility="{x:Bind local:Bind.Collapsed(ViewModel.CanPlay), Mode=OneWay}" MinWidth="120" x:Uid="Common_StopButton">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE71A;" FontSize="14" />
+                        <TextBlock x:Uid="Common_Stop" />
+                    </StackPanel>
+                </Button>
+                <Button Click="UpdatePack_Click" x:Uid="Instance_UpdatePackButton" Visibility="{x:Bind local:Bind.Visible(ViewModel.IsModpack), Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE895;" FontSize="14" />
+                        <TextBlock x:Uid="Instance_UpdatePack" />
+                    </StackPanel>
+                </Button>
+                <Button Click="Export_Click" x:Uid="Instance_ExportButton">
+                    <FontIcon Glyph="&#xEDE1;" FontSize="14" />
+                </Button>
+                <Button Click="OpenFolder_Click" x:Uid="Common_OpenFolderButton">
+                    <FontIcon Glyph="&#xE8B7;" FontSize="14" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Where it comes from: another launcher's folder, a modpack -->
+        <StackPanel Grid.Row="1" Spacing="6">
+            <InfoBar Severity="Informational" IsClosable="False" IsOpen="{x:Bind ViewModel.IsExternal, Mode=OneWay}"
+                     Title="{x:Bind ViewModel.ExternalTitle, Mode=OneWay}" Message="{x:Bind ViewModel.ExternalInfo, Mode=OneWay}" />
+            <InfoBar Severity="Warning" IsClosable="True" IsOpen="{x:Bind ViewModel.HasWarnings, Mode=OneWay}"
+                     x:Uid="Instance_WarningsBar" Message="{x:Bind ViewModel.WarningsText, Mode=OneWay}" />
+            <TextBlock Text="{x:Bind ViewModel.PackInfo, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.PackInfo), Mode=OneWay, FallbackValue=Collapsed}" />
+        </StackPanel>
+
+        <!-- Launch status: only while launching (or after a crash); a running game shows a badge by the name. -->
+        <StackPanel Grid.Row="2" Spacing="6" Visibility="{x:Bind local:Bind.Visible(ViewModel.ShowLaunchStatus), Mode=OneWay}">
+            <InfoBar x:Uid="Instance_CrashBar" Severity="Error" IsClosable="True"
+                     IsOpen="{x:Bind ViewModel.ShowCrash, Mode=OneWay}" Message="{x:Bind ViewModel.Game.Status, Mode=OneWay}">
+                <InfoBar.ActionButton>
+                    <Button x:Uid="Instance_CopyLogButton" Click="CopyLog_Click" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <!-- Why it crashed (what the analyzer recognised), and ways to get help. -->
+            <StackPanel Spacing="8" Visibility="{x:Bind local:Bind.Visible(ViewModel.HasDiagnosis), Mode=OneWay}">
+                <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto" Visibility="{x:Bind local:Bind.Collapsed(ViewModel.NoFindings), Mode=OneWay}">
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.CrashFindings}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="services:CrashFindingItem">
+                                <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,8">
+                                    <Grid ColumnSpacing="14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <FontIcon Glyph="{x:Bind local:Bind.FindingGlyph(IsPossible)}" FontSize="18" VerticalAlignment="Top" Margin="0,2,0,0"
+                                                  Foreground="{x:Bind local:Bind.FindingBrush(IsPossible)}" />
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock x:Uid="Crash_Possible" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       Visibility="{x:Bind local:Bind.Visible(IsPossible)}" />
+                                            <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{x:Bind Advice}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                            <TextBlock Text="{x:Bind Details}" FontFamily="Cascadia Mono, Consolas" FontSize="12" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"
+                                                       Visibility="{x:Bind local:Bind.Visible(HasDetails)}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <TextBlock x:Uid="Crash_NoFindings" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Visibility="{x:Bind local:Bind.Visible(ViewModel.NoFindings), Mode=OneWay}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Command="{x:Bind ViewModel.UploadLogCommand}" x:Uid="Crash_UploadLogButton">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE898;" FontSize="12" />
+                            <TextBlock x:Uid="Crash_UploadLog" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{x:Bind ViewModel.SaveDiagnosticsCommand}" x:Uid="Crash_SaveDiagnosticsButton">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE74E;" FontSize="12" />
+                            <TextBlock x:Uid="Crash_SaveDiagnostics" />
+                        </StackPanel>
+                    </Button>
+                    <HyperlinkButton x:Uid="Crash_OpenReport" Command="{x:Bind ViewModel.OpenCrashReportCommand}"
+                                     Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.CrashReportFile), Mode=OneWay, FallbackValue=Collapsed}" />
+                </StackPanel>
+            </StackPanel>
+            <TextBlock Text="{x:Bind ViewModel.Game.Status, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Visibility="{x:Bind local:Bind.Collapsed(ViewModel.ShowCrash), Mode=OneWay}" TextWrapping="Wrap" />
+            <ProgressBar Value="{x:Bind ViewModel.Game.Progress, Mode=OneWay}" IsIndeterminate="{x:Bind ViewModel.Game.IsIndeterminate, Mode=OneWay}"
+                         Visibility="{x:Bind local:Bind.Visible(ViewModel.Game.IsPreparing), Mode=OneWay}" />
+            <Grid ColumnSpacing="12" Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.Game.Transfer), Mode=OneWay, FallbackValue=Collapsed}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{x:Bind ViewModel.Game.CurrentFile, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.Game.Transfer, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Grid>
+        </StackPanel>
+
+        <!-- Scrolls sideways when the window is too narrow for every tab. -->
+        <ScrollViewer Grid.Row="3" HorizontalScrollMode="Auto" HorizontalScrollBarVisibility="Hidden" VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
+            <SelectorBar x:Name="Tabs" SelectionChanged="Tabs_SelectionChanged">
+                <SelectorBarItem x:Uid="Instance_TabLog" Tag="Log" IsSelected="True" />
+                <SelectorBarItem x:Uid="Instance_TabMods" Tag="Mod" />
+                <SelectorBarItem x:Uid="Instance_TabResourcePacks" Tag="ResourcePack" />
+                <SelectorBarItem x:Uid="Instance_TabShaders" Tag="ShaderPack" />
+                <SelectorBarItem x:Uid="Instance_TabDataPacks" Tag="DataPack" />
+                <SelectorBarItem x:Uid="Instance_TabWorlds" Tag="Worlds" />
+                <SelectorBarItem x:Uid="Instance_TabServers" Tag="Servers" />
+                <SelectorBarItem x:Uid="Instance_TabScreenshots" Tag="Screenshots" />
+                <SelectorBarItem x:Uid="Instance_TabSnapshots" Tag="Snapshots" />
+                <SelectorBarItem x:Uid="Instance_TabVersion" Tag="Version" />
+                <SelectorBarItem x:Uid="Instance_TabSettings" Tag="Settings" />
+            </SelectorBar>
+        </ScrollViewer>
+
+        <!-- Log -->
+        <Grid x:Name="LogPanel" Grid.Row="4" RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <!-- Nothing logged yet: say what will appear here instead of an empty box. -->
+            <StackPanel Grid.RowSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="420"
+                        Visibility="{x:Bind local:Bind.Collapsed(ViewModel.HasLog), Mode=OneWay}">
+                <FontIcon Glyph="&#xE756;" FontSize="40" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="0,0,0,4" />
+                <TextBlock x:Uid="Instance_LogEmptyTitle" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                <TextBlock Text="{x:Bind ViewModel.LogEmptyHint, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+                <HyperlinkButton x:Uid="Instance_OpenLastLog" Command="{x:Bind ViewModel.OpenLastLogCommand}" HorizontalAlignment="Center"
+                                 Visibility="{x:Bind local:Bind.VisibleIfNotNull(ViewModel.LastLogFile), Mode=OneWay, FallbackValue=Collapsed}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" Visibility="{x:Bind local:Bind.Visible(ViewModel.HasLog), Mode=OneWay}">
+                <Button Click="CopyLog_Click" x:Uid="Instance_CopyLogA11y">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE8C8;" FontSize="12" />
+                        <TextBlock x:Uid="Instance_CopyLog" />
+                    </StackPanel>
+                </Button>
+                <Button Command="{x:Bind ViewModel.UploadLogCommand}" x:Uid="Instance_UploadLogA11y">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE898;" FontSize="12" />
+                        <TextBlock x:Uid="Instance_UploadLog" />
+                    </StackPanel>
+                </Button>
+                <ToggleButton x:Name="AutoScroll" x:Uid="Instance_AutoScroll" IsChecked="True" Click="AutoScroll_Click" />
+            </StackPanel>
+            <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="0" Visibility="{x:Bind local:Bind.Visible(ViewModel.HasLog), Mode=OneWay}">
+                <!-- No add/remove animations (every new line would slide in) and no per-line scrolling: the panel itself
+                     keeps the newest line in view while auto-scroll is on. Lines are selected as rows (drag, Shift/Ctrl+click,
+                     Ctrl+A) and copied with Ctrl+C or the context menu; per-line text selection couldn't span lines. -->
+                <ListView x:Name="LogList" ItemsSource="{x:Bind ViewModel.Game.Log, Mode=OneWay}" SelectionMode="Extended" Padding="8"
+                          Loaded="LogList_Loaded" SelectionChanged="LogList_SelectionChanged" ContextRequested="LogList_ContextRequested"
+                          KeyboardAcceleratorPlacementMode="Hidden">
+                    <ListView.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="CopySelected_Invoked" />
+                    </ListView.KeyboardAccelerators>
+                    <ListView.ContextFlyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem x:Name="CopySelectedItem" x:Uid="Instance_LogCopySelected" Click="CopySelected_Click" KeyboardAcceleratorTextOverride="Ctrl+C">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem x:Uid="Instance_LogSelectAll" Click="SelectAll_Click" KeyboardAcceleratorTextOverride="Ctrl+A">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B3;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem x:Uid="Instance_LogCopyAll" Click="CopyLog_Click">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </ListView.ContextFlyout>
+                    <ListView.ItemContainerTransitions>
+                        <TransitionCollection />
+                    </ListView.ItemContainerTransitions>
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" />
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="Padding" Value="4,1" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="logging:GameLogEntry">
+                            <StackPanel>
+                                <TextBlock FontFamily="Cascadia Mono, Consolas" FontSize="12" TextWrapping="Wrap">
+                                    <Run Text="{x:Bind local:Bind.Time(Timestamp)}" Foreground="{ThemeResource LogTimestampBrush}" />
+                                    <Run Text="{x:Bind local:Bind.Level(Level)}" Foreground="{x:Bind local:Bind.LevelBrush(Level)}" FontWeight="SemiBold" />
+                                    <Run Text="{x:Bind Message}" Foreground="{x:Bind local:Bind.LevelBrush(Level)}" />
+                                </TextBlock>
+                                <TextBlock Text="{x:Bind Throwable}" FontFamily="Cascadia Mono, Consolas" FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                           Visibility="{x:Bind local:Bind.VisibleIfText(Throwable), FallbackValue=Collapsed}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Border>
+        </Grid>
+
+        <!-- Content tabs (view models are created on first selection) -->
+        <local:ContentPanel x:Name="ModPanel" Grid.Row="4" Visibility="Collapsed" />
+        <local:ContentPanel x:Name="ResourcePackPanel" Grid.Row="4" Visibility="Collapsed" />
+        <local:ContentPanel x:Name="ShaderPackPanel" Grid.Row="4" Visibility="Collapsed" />
+        <local:ContentPanel x:Name="DataPackPanel" Grid.Row="4" Visibility="Collapsed" />
+
+        <!-- Worlds, servers, screenshots (view models are created on first selection) -->
+        <local:WorldsPanel x:Name="WorldsTab" Grid.Row="4" Visibility="Collapsed" />
+        <local:ServersPanel x:Name="ServersTab" Grid.Row="4" Visibility="Collapsed" />
+        <local:ScreenshotsPanel x:Name="ScreenshotsTab" Grid.Row="4" Visibility="Collapsed" />
+        <local:SnapshotsPanel x:Name="SnapshotsTab" Grid.Row="4" Visibility="Collapsed" />
+
+        <!-- Version: Minecraft version + mod loader -->
+        <ScrollViewer x:Name="VersionPanel" Grid.Row="4" Visibility="Collapsed">
+            <StackPanel Spacing="12">
+                <TextBlock x:Uid="Version_Hint" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                <InfoBar Severity="Informational" IsClosable="False" IsOpen="{x:Bind local:Bind.Not(ViewModel.CanEditVersion), Mode=OneWay}" x:Uid="Version_LockedBar" />
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Uid="Version_Minecraft" HorizontalAlignment="Stretch"
+                              ItemsSource="{x:Bind ViewModel.MinecraftVersions}" SelectedItem="{x:Bind ViewModel.SelectedMinecraftVersion, Mode=TwoWay}" />
+                    <CheckBox Grid.Column="1" x:Uid="NewInstance_Snapshots" VerticalAlignment="Bottom" IsChecked="{x:Bind ViewModel.ShowSnapshots, Mode=TwoWay}" />
+                </Grid>
+                <local:LoaderPicker ViewModel="{x:Bind ViewModel.LoaderPicker}" />
+                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                           Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.InstalledProfile), Mode=OneWay, FallbackValue=Collapsed}">
+                    <Run x:Uid="Version_InstalledAs" /> <Run Text="{x:Bind ViewModel.InstalledProfile, Mode=OneWay}" FontFamily="Cascadia Mono, Consolas" />
+                </TextBlock>
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Button x:Uid="Version_Apply" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.ApplyVersionCommand}" IsEnabled="{x:Bind ViewModel.CanEditVersion, Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind ViewModel.VersionStatus, Mode=OneWay}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Settings -->
+        <ScrollViewer x:Name="SettingsPanel" Grid.Row="4" Visibility="Collapsed">
+            <StackPanel Spacing="12">
+                <TextBlock x:Uid="Instance_SettingsHint" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                <ComboBox x:Uid="Instance_Account" ItemsSource="{x:Bind ViewModel.AccountChoices}" SelectedIndex="{x:Bind ViewModel.AccountIndex, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AccountChoice">
+                            <TextBlock Text="{x:Bind Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <!-- Memory and window size share a row across the width, like the full-width fields around them. Empty
+                     uses the global setting, shown as the placeholder ("Automatic" or its size). -->
+                <Grid ColumnSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <NumberBox x:Uid="Instance_MaxMemory" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Value="{x:Bind ViewModel.MaxMemory, Mode=TwoWay}" Minimum="256"
+                               SpinButtonPlacementMode="Hidden" PlaceholderText="{x:Bind ViewModel.GlobalMemory, Mode=OneWay}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Bottom">
+                        <TextBlock x:Uid="Instance_WindowSize" Margin="0,0,0,8" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <NumberBox x:Uid="Settings_ResolutionWidth" HorizontalAlignment="Stretch" Value="{x:Bind ViewModel.WindowWidth, Mode=TwoWay}" Minimum="320" SpinButtonPlacementMode="Hidden"
+                                       PlaceholderText="{x:Bind ViewModel.GlobalWindowWidth, Mode=OneWay}" />
+                            <TextBlock Grid.Column="1" Text="×" VerticalAlignment="Center" />
+                            <NumberBox Grid.Column="2" x:Uid="Settings_ResolutionHeight" HorizontalAlignment="Stretch" Value="{x:Bind ViewModel.WindowHeight, Mode=TwoWay}" Minimum="240" SpinButtonPlacementMode="Hidden"
+                                       PlaceholderText="{x:Bind ViewModel.GlobalWindowHeight, Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+                <ComboBox x:Uid="Instance_JavaPath" ItemsSource="{x:Bind ViewModel.JavaChoices}" SelectedIndex="{x:Bind ViewModel.JavaIndex, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:JavaChoice">
+                            <StackPanel>
+                                <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind Detail}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis" Visibility="{x:Bind local:Bind.VisibleIfText(Detail), FallbackValue=Collapsed}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <!-- Windows on ARM: how this version runs, and the way out if native misbehaves. -->
+                <StackPanel Spacing="8" Visibility="{x:Bind local:Bind.Visible(vm:InstanceViewModel.IsArm64Pc)}">
+                    <ComboBox x:Uid="Instance_Arm64Mode" SelectedIndex="{x:Bind ViewModel.Arm64ModeIndex, Mode=TwoWay}"
+                              IsEnabled="{x:Bind ViewModel.CanChooseArm64Mode, Mode=OneWay}" HorizontalAlignment="Stretch">
+                        <ComboBoxItem x:Uid="Instance_Arm64Auto" />
+                        <ComboBoxItem x:Uid="Instance_Arm64Emulate" />
+                    </ComboBox>
+                    <InfoBar x:Uid="Instance_Arm64Info" IsOpen="True" IsClosable="False" Severity="Informational"
+                             Message="{x:Bind ViewModel.Arm64Explanation, Mode=OneWay}" />
+                </StackPanel>
+                <TextBox x:Uid="Instance_JvmArgs" Text="{x:Bind ViewModel.JvmArguments, Mode=TwoWay}" TextWrapping="Wrap" AcceptsReturn="True"
+                         MinHeight="96" MaxHeight="240" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         FontFamily="Cascadia Mono, Consolas" IsSpellCheckEnabled="False">
+                    <TextBox.HeaderTemplate>
+                        <!-- The header would inherit the box's monospace font. -->
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontFamily="{ThemeResource ContentControlThemeFontFamily}" />
+                        </DataTemplate>
+                    </TextBox.HeaderTemplate>
+                </TextBox>
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Button x:Uid="Common_Save" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.SaveSettingsCommand}" />
+                    <Button x:Uid="Instance_CreateShortcut" Command="{x:Bind ViewModel.CreateShortcutCommand}" />
+                    <TextBlock Text="{x:Bind ViewModel.SaveStatus, Mode=OneWay}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

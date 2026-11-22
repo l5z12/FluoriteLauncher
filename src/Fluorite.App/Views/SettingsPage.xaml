@@ -1,0 +1,282 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Fluorite.App.Views.SettingsPage"
+    NavigationCacheMode="Required"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
+    xmlns:vm="using:Fluorite.App.ViewModels">
+
+    <ScrollViewer>
+        <StackPanel Padding="36,24,36,36" Spacing="6">
+            <TextBlock x:Uid="Settings_Title" Style="{StaticResource PageTitleStyle}" />
+
+            <InfoBar x:Uid="Settings_RestartBar" IsOpen="{x:Bind ViewModel.RestartRequired, Mode=OneWay}" Severity="Informational" IsClosable="False">
+                <InfoBar.ActionButton>
+                    <Button x:Uid="Settings_RestartNow" Click="RestartNow_Click" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <TextBlock x:Uid="Settings_GroupGame" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
+            <toolkit:SettingsExpander x:Uid="Settings_MemoryAuto" Description="{x:Bind vm:SettingsViewModel.AutoMemoryHint}"
+                                      IsExpanded="{x:Bind ViewModel.ManualMemory, Mode=OneWay}">
+                <toolkit:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE964;" /></toolkit:SettingsExpander.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.AutoMemory, Mode=TwoWay}" />
+                <toolkit:SettingsExpander.Items>
+                    <toolkit:SettingsCard x:Uid="Settings_Memory" IsEnabled="{x:Bind ViewModel.ManualMemory, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Slider Width="240" Minimum="512" Maximum="{x:Bind local:SettingsPage.MemoryMax}" StepFrequency="256" Value="{x:Bind ViewModel.MaxMemoryMb, Mode=TwoWay}" />
+                            <NumberBox x:Uid="Settings_MemoryBox" Width="110" Value="{x:Bind ViewModel.MaxMemoryMb, Mode=TwoWay}" Minimum="256" SpinButtonPlacementMode="Hidden" />
+                            <TextBlock Text="{x:Bind ViewModel.MemorySizeText, Mode=OneWay}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </toolkit:SettingsCard>
+                </toolkit:SettingsExpander.Items>
+            </toolkit:SettingsExpander>
+            <toolkit:SettingsCard x:Uid="Settings_Resolution">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE740;" /></toolkit:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <!-- Empty means Minecraft's default, shown as the placeholder. -->
+                    <NumberBox x:Uid="Settings_ResolutionWidth" Width="100" Value="{x:Bind ViewModel.WindowWidth, Mode=TwoWay}" Minimum="320" SpinButtonPlacementMode="Hidden"
+                               PlaceholderText="{x:Bind vm:SettingsViewModel.DefaultWidthText}" />
+                    <TextBlock Text="×" VerticalAlignment="Center" />
+                    <NumberBox x:Uid="Settings_ResolutionHeight" Width="100" Value="{x:Bind ViewModel.WindowHeight, Mode=TwoWay}" Minimum="240" SpinButtonPlacementMode="Hidden"
+                               PlaceholderText="{x:Bind vm:SettingsViewModel.DefaultHeightText}" />
+                </StackPanel>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsExpander x:Uid="Settings_JvmArgs" IsExpanded="False">
+                <toolkit:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE943;" /></toolkit:SettingsExpander.HeaderIcon>
+                <!-- Collapsed: the start of what's set. -->
+                <TextBlock Text="{x:Bind ViewModel.JvmArguments, Mode=OneWay}" MaxWidth="320" MaxLines="1" TextTrimming="CharacterEllipsis"
+                           FontFamily="Cascadia Mono, Consolas" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                <toolkit:SettingsExpander.Items>
+                    <!-- Vertical, not Left: Left always sizes the content to fit, Vertical stretches it across. -->
+                    <toolkit:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
+                        <TextBox HorizontalAlignment="Stretch" Text="{x:Bind ViewModel.JvmArguments, Mode=TwoWay}" TextWrapping="Wrap" AcceptsReturn="True"
+                                 MinHeight="96" MaxHeight="240" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 FontFamily="Cascadia Mono, Consolas" IsSpellCheckEnabled="False" />
+                    </toolkit:SettingsCard>
+                </toolkit:SettingsExpander.Items>
+            </toolkit:SettingsExpander>
+
+            <TextBlock x:Uid="Settings_GroupPerformance" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
+            <toolkit:SettingsCard x:Uid="Settings_JvmPreset">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE9D9;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox SelectedIndex="{x:Bind ViewModel.JvmPresetIndex, Mode=TwoWay}" MinWidth="200">
+                    <ComboBoxItem x:Uid="Settings_JvmPresetNone" />
+                    <ComboBoxItem x:Uid="Settings_JvmPresetBalanced" />
+                    <ComboBoxItem x:Uid="Settings_JvmPresetLowLatency" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_Gpu">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xF211;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox SelectedIndex="{x:Bind ViewModel.GpuPreferenceIndex, Mode=TwoWay}" MinWidth="200">
+                    <ComboBoxItem x:Uid="Settings_GpuDefault" />
+                    <ComboBoxItem x:Uid="Settings_GpuPowerSaving" />
+                    <ComboBoxItem x:Uid="Settings_GpuHigh" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_Priority">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7C1;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox SelectedIndex="{x:Bind ViewModel.PriorityIndex, Mode=TwoWay}" MinWidth="200">
+                    <ComboBoxItem x:Uid="Settings_PriorityBelowNormal" />
+                    <ComboBoxItem x:Uid="Settings_PriorityNormal" />
+                    <ComboBoxItem x:Uid="Settings_PriorityAboveNormal" />
+                    <ComboBoxItem x:Uid="Settings_PriorityHigh" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+
+            <TextBlock x:Uid="Settings_GroupJava" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
+            <toolkit:SettingsCard x:Uid="Settings_Java">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xEC7A;" /></toolkit:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ComboBox x:Uid="Settings_JavaPath" Width="360" ItemsSource="{x:Bind ViewModel.JavaChoices}" SelectedIndex="{x:Bind ViewModel.JavaIndex, Mode=TwoWay}"
+                              IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsScanningJava), Mode=OneWay}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:JavaChoice">
+                                <StackPanel>
+                                    <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind Detail}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis" Visibility="{x:Bind local:Bind.VisibleIfText(Detail), FallbackValue=Collapsed}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button x:Uid="Settings_ScanJava" Command="{x:Bind ViewModel.ScanJavaCommand}" VerticalAlignment="Center" />
+                </StackPanel>
+            </toolkit:SettingsCard>
+
+            <TextBlock x:Uid="Settings_GroupLaunchers" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
+            <toolkit:SettingsExpander x:Uid="Settings_OtherLaunchers" IsExpanded="True" ItemsSource="{x:Bind Roots}">
+                <toolkit:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE7B8;" /></toolkit:SettingsExpander.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Uid="Settings_FindLaunchers" Click="FindLaunchers_Click" />
+                    <Button x:Uid="Settings_AddLauncherFolder" Click="AddLauncherFolder_Click" />
+                </StackPanel>
+                <toolkit:SettingsExpander.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ExternalRootItem">
+                        <toolkit:SettingsCard Header="{x:Bind Title}" Description="{x:Bind Path}">
+                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                <ToggleSwitch x:Uid="Settings_LauncherWriteBack" IsOn="{x:Bind AllowWriteBack, Mode=TwoWay}" MinWidth="0"
+                                              Visibility="{x:Bind local:Bind.Visible(CanWriteBack)}" />
+                                <ToggleSwitch x:Uid="Settings_LauncherEnabled" IsOn="{x:Bind Enabled, Mode=TwoWay}" MinWidth="0" />
+                                <Button Tag="{x:Bind}" Click="RemoveLauncherFolder_Click" x:Uid="Settings_RemoveLauncherFolder" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE711;" FontSize="12" />
+                                </Button>
+                            </StackPanel>
+                        </toolkit:SettingsCard>
+                    </DataTemplate>
+                </toolkit:SettingsExpander.ItemTemplate>
+                <toolkit:SettingsExpander.ItemsFooter>
+                    <toolkit:SettingsCard ContentAlignment="Left" Visibility="{x:Bind local:Bind.VisibleIfZero(Roots.Count), Mode=OneWay}">
+                        <TextBlock x:Uid="Settings_NoLauncherFolders" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    </toolkit:SettingsCard>
+                </toolkit:SettingsExpander.ItemsFooter>
+            </toolkit:SettingsExpander>
+
+            <TextBlock x:Uid="Settings_GroupDownloads" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
+            <toolkit:SettingsCard x:Uid="Settings_Source">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE896;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox SelectedIndex="{x:Bind ViewModel.DownloadSourceIndex, Mode=TwoWay}" MinWidth="200">
+                    <ComboBoxItem x:Uid="Settings_SourceOfficial" />
+                    <ComboBoxItem x:Uid="Settings_SourceBmclapi" />
+                    <ComboBoxItem x:Uid="Settings_SourceAuto" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_Parallel">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE9F5;" /></toolkit:SettingsCard.HeaderIcon>
+                <!-- Every slider has a box beside it: an exact number, typed or with the arrow keys. -->
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Slider Width="240" Minimum="1" Maximum="128" Value="{x:Bind ViewModel.MaxParallelDownloads, Mode=TwoWay}" />
+                    <NumberBox x:Uid="Settings_ParallelBox" Width="110" Minimum="1" Maximum="128" SpinButtonPlacementMode="Hidden"
+                               Value="{x:Bind ViewModel.MaxParallelDownloads, Mode=TwoWay}" />
+                </StackPanel>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_DownloadDetails">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE946;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.ShowDownloadDetails, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
+
+            <TextBlock x:Uid="Settings_GroupBehavior" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
+            <toolkit:SettingsCard x:Uid="Settings_OnGameStart">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE768;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox SelectedIndex="{x:Bind ViewModel.OnGameStartIndex, Mode=TwoWay}" MinWidth="220">
+                    <ComboBoxItem x:Uid="Settings_OnStartKeep" />
+                    <ComboBoxItem x:Uid="Settings_OnStartMinimize" />
+                    <ComboBoxItem x:Uid="Settings_OnStartHide" />
+                    <ComboBoxItem x:Uid="Settings_OnStartClose" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_CloseToTray">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8A0;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.CloseToTray, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_ShowLogOnCrash">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7BA;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.ShowLogOnCrash, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_NotifyExit">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xEA8F;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.NotifyOnGameExit, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_DiscordPresence" Visibility="{x:Bind ViewModel.DiscordAvailable}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8BD;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.ShowDiscordPresence, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_CheckMods">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE9D5;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.CheckModsBeforeLaunch, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_SnapshotBeforeUpdates">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE81C;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.SnapshotBeforeUpdates, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_LoaderAvailability">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE73E;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.ShowLoaderAvailability, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsExpander x:Uid="Settings_AutoBackup" IsExpanded="{x:Bind ViewModel.AutoBackupWorlds, Mode=OneWay}">
+                <toolkit:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xEA35;" /></toolkit:SettingsExpander.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.AutoBackupWorlds, Mode=TwoWay}" />
+                <toolkit:SettingsExpander.Items>
+                    <toolkit:SettingsCard x:Uid="Settings_AutoBackupKeep" IsEnabled="{x:Bind ViewModel.AutoBackupWorlds, Mode=OneWay}">
+                        <NumberBox Width="110" Minimum="1" Maximum="100" SpinButtonPlacementMode="Compact"
+                                   Value="{x:Bind ViewModel.AutoBackupsToKeep, Mode=TwoWay}" />
+                    </toolkit:SettingsCard>
+                </toolkit:SettingsExpander.Items>
+            </toolkit:SettingsExpander>
+
+            <TextBlock x:Uid="Settings_GroupApp" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
+            <toolkit:SettingsCard x:Uid="Settings_Language">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xF2B7;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox SelectedIndex="{x:Bind ViewModel.LanguageIndex, Mode=TwoWay}" MinWidth="200">
+                    <ComboBoxItem x:Uid="Settings_LangSystem" />
+                    <ComboBoxItem Content="English" />
+                    <ComboBoxItem Content="简体中文" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_Theme">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE790;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}" MinWidth="200">
+                    <ComboBoxItem x:Uid="Settings_ThemeSystem" />
+                    <ComboBoxItem x:Uid="Settings_ThemeLight" />
+                    <ComboBoxItem x:Uid="Settings_ThemeDark" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsExpander x:Uid="Settings_LauncherWindow" IsExpanded="{x:Bind ViewModel.CustomLauncherSize, Mode=OneWay}">
+                <toolkit:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE7C4;" /></toolkit:SettingsExpander.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <!-- Greyed out while the window is already at the default size. -->
+                    <Button x:Name="ResetSizeButton" x:Uid="Settings_ResetSize" Click="ResetSize_Click" VerticalAlignment="Center" />
+                    <!-- In LauncherWindowMode's order. -->
+                    <ComboBox SelectedIndex="{x:Bind ViewModel.LauncherWindowIndex, Mode=TwoWay}" MinWidth="200">
+                        <ComboBoxItem x:Uid="Settings_LauncherWindowRemember" />
+                        <ComboBoxItem x:Uid="Settings_LauncherWindowCustom" />
+                        <ComboBoxItem x:Uid="Settings_LauncherWindowMaximized" />
+                    </ComboBox>
+                </StackPanel>
+                <toolkit:SettingsExpander.Items>
+                    <toolkit:SettingsCard x:Uid="Settings_LauncherSize" IsEnabled="{x:Bind ViewModel.CustomLauncherSize, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <!-- Empty means the default, shown as the placeholder. A typed size applies to the window at once. -->
+                            <NumberBox x:Uid="Settings_LauncherWidth" Width="100" Value="{x:Bind ViewModel.LauncherWidth, Mode=TwoWay}" SpinButtonPlacementMode="Hidden"
+                                       Minimum="{x:Bind vm:SettingsViewModel.MinLauncherWidth}" PlaceholderText="{x:Bind vm:SettingsViewModel.DefaultLauncherWidthText}" />
+                            <TextBlock Text="×" VerticalAlignment="Center" />
+                            <NumberBox x:Uid="Settings_LauncherHeight" Width="100" Value="{x:Bind ViewModel.LauncherHeight, Mode=TwoWay}" SpinButtonPlacementMode="Hidden"
+                                       Minimum="{x:Bind vm:SettingsViewModel.MinLauncherHeight}" PlaceholderText="{x:Bind vm:SettingsViewModel.DefaultLauncherHeightText}" />
+                            <!-- Shows the window's size as it changes. -->
+                            <Button x:Name="UseCurrentSizeButton" Click="UseCurrentSize_Click" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </toolkit:SettingsCard>
+                </toolkit:SettingsExpander.Items>
+            </toolkit:SettingsExpander>
+            <toolkit:SettingsCard x:Uid="Settings_HomeLoading">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE80F;" /></toolkit:SettingsCard.HeaderIcon>
+                <!-- In HomeLoadingStyle's order. -->
+                <ComboBox SelectedIndex="{x:Bind ViewModel.HomeLoadingIndex, Mode=TwoWay}" MinWidth="200">
+                    <ComboBoxItem x:Uid="Settings_HomeLoadingWindow" />
+                    <ComboBoxItem x:Uid="Settings_HomeLoadingIndicator" />
+                    <ComboBoxItem x:Uid="Settings_HomeLoadingHide" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_DataRoot" Description="{x:Bind ViewModel.DataRoot}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8B7;" /></toolkit:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Uid="Settings_OpenFolder" Command="{x:Bind ViewModel.OpenDataFolderCommand}" />
+                    <Button x:Uid="Settings_ChangeFolder" Click="ChangeDataRoot_Click" />
+                </StackPanel>
+            </toolkit:SettingsCard>
+
+            <TextBlock x:Uid="Settings_GroupAbout" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
+            <toolkit:SettingsCard x:Uid="Settings_About" Description="{x:Bind ViewModel.Version}">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <ImageIcon>
+                        <ImageIcon.Source>
+                            <BitmapImage UriSource="ms-appx:///Assets/LogoIcon.png" DecodePixelWidth="20" DecodePixelHeight="20" DecodePixelType="Logical" />
+                        </ImageIcon.Source>
+                    </ImageIcon>
+                </toolkit:SettingsCard.HeaderIcon>
+            </toolkit:SettingsCard>            <TextBlock x:Uid="Home_Disclaimer" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" Margin="0,8,0,0" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

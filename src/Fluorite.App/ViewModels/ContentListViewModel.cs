@@ -1,0 +1,677 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Fluorite.App.Services;
+using Fluorite.Core.Instances;
+using Fluorite.Modding.Content;
+using Fluorite.Modding.Metadata;
+using Fluorite.Modding.Platforms;
+using Fluorite.Platform.Windows.Shell;
+using Microsoft.Extensions.Logging;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+
+namespace Fluorite.App.ViewModels;
+
+/// <summary>One file in an instance's content tab.</summary>
+public sealed partial class ContentItemViewModel : ObservableObject
+{
+    private readonly ContentListViewModel _owner;
+    private bool _syncing;
+    private bool _iconRequested;
+    private int _iconGeneration;
+
+    public ContentItemViewModel(ContentFile file, ContentListViewModel owner)
+    {
+        _owner = owner;
+        File = file;
+        _syncing = true;
+        Enabled = file.Enabled;
+        _syncing = false;
+    }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Name), nameof(Version), nameof(FileName), nameof(Description), nameof(SourceText), nameof(IsPinned), nameof(Subtitle), nameof(IsManifestEdited))]
+    public partial ContentFile File { get; set; }
+
+    /// <summary>A mod jar: it has mod info and a manifest to edit.</summary>
+    public bool IsMod => File.Location.Kind == ContentKind.Mod && !File.IsDirectory;
+
+    /// <summary>Its manifest was edited in Fluorite (the original is kept).</summary>
+    public bool IsManifestEdited => File.Record.OriginalSha1 is not null;
+
+    public string Name => File.DisplayName;
+    public string? Version => File.Version;
+    public string FileName => File.FileName;
+    public bool IsPinned => File.Record.Pinned;
+    public bool HasSource => File.Record.Source is not null;
+
+    public string Description =>
+        ContentMetadataReader.StripFormatting(File.Metadata.Description ?? "").ReplaceLineEndings(" ").Trim() is { Length: > 0 } d ? d : File.FileName;
+
+    public string Subtitle => string.Join("  ·  ", new[] { Version, File.Metadata.Authors.Count > 0 ? string.Join(", ", File.Metadata.Authors.Take(3)) : null }.Where(s => !string.IsNullOrEmpty(s)));
+
+    public string SourceText => File.Record.Source?.Platform switch
+    {
+        ContentPlatform.Modrinth => "Modrinth",
+        ContentPlatform.CurseForge => "CurseForge",
+        _ => File.IsDirectory ? Loc.Get("Content_Folder") : Loc.Get("Content_Local"),
+    };
+
+    [ObservableProperty] public partial bool Enabled { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdateText), nameof(HasUpdate))]
+    public partial RemoteVersion? Update { get; set; }
+
+    public bool HasUpdate => Update is not null;
+    public string UpdateText => Update is null ? "" : Loc.Format("Content_UpdateTo", Update.VersionNumber);
+
+    [ObservableProperty] public partial ImageSource? Icon { get; set; }
+    [ObservableProperty] public partial string? Issue { get; set; }
+    [ObservableProperty] public partial bool IssueIsError { get; set; }
+    [ObservableProperty] public partial bool IsBusy { get; set; }
+
+    partial void OnEnabledChanged(bool value)
+    {
+        if (!_syncing)
+            _ = _owner.SetEnabledAsync(this, value);
+    }
+
+    public void SetEnabledSilently(bool value)
+    {
+        _syncing = true;
+        Enabled = value;
+        _syncing = false;
+    }
+
+    /// <summary>Remote icon if the project is known, else the jar/pack's own icon. Call on the UI thread.</summary>
+    public async Task LoadIconAsync()
+    {
+        if (_iconRequested)
+            return;
+        _iconRequested = true;
+        if (File.Record.IconUrl is { } url && Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            Icon = new BitmapImage(uri) { DecodePixelWidth = 40, DecodePixelType = DecodePixelType.Logical };
+            return;
+        }
+        if (File.Metadata.IconEntry is not { } entry)
+            return;
+        var generation = _iconGeneration;
+        var path = File.Path;
+        var bytes = await Task.Run(() => ContentMetadataReader.ReadEntry(path, entry));
+        if (bytes is null)
+            return;
+        // Decoded to the 40 px tile; unlike a BitmapImage fed a stream, the PNG isn't kept alongside.
+        var image = await ImageLoader.FromBytesAsync(bytes, 40);
+        if (generation != _iconGeneration)
+        {
+            ImageLoader.Release(image); // Released while it decoded.
+            return;
+        }
+        if (image is not null)
+            Icon = image;
+    }
+
+    public void ResetIcon() => _iconRequested = false;
+
+    /// <summary>Drops the icon now (the list is going away) rather than whenever the GC gets to it.</summary>
+    public void ReleaseIcon()
+    {
+        _iconGeneration++;
+        _iconRequested = false;
+        var icon = Icon;
+        Icon = null;
+        ImageLoader.Release(icon);
+    }
+
+    public void RaisePinnedChanged() => OnPropertyChanged(nameof(IsPinned));
+
+    /// <summary>List items are announced by this (screen readers, UI Automation).</summary>
+    public override string ToString() => Name;
+}
+
+/// <summary>
+/// An instance's mods / resource packs / shader packs / data packs: scan, identify, toggle, delete, update,
+/// add files, and (for mods) pre-launch issues per file.
+/// </summary>
+public sealed partial class ContentListViewModel(ContentService content, ContentInstallService installer, UpdateBadgeService badges) : ObservableObject
+{
+    /// <summary>
+    /// What the Mods tab found (or updated) is what the instance's Library card shows. Only after a real check: a
+    /// list not checked yet has 0 updates only because nobody looked.
+    /// </summary>
+    private void ReportUpdates()
+    {
+        if (Kind == ContentKind.Mod && Instance is { } instance)
+            badges.Report(instance, UpdateCount);
+    }
+
+    private List<ContentItemViewModel> _all = [];
+    private CancellationTokenSource? _refresh;
+
+    public GameInstance? Instance { get; private set; }
+    public ContentKind Kind { get; private set; }
+
+    public ObservableCollection<ContentItemViewModel> Items { get; } = [];
+    public ObservableCollection<string> Worlds { get; } = [];
+
+    [ObservableProperty] public partial string Filter { get; set; } = "";
+    [ObservableProperty] public partial string? SelectedWorld { get; set; }
+    [ObservableProperty] public partial bool IsLoading { get; set; }
+    [ObservableProperty] public partial bool IsChecking { get; set; }
+    [ObservableProperty] public partial string? Status { get; set; }
+    [ObservableProperty] public partial string? Error { get; set; }
+    [ObservableProperty] public partial string? IssueSummary { get; set; }
+    [ObservableProperty] public partial bool IssueSummaryIsError { get; set; }
+    [ObservableProperty] public partial string Summary { get; set; } = "";
+    [ObservableProperty] public partial int UpdateCount { get; set; }
+    [ObservableProperty] public partial bool IsEmpty { get; set; }
+
+    public bool IsDataPacks => Kind == ContentKind.DataPack;
+    public bool IsMods => Kind == ContentKind.Mod;
+    public bool HasWorlds => Worlds.Count > 0;
+
+    /// <summary>Mods tab of an instance without a loader: mods won't load.</summary>
+    public bool NoLoader => IsMods && Instance is { } i && ContentService.ModLoaderNames(i.Manifest).Count == 0;
+
+    public string EmptyText => Loc.Get(Kind switch
+    {
+        ContentKind.ResourcePack => "Content_EmptyResourcePacks",
+        ContentKind.ShaderPack => "Content_EmptyShaders",
+        ContentKind.DataPack => HasWorlds ? "Content_EmptyDataPacks" : "DataPack_NoWorlds",
+        _ => "Content_EmptyMods",
+    });
+
+    public ContentLocation? Location => Kind == ContentKind.DataPack
+        ? SelectedWorld is { } w ? new ContentLocation(Kind, w) : null
+        : new ContentLocation(Kind);
+
+    private ContentManager Manager => content.For(Instance!);
+
+    public void Initialize(GameInstance instance, ContentKind kind)
+    {
+        Instance = instance;
+        Kind = kind;
+        installer.ContentChanged += OnContentChanged;
+        if (kind == ContentKind.DataPack)
+        {
+            foreach (var w in Manager.GetWorlds())
+                Worlds.Add(w);
+            SelectedWorld = Worlds.FirstOrDefault();
+        }
+        OnPropertyChanged(nameof(IsDataPacks));
+        OnPropertyChanged(nameof(IsMods));
+        OnPropertyChanged(nameof(HasWorlds));
+        OnPropertyChanged(nameof(NoLoader));
+        OnPropertyChanged(nameof(EmptyText));
+    }
+
+    public void Detach() => installer.ContentChanged -= OnContentChanged;
+
+    /// <summary>
+    /// The instance page is closing: stop listening, cancel a scan in progress and drop the list and its icons, so
+    /// nothing keeps them (or the page's list control) alive.
+    /// </summary>
+    public void Release()
+    {
+        Detach();
+        _refresh?.Cancel();
+        foreach (var item in _all)
+            item.ReleaseIcon();
+        _all = [];
+        Items.Clear();
+    }
+
+    private void OnContentChanged(object? sender, string gameDirectory)
+    {
+        if (Instance is not null && string.Equals(gameDirectory, Instance.GameDirectory, StringComparison.OrdinalIgnoreCase))
+            _ = ReloadAsync();
+    }
+
+    partial void OnSelectedWorldChanged(string? value)
+    {
+        if (Instance is not null)
+            _ = ReloadAsync();
+    }
+
+    partial void OnFilterChanged(string value) => ApplyFilter();
+
+    /// <summary>When the last list was refilled to play its entrance again (<see cref="RefreshAsync"/>).</summary>
+    private long _lastReplay = long.MinValue / 2;
+
+    /// <param name="replay">
+    /// Refill the list, so its rows play their entrance again: a refresh asked for is seen even when nothing changed.
+    /// At most once a second, so holding F5 doesn't rebuild the list nonstop; otherwise, and for every other update,
+    /// only what changed changes.
+    /// </param>
+    private void ApplyFilter(bool replay = false)
+    {
+        var f = Filter.Trim();
+        var visible = string.IsNullOrEmpty(f)
+            ? _all
+            : _all.Where(i => i.Name.Contains(f, StringComparison.CurrentCultureIgnoreCase) || i.FileName.Contains(f, StringComparison.CurrentCultureIgnoreCase)).ToList();
+        if (replay && Environment.TickCount64 - _lastReplay >= 1000)
+        {
+            _lastReplay = Environment.TickCount64;
+            Items.Clear();
+            foreach (var i in visible)
+                Items.Add(i);
+        }
+        else
+        {
+            CollectionSync.Sync(Items, visible);
+        }
+        IsEmpty = _all.Count == 0 && !IsLoading;
+        var enabled = _all.Count(i => i.Enabled);
+        Summary = _all.Count == 0 ? "" : Loc.Format(_all.Count == 1 ? "Content_SummaryOne" : "Content_Summary", _all.Count, enabled);
+    }
+
+    /// <summary>Refresh, F5, the menu: the list plays its entrance again, so it's seen to have happened.</summary>
+    [RelayCommand]
+    public Task RefreshAsync() => LoadAsync(replay: true);
+
+    /// <summary>After an install, a removal, another world…: only what changed changes.</summary>
+    public Task ReloadAsync() => LoadAsync(replay: false);
+
+    private async Task LoadAsync(bool replay)
+    {
+        if (Instance is null || Location is not { } location)
+        {
+            _all = [];
+            ApplyFilter();
+            return;
+        }
+        _refresh?.Cancel();
+        var cts = _refresh = new CancellationTokenSource();
+        IsLoading = true;
+        Error = null;
+        try
+        {
+            var manager = Manager;
+            var files = await Task.Run(() => manager.ScanAsync(location, cts.Token));
+            if (cts.IsCancellationRequested)
+                return;
+            Rebuild(files, replay);
+
+            // Identify unknown files in the background, then refresh titles/icons/links.
+            var identified = await Task.Run(() => content.IdentifyAsync(manager, files, cts.Token));
+            if (identified > 0 && !cts.IsCancellationRequested)
+                Rebuild(await Task.Run(() => manager.ScanAsync(location, cts.Token)));
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            // Run as a command (Refresh, F5), whatever escapes here would end the app: show it instead.
+            App.Get<Microsoft.Extensions.Logging.ILogger<ContentListViewModel>>().LogError(ex, "Refreshing {Kind} failed", Kind);
+            Error = ex.Message;
+        }
+        finally
+        {
+            if (_refresh == cts)
+                IsLoading = false;
+            IsEmpty = _all.Count == 0 && !IsLoading;
+            MemoryTrim.Schedule(); // Opening every jar leaves a lot of garbage behind.
+        }
+    }
+
+    private void Rebuild(IReadOnlyList<ContentFile> files, bool replay = false)
+    {
+        // Not ToDictionary: "x.jar" and "x.jar.disabled" side by side share a key, and a duplicate would throw.
+        var previous = new Dictionary<string, ContentItemViewModel>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in _all)
+            previous.TryAdd(item.File.Key, item);
+        _all = files.Select(f =>
+        {
+            // Each one reused once: twins mustn't become the same row twice.
+            if (previous.Remove(f.Key, out var existing))
+            {
+                var iconChanged = existing.File.Record.IconUrl != f.Record.IconUrl;
+                existing.File = f;
+                existing.SetEnabledSilently(f.Enabled);
+                if (iconChanged)
+                    existing.ResetIcon();
+                return existing;
+            }
+            return new ContentItemViewModel(f, this);
+        }).ToList();
+        ApplyFilter(replay);
+        UpdateIssues();
+        UpdateCount = _all.Count(i => i.HasUpdate);
+    }
+
+    /// <summary>Mods tab: run the pre-launch checks and show them per file.</summary>
+    private void UpdateIssues()
+    {
+        if (!IsMods || Instance is null)
+            return;
+        var issues = ModChecker.Check(_all.Select(i => i.File).ToList(), Instance.Manifest);
+        foreach (var item in _all)
+        {
+            var mine = issues.Where(i => i.File == item.FileName).ToList();
+            item.Issue = mine.Count == 0 ? null : string.Join("\n", mine.Select(ContentInstallService.Describe));
+            item.IssueIsError = mine.Any(i => i.Severity == ModIssueSeverity.Error);
+        }
+        var errors = issues.Count(i => i.Severity == ModIssueSeverity.Error);
+        var warnings = issues.Count - errors;
+        IssueSummary = issues.Count == 0 ? null : Loc.Format("Content_IssueSummary", errors, warnings);
+        IssueSummaryIsError = errors > 0;
+    }
+
+    public async Task SetEnabledAsync(ContentItemViewModel item, bool enabled)
+    {
+        try
+        {
+            item.File = await Manager.SetEnabledAsync(item.File, enabled);
+        }
+        catch (IOException ex)
+        {
+            item.SetEnabledSilently(item.File.Enabled);
+            Error = ex.Message;
+        }
+        ApplySummaryOnly();
+        UpdateIssues();
+    }
+
+    private void ApplySummaryOnly() =>
+        Summary = _all.Count == 0 ? "" : Loc.Format(_all.Count == 1 ? "Content_SummaryOne" : "Content_Summary", _all.Count, _all.Count(i => i.Enabled));
+
+    public async Task SetAllEnabledAsync(IReadOnlyList<ContentItemViewModel> items, bool enabled)
+    {
+        foreach (var item in items.Where(i => i.Enabled != enabled))
+        {
+            item.SetEnabledSilently(enabled);
+            await SetEnabledAsync(item, enabled);
+        }
+    }
+
+    /// <summary>"Removed … Undo" after the last removal.</summary>
+    [ObservableProperty] public partial UndoOffer? PendingUndo { get; set; }
+
+    /// <summary>
+    /// Removed at once, no question: they wait out of the game's sight for a few seconds (Undo), then go to the
+    /// Recycle Bin. Undo also brings back what Fluorite knew about them (source, pin).
+    /// </summary>
+    public async Task DeleteAsync(IReadOnlyList<ContentItemViewModel> items)
+    {
+        if (items.Count == 0 || Instance is null)
+            return;
+        var manager = Manager;
+        var files = items.Select(i => i.File).ToList();
+        var message = items.Count == 1 ? Loc.Format("Undo_RemovedOne", items[0].Name) : Loc.Format("Undo_RemovedMany", items.Count);
+        RemovalStash stash;
+        try
+        {
+            stash = await Task.Run(() => RemovalStash.Create(manager.GameDirectory, files.Select(f => f.Path)));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Error = ex.Message;
+            return;
+        }
+        await ReloadAsync();
+        OfferUndo(new UndoOffer(message, async () =>
+        {
+            await Task.Run(stash.Restore);
+            await manager.RestoreRecordsAsync(files);
+            await ReloadAsync();
+        }, stash.Commit));
+    }
+
+    private void OfferUndo(UndoOffer offer)
+    {
+        _ = PendingUndo?.CommitAsync();
+        offer.Finished += (_, _) =>
+        {
+            if (PendingUndo == offer)
+                PendingUndo = null;
+        };
+        PendingUndo = offer;
+    }
+
+    [RelayCommand]
+    private async Task CheckUpdatesAsync()
+    {
+        if (Instance is null)
+            return;
+        IsChecking = true;
+        Status = null;
+        Error = null;
+        try
+        {
+            var target = ContentService.TargetFor(Instance.Manifest, Kind);
+            var files = _all.Select(i => i.File).ToList();
+            var updates = await Task.Run(() => content.CheckUpdatesAsync(files, target));
+            foreach (var item in _all)
+                item.Update = updates.FirstOrDefault(u => u.File.Key == item.File.Key)?.Latest;
+            UpdateCount = updates.Count;
+            ReportUpdates();
+            var unknown = _all.Count(i => !i.HasSource && !i.File.IsDirectory);
+            Status = updates.Count == 0 ? Loc.Get("Content_UpToDate") : Loc.Format("Content_UpdatesFound", updates.Count);
+            if (unknown > 0)
+                Status += " " + Loc.Format("Content_UnknownFiles", unknown);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidDataException)
+        {
+            Error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            // A command: whatever escapes would end the app.
+            App.Get<Microsoft.Extensions.Logging.ILogger<ContentListViewModel>>().LogError(ex, "Checking {Kind} for updates failed", Kind);
+            Error = ex.Message;
+        }
+        finally
+        {
+            IsChecking = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UpdateAllAsync()
+    {
+        var updates = _all.Where(i => i.Update is not null).Select(i => new ContentUpdate(i.File, i.Update!)).ToList();
+        if (Instance is null || updates.Count == 0)
+            return;
+        foreach (var i in _all.Where(i => i.HasUpdate))
+            i.IsBusy = true;
+        try
+        {
+            if (await installer.UpdateAsync(Instance, Kind, updates) is { } applied)
+            {
+                // Updates skipped because they wouldn't work here keep their badge.
+                var done = applied.Select(u => u.File.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var i in _all.Where(i => done.Contains(i.File.Key)))
+                    i.Update = null;
+                UpdateCount = _all.Count(i => i.HasUpdate);
+                ReportUpdates();
+                Status = applied.Count == updates.Count
+                    ? Loc.Format("Content_Updated", applied.Count)
+                    : Loc.Format("Content_UpdatedSkipped", applied.Count, updates.Count - applied.Count);
+            }
+        }
+        finally
+        {
+            foreach (var i in _all)
+                i.IsBusy = false;
+        }
+    }
+
+    public async Task UpdateOneAsync(ContentItemViewModel item)
+    {
+        if (Instance is null || item.Update is not { } latest)
+            return;
+        item.IsBusy = true;
+        try
+        {
+            if (await installer.UpdateAsync(Instance, Kind, [new ContentUpdate(item.File, latest)]) is { Count: > 0 })
+            {
+                item.Update = null;
+                UpdateCount = _all.Count(i => i.HasUpdate);
+                ReportUpdates();
+            }
+        }
+        finally
+        {
+            item.IsBusy = false;
+        }
+    }
+
+    public async Task TogglePinAsync(ContentItemViewModel item)
+    {
+        var pinned = !item.IsPinned;
+        await Manager.UpdateAsync(index =>
+        {
+            if (index.Files.TryGetValue(item.File.Key, out var r))
+                r.Pinned = pinned;
+            return true;
+        });
+        item.File.Record.Pinned = pinned;
+        item.RaisePinnedChanged();
+        if (pinned)
+        {
+            item.Update = null;
+            UpdateCount = _all.Count(i => i.HasUpdate);
+            ReportUpdates();
+        }
+    }
+
+    public async Task<int> ImportAsync(IEnumerable<string> paths) =>
+        Instance is null || Location is not { } location ? 0 : await installer.ImportAsync(Instance, location, paths);
+
+    public async Task<string?> GetChangelogHtmlAsync(ContentItemViewModel item)
+    {
+        if (item.Update is not { } latest)
+            return null;
+        var platform = content.Get(latest.Platform);
+        var text = await platform.GetChangelogAsync(latest);
+        if (string.IsNullOrWhiteSpace(text))
+            return $"<p>{System.Net.WebUtility.HtmlEncode(Loc.Get("Content_NoChangelog"))}</p>";
+        return platform.TextFormat == TextFormat.Markdown ? HtmlContent.FromMarkdown(text) : text;
+    }
+
+    [RelayCommand]
+    private void OpenFolder()
+    {
+        if (Instance is null || Location is not { } location)
+            return;
+        var path = location.FullPath(Instance.GameDirectory);
+        Directory.CreateDirectory(path);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+    }
+
+    // ── Mod info and manifest ─────────────────────────────────────────────
+
+    /// <summary>
+    /// What this instance runs, as mod manifests name it: Minecraft, then its loader (e.g. <c>fabricloader</c>), with
+    /// the versions. For "Allow Minecraft 1.21.4" and the dependency ticks in Mod info.
+    /// </summary>
+    public IReadOnlyList<(string DependencyId, string Label, string Version)> InstanceTargets
+    {
+        get
+        {
+            if (Instance is null)
+                return [];
+            var result = new List<(string, string, string)>();
+            if (Instance.Manifest.MinecraftVersion is { } mc)
+                result.Add(("minecraft", "Minecraft", mc));
+            if (ComponentResolver.PrimaryLoader(Instance.Manifest) is { } loader && LoaderDependencyId(loader.Uid) is { } id)
+                result.Add((id, InstanceItem.LoaderName(loader.Uid), loader.Version));
+            return result;
+        }
+    }
+
+    private static string? LoaderDependencyId(string uid) => uid switch
+    {
+        ComponentUids.FabricLoader or ComponentUids.LegacyFabric => "fabricloader",
+        ComponentUids.QuiltLoader => "quilt_loader",
+        ComponentUids.Forge => "forge",
+        ComponentUids.NeoForge => "neoforge",
+        _ => null,
+    };
+
+    /// <summary>The loader whose manifest to open first in a jar made for several.</summary>
+    public ModLoaderKind? InstanceLoaderKind => Instance is null ? null : ComponentResolver.PrimaryLoader(Instance.Manifest)?.Uid switch
+    {
+        ComponentUids.QuiltLoader => ModLoaderKind.Quilt,
+        ComponentUids.Forge => ModLoaderKind.Forge,
+        ComponentUids.NeoForge => ModLoaderKind.NeoForge,
+        ComponentUids.FabricLoader or ComponentUids.LegacyFabric => ModLoaderKind.Fabric,
+        _ => null,
+    };
+
+    /// <summary>Some file in this list (enabled) provides the mod id: for the ticks on Mod info's dependencies.</summary>
+    public bool HasModId(string id) => _all.Any(i => i.Enabled && i.File.Metadata.ProvidedIds.Contains(id, StringComparer.OrdinalIgnoreCase));
+
+    public bool HasOriginal(ContentItemViewModel item) => Instance is not null && Manager.OriginalOf(item.File) is not null;
+
+    /// <summary>Writes an edited manifest into the mod's jar. Null when done, else why not.</summary>
+    public async Task<string?> EditManifestAsync(ContentItemViewModel item, string entryName, string text)
+    {
+        if (Instance is null)
+            return null;
+        try
+        {
+            var unsigned = await Manager.EditManifestAsync(item.File, entryName, text);
+            await ReloadAsync();
+            Status = Loc.Format(unsigned ? "Manifest_SavedUnsigned" : "Manifest_Saved", item.Name);
+            return null;
+        }
+        catch (Exception ex) when (ex is InvalidDataException)
+        {
+            return Loc.Get("Manifest_NoMod");
+        }
+        catch (Exception ex) when (ex is IOException and not FileNotFoundException)
+        {
+            return Loc.Format("Manifest_InUse", item.FileName);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or FileNotFoundException)
+        {
+            return ex.Message;
+        }
+    }
+
+    /// <summary>Puts back the jar as it was before its manifest was edited. Null when done, else why not.</summary>
+    public async Task<string?> RestoreManifestAsync(ContentItemViewModel item)
+    {
+        if (Instance is null)
+            return null;
+        try
+        {
+            await Manager.RestoreOriginalAsync(item.File);
+            await ReloadAsync();
+            Status = Loc.Format("Manifest_Restored", item.Name);
+            return null;
+        }
+        catch (Exception ex) when (ex is IOException and not FileNotFoundException)
+        {
+            return Loc.Format("Manifest_InUse", item.FileName);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or FileNotFoundException)
+        {
+            return ex.Message;
+        }
+    }
+
+    public static void ShowInFolder(ContentItemViewModel item) =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"/select,\"{item.File.Path}\"") { UseShellExecute = false });
+
+    [RelayCommand]
+    private void Browse()
+    {
+        if (Instance is not null)
+            App.Window?.NavigateTo("Browse", new BrowseContext(Instance.Id, Kind));
+    }
+
+    public ProjectNavigation? ProjectFor(ContentItemViewModel item) =>
+        item.File.Record.Source is { } s
+            ? new ProjectNavigation(new RemoteProject(s.Platform, s.ProjectId, "", item.Name) { IconUrl = item.File.Record.IconUrl, WebUrl = item.File.Record.ProjectUrl }, Instance, Kind)
+            : null;
+}

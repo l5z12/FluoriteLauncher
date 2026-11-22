@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Fluorite.App.Views.AccountsPage"
+    NavigationCacheMode="Required"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:vm="using:Fluorite.App.ViewModels">
+
+    <ScrollViewer>
+        <StackPanel Padding="36,24,36,36" Spacing="16">
+            <TextBlock x:Uid="Accounts_Title" Style="{StaticResource PageTitleStyle}" />
+
+            <InfoBar IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.ErrorMessage), Mode=OneWay, FallbackValue=False}" Severity="Error"
+                     Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" IsClosable="True" />
+
+            <!-- Drag a card to reorder (or right-click › Move up/down); the order is used everywhere accounts are listed.
+                 The page scrolls, not the list. -->
+            <ListView x:Name="AccountList" ItemsSource="{x:Bind ViewModel.Accounts}" SelectionMode="None" CanDragItems="True" CanReorderItems="True" AllowDrop="True"
+                      DragItemsCompleted="Accounts_DragItemsCompleted"
+                      ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="0,0,0,8" />
+                        <Setter Property="MinHeight" Value="0" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AccountItem">
+                        <Grid Padding="8,12,16,12" ColumnSpacing="12"
+                              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                            <Grid.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem x:Uid="Accounts_MoveUp" Tag="{x:Bind}" Click="MoveUp_Click" KeyboardAcceleratorTextOverride="Alt+Up">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74A;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutItem x:Uid="Accounts_MoveDown" Tag="{x:Bind}" Click="MoveDown_Click" KeyboardAcceleratorTextOverride="Alt+Down">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74B;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                </MenuFlyout>
+                            </Grid.ContextFlyout>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <!-- Grip: the whole card drags, this just says so. -->
+                            <FontIcon Glyph="&#xE76F;" FontSize="14" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <Grid Grid.Column="1" Width="40" Height="40">
+                                <Border CornerRadius="20" Background="{ThemeResource FluoriteTealBrush}" Visibility="{x:Bind local:Bind.Collapsed(HasAvatar), Mode=OneWay}">
+                                    <TextBlock Text="{x:Bind Initial}" FontWeight="SemiBold" Foreground="{ThemeResource FluoriteOnBrandBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <Border CornerRadius="6" Visibility="{x:Bind HasAvatar, Mode=OneWay}">
+                                    <Image Source="{x:Bind Avatar, Mode=OneWay}" Stretch="Uniform" />
+                                </Border>
+                            </Grid>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock Text="{x:Bind KindText}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE73E;" Foreground="{ThemeResource FluoriteTealBrush}" Visibility="{x:Bind local:Bind.Visible(IsSelected), Mode=OneWay}" />
+                                <Button x:Uid="Accounts_Use" Tag="{x:Bind}" Click="Select_Click" Visibility="{x:Bind local:Bind.Collapsed(IsSelected), Mode=OneWay}" />
+                                <Button x:Uid="Accounts_Skin" Tag="{x:Bind}" Click="Skin_Click" />
+                                <Button Tag="{x:Bind}" Click="Remove_Click" x:Uid="Accounts_RemoveButton">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Uid="Accounts_AddMicrosoft" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <!-- Click: Windows account, or the browser when Windows can't. Right-click (or Shift+F10): pick the method. -->
+                        <Button x:Uid="Accounts_SignInMicrosoft" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.SignInWithMicrosoftCommand}"
+                                IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsBusy), Mode=OneWay}">
+                            <Button.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem x:Uid="Accounts_MethodWindows" Command="{x:Bind ViewModel.SignInWithWindowsCommand}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE77B;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutItem x:Uid="Accounts_MethodBrowser" Command="{x:Bind ViewModel.SignInWithBrowserCommand}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE774;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutItem x:Uid="Accounts_MethodCode" Command="{x:Bind ViewModel.SignInWithCodeCommand}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8EA;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                </MenuFlyout>
+                            </Button.ContextFlyout>
+                        </Button>
+                        <Button x:Uid="Accounts_SignInCode" Command="{x:Bind ViewModel.SignInWithCodeCommand}" IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsBusy), Mode=OneWay}" />
+                        <Button x:Uid="Common_Cancel" Command="{x:Bind ViewModel.CancelSignInCommand}" Visibility="{x:Bind local:Bind.Visible(ViewModel.IsBusy), Mode=OneWay}" />
+                        <ProgressRing IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" Width="20" Height="20" />
+                    </StackPanel>
+                    <StackPanel Spacing="4" Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.DeviceCode), Mode=OneWay, FallbackValue=Collapsed}">
+                        <TextBlock x:Uid="Accounts_DeviceCodeHint" TextWrapping="Wrap" />
+                        <TextBlock Text="{x:Bind ViewModel.DeviceCode, Mode=OneWay}" FontSize="28" FontFamily="Cascadia Mono, Consolas" IsTextSelectionEnabled="True" />
+                        <TextBlock Text="{x:Bind ViewModel.DeviceCodeUrl, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsTextSelectionEnabled="True" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Uid="Accounts_AddYggdrasil" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock x:Uid="Accounts_YggdrasilHint" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <Grid ColumnSpacing="12" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="*" MaxWidth="420" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ComboBox x:Uid="Accounts_YggServer" HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.YggdrasilChoices}"
+                                  SelectedIndex="{x:Bind ViewModel.YggdrasilChoice, Mode=TwoWay}" />
+                        <TextBox x:Uid="Accounts_YggAddress" Grid.Column="1" Text="{x:Bind ViewModel.YggdrasilAddress, Mode=TwoWay}"
+                                 Visibility="{x:Bind local:Bind.Visible(ViewModel.IsCustomYggdrasil), Mode=OneWay}" />
+                        <TextBox x:Uid="Accounts_YggLogin" Grid.Row="1" Text="{x:Bind ViewModel.YggdrasilLogin, Mode=TwoWay}" />
+                        <PasswordBox x:Name="YggPassword" x:Uid="Accounts_YggPassword" Grid.Row="1" Grid.Column="1" KeyDown="YggPassword_KeyDown" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="Accounts_YggSignIn" Style="{StaticResource AccentButtonStyle}" Click="YggSignIn_Click"
+                                IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsYggdrasilBusy), Mode=OneWay}" />
+                        <HyperlinkButton x:Uid="Accounts_YggRegister" Click="YggRegister_Click" />
+                        <ProgressRing IsActive="{x:Bind ViewModel.IsYggdrasilBusy, Mode=OneWay}" Width="20" Height="20" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Uid="Accounts_AddOffline" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock x:Uid="Accounts_OfflineLocked" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Visibility="{x:Bind local:Bind.Collapsed(ViewModel.OfflineUnlocked), Mode=OneWay}" />
+                    <StackPanel Spacing="8" Visibility="{x:Bind local:Bind.Visible(ViewModel.OfflineUnlocked), Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <!-- Checked as typed: the rule sits under the box, Add waits for a name that works, Enter adds. -->
+                            <TextBox x:Uid="Accounts_OfflineName" Width="240" MaxLength="16" IsSpellCheckEnabled="False"
+                                     Text="{x:Bind ViewModel.OfflineName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" KeyDown="OfflineName_KeyDown" />
+                            <Button x:Uid="Accounts_AddOfflineButton" VerticalAlignment="Top" Command="{x:Bind ViewModel.AddOfflineCommand}" />
+                        </StackPanel>
+                        <TextBlock Text="{x:Bind ViewModel.OfflineNameProblem, Mode=OneWay}" Foreground="{ThemeResource SystemFillColorCriticalBrush}" TextWrapping="Wrap"
+                                   Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.OfflineNameProblem), Mode=OneWay, FallbackValue=Collapsed}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

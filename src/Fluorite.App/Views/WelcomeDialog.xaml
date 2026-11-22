@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Fluorite.App.Views.WelcomeDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
+    x:Uid="WelcomeDialog"
+    Style="{StaticResource DefaultContentDialogStyle}"
+    DefaultButton="Primary">
+    <ContentDialog.Resources>
+        <!-- Default max width (548) is too narrow for paths and the detected-launcher list. -->
+        <x:Double x:Key="ContentDialogMaxWidth">720</x:Double>
+    </ContentDialog.Resources>
+
+    <ScrollViewer MaxHeight="520">
+        <StackPanel Spacing="20" Width="600">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Image Width="48" Height="48">
+                    <Image.Source>
+                        <BitmapImage UriSource="ms-appx:///Assets/LogoMedium.png" DecodePixelWidth="48" DecodePixelHeight="48" DecodePixelType="Logical" />
+                    </Image.Source>
+                </Image>
+                <TextBlock Grid.Column="1" x:Uid="Welcome_Intro" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- First, so someone who can't read this language finds theirs (the names are in their own language). -->
+            <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xF2B7;" FontSize="16" />
+                    <TextBlock x:Uid="Welcome_Language" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                </StackPanel>
+                <ComboBox x:Name="LanguageBox" x:Uid="Welcome_LanguageBox" MinWidth="240" SelectionChanged="LanguageBox_SelectionChanged">
+                    <ComboBoxItem x:Uid="Settings_LangSystem" />
+                    <ComboBoxItem Content="English" />
+                    <ComboBoxItem Content="简体中文" />
+                </ComboBox>
+                <TextBlock x:Uid="Welcome_LanguageHint" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock x:Uid="Welcome_DataFolder" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Name="DataFolderText" IsTextSelectionEnabled="True" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                <TextBlock x:Uid="Welcome_DataFolderHint" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- Same cards as Settings → Other launchers: name, what's there, and a switch on the right. -->
+            <StackPanel x:Name="DetectedPanel" Spacing="8">
+                <TextBlock x:Uid="Welcome_Detected" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Uid="Welcome_DetectedHint" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                <ItemsControl x:Name="DetectedList">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="4" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:DetectedItem">
+                            <toolkit:SettingsCard Header="{x:Bind Name}" Description="{x:Bind Summary}">
+                                <ToggleSwitch x:Uid="Welcome_ShowInLibrary" IsOn="{x:Bind UseInPlace, Mode=TwoWay}" MinWidth="0"
+                                              Visibility="{x:Bind local:Bind.Visible(CanUseInPlace)}" />
+                            </toolkit:SettingsCard>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

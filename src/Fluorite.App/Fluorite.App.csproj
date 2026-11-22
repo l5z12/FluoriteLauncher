@@ -1,0 +1,91 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(FluoriteWindowsTfm)</TargetFramework>
+    <TargetPlatformMinVersion>$(FluoriteMinWindows)</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>$(FluoriteMinWindows)</SupportedOSPlatformVersion>
+    <RootNamespace>Fluorite.App</RootNamespace>
+    <AssemblyName>FluoriteLauncher</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AppxBundle>Never</AppxBundle>
+    <GenerateAppInstallerFile>false</GenerateAppInstallerFile>
+    <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <!-- App types are WinRT/XAML-bound; analyzer rules aimed at libraries don't apply. -->
+    <NoWarn>$(NoWarn);CA1515;CA1001;CA2007;CA1822;CA1031;CA1848;CA1873;CA2000</NoWarn>
+    <!--
+      Native AOT on publish (builds/F5 still run on the JIT; the AOT and trim analyzers run on every build). Needs the
+      MSVC linker: Visual Studio's "Desktop development with C++" (vswhere.exe on PATH).
+    -->
+    <PublishAot>true</PublishAot>
+    <!-- Serilog reports reflection for {@object} destructuring, which Fluorite never uses: keep it visible, not fatal. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2104</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <!-- Building without an explicit platform (e.g. `dotnet build` of the solution) targets x64. -->
+  <PropertyGroup Condition="'$(Platform)' == '' or '$(Platform)' == 'AnyCPU'">
+    <Platform>x64</Platform>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <!-- `-p:Unpackaged=true` produces a self-contained unpackaged build for quick local runs without Developer Mode. -->
+  <PropertyGroup Condition="'$(Unpackaged)' == 'true'">
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <DefineConstants>$(DefineConstants);FLUORITE_UNPACKAGED</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Copied explicitly: an unpackaged publish (Native AOT) otherwise leaves them out (no title-bar or instance icons). -->
+    <Content Include="Assets\**\*.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\**\*.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectCapability Include="Msix" />
+  </ItemGroup>
+
+  <!-- Build-time secrets/config (CI passes them as -p:Name=...). -->
+  <ItemGroup>
+    <!-- CurseForge API key (CI secret FLUORITE_CURSEFORGE_API_KEY). Empty = CurseForge turned off, see CurseForgeApiKey. -->
+    <AssemblyMetadata Include="FluoriteCurseForgeApiKey" Value="$(FluoriteCurseForgeApiKey)" />
+    <!-- Discord application id for Rich Presence (public, not a secret). Empty = no Rich Presence. -->
+    <AssemblyMetadata Include="FluoriteDiscordAppId" Value="$(FluoriteDiscordAppId)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="H.NotifyIcon.WinUI" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.Segmented" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="Markdig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fluorite.Core\Fluorite.Core.csproj" />
+    <ProjectReference Include="..\Fluorite.Auth\Fluorite.Auth.csproj" />
+    <ProjectReference Include="..\Fluorite.Modding\Fluorite.Modding.csproj" />
+    <ProjectReference Include="..\Fluorite.Platform.Windows\Fluorite.Platform.Windows.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+    <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+  </PropertyGroup>
+
+</Project>

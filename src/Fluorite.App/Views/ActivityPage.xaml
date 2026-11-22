@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Fluorite.App.Views.ActivityPage"
+    NavigationCacheMode="Required"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:services="using:Fluorite.App.Services">
+
+    <Grid Padding="36,24,36,24" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <TextBlock x:Uid="Activity_Title" Style="{StaticResource PageTitleStyle}" VerticalAlignment="Center" />
+            <Button x:Uid="Activity_ClearFinished" HorizontalAlignment="Right" Click="ClearFinished_Click" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="8">
+            <ItemsRepeater ItemsSource="{x:Bind Installer.Jobs}">
+                <ItemsRepeater.Layout>
+                    <StackLayout Spacing="8" />
+                </ItemsRepeater.Layout>
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="services:ContentJob">
+                        <Grid Padding="16" RowSpacing="8" ColumnSpacing="16"
+                              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <!-- Cancel while downloading (nothing in the instance changes); Try again after a failure. -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button x:Uid="Activity_CancelJob" Tag="{x:Bind}" Click="CancelJob_Click" Visibility="{x:Bind local:Bind.Visible(CanCancel), Mode=OneWay}" />
+                                <Button x:Uid="Activity_RetryJob" Tag="{x:Bind}" Click="RetryJob_Click" Visibility="{x:Bind local:Bind.Visible(CanRetry), Mode=OneWay}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}">
+                                    <Run Text="{x:Bind Title}" /><Run Text="  →  " Foreground="{ThemeResource TextFillColorTertiaryBrush}" /><Run Text="{x:Bind InstanceName}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="Normal" />
+                                </TextBlock>
+                                <TextBlock Text="{x:Bind Status, Mode=OneWay}" Foreground="{x:Bind local:Bind.JobBrush(Failed), Mode=OneWay}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Spacing="6" Visibility="{x:Bind local:Bind.Visible(IsActive), Mode=OneWay}">
+                                <ProgressBar Value="{x:Bind Progress, Mode=OneWay}" IsIndeterminate="{x:Bind IsIndeterminate, Mode=OneWay}" />
+                                <Grid ColumnSpacing="12" Visibility="{x:Bind local:Bind.VisibleIfText(Transfer), Mode=OneWay, FallbackValue=Collapsed}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind CurrentFile, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind CurrentFile, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Transfer, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+            <ItemsRepeater ItemsSource="{x:Bind Runner.Games}">
+                <ItemsRepeater.Layout>
+                    <StackLayout Spacing="8" />
+                </ItemsRepeater.Layout>
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="services:RunningGame">
+                        <Grid Padding="16" ColumnSpacing="16" RowSpacing="8"
+                              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock Text="{x:Bind Status, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button x:Uid="Activity_ViewLog" Tag="{x:Bind}" Click="ViewLog_Click" />
+                                <Button x:Uid="Activity_Stop" Tag="{x:Bind}" Click="Stop_Click" Visibility="{x:Bind local:Bind.Visible(IsActive), Mode=OneWay}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Spacing="6" Visibility="{x:Bind local:Bind.Visible(IsPreparing), Mode=OneWay}">
+                                <ProgressBar Value="{x:Bind Progress, Mode=OneWay}" IsIndeterminate="{x:Bind IsIndeterminate, Mode=OneWay}" />
+                                <Grid ColumnSpacing="12" Visibility="{x:Bind local:Bind.VisibleIfText(Transfer), Mode=OneWay, FallbackValue=Collapsed}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind CurrentFile, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind CurrentFile, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Transfer, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" x:Name="EmptyState">
+            <FontIcon Glyph="&#xE896;" FontSize="48" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            <TextBlock x:Uid="Activity_Empty" HorizontalAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</Page>

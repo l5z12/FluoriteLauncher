@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Fluorite.App.Views.BrowsePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:vm="using:Fluorite.App.ViewModels"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
+    NavigationCacheMode="Required">
+
+    <Grid Padding="36,24,36,0" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Uid="Browse_Title" Style="{StaticResource PageTitleStyle}" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Visibility="{x:Bind local:Bind.Collapsed(ViewModel.IsModpackKind), Mode=OneWay}">
+                <TextBlock x:Uid="Browse_InstallToLabel" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <ComboBox x:Uid="Browse_InstallTo" MinWidth="280" MaxWidth="420" VerticalAlignment="Center"
+                          ItemsSource="{x:Bind ViewModel.Instances}" SelectedIndex="{x:Bind ViewModel.InstanceIndex, Mode=TwoWay}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Wraps on narrow windows instead of running off the edge. -->
+        <local:ToolbarPanel Grid.Row="1" Spacing="16">
+            <toolkit:Segmented SelectedIndex="{x:Bind ViewModel.PlatformIndex, Mode=TwoWay}" x:Uid="Browse_PlatformA11y">
+                <toolkit:SegmentedItem Content="Modrinth" />
+                <toolkit:SegmentedItem Content="CurseForge" />
+            </toolkit:Segmented>
+            <toolkit:Segmented SelectedIndex="{x:Bind ViewModel.KindIndex, Mode=TwoWay}" x:Uid="Browse_KindA11y">
+                <toolkit:SegmentedItem x:Uid="Browse_KindMods" />
+                <toolkit:SegmentedItem x:Uid="Browse_KindResourcePacks" />
+                <toolkit:SegmentedItem x:Uid="Browse_KindShaders" />
+                <toolkit:SegmentedItem x:Uid="Browse_KindDataPacks" />
+                <toolkit:SegmentedItem x:Uid="Browse_KindModpacks" />
+            </toolkit:Segmented>
+        </local:ToolbarPanel>
+
+        <!-- The search box takes the room the filters leave; on narrow windows the filters move below it. -->
+        <local:ToolbarPanel Grid.Row="2">
+            <AutoSuggestBox x:Name="SearchBox" local:ToolbarPanel.Fill="True" MinWidth="280" x:Uid="Browse_Search" QueryIcon="Find" Text="{x:Bind ViewModel.Query, Mode=TwoWay}" QuerySubmitted="Search_QuerySubmitted" />
+            <ComboBox local:ToolbarPanel.Far="True" x:Uid="Browse_VersionFilter" MinWidth="130" ItemsSource="{x:Bind ViewModel.GameVersions}" SelectedIndex="{x:Bind ViewModel.GameVersionIndex, Mode=TwoWay}" />
+            <ComboBox local:ToolbarPanel.Far="True" x:Uid="Browse_LoaderFilter" MinWidth="130" ItemsSource="{x:Bind ViewModel.Loaders}" SelectedIndex="{x:Bind ViewModel.LoaderIndex, Mode=TwoWay}"
+                      Visibility="{x:Bind local:Bind.Visible(ViewModel.IsModKind), Mode=OneWay}" />
+            <ComboBox local:ToolbarPanel.Far="True" x:Uid="Browse_CategoryFilter" MinWidth="170" ItemsSource="{x:Bind ViewModel.Categories}" SelectedIndex="{x:Bind ViewModel.CategoryIndex, Mode=TwoWay}" />
+            <ComboBox local:ToolbarPanel.Far="True" x:Uid="Browse_Sort" MinWidth="150" SelectedIndex="{x:Bind ViewModel.SortIndex, Mode=TwoWay}">
+                <ComboBoxItem x:Uid="Browse_SortRelevance" />
+                <ComboBoxItem x:Uid="Browse_SortDownloads" />
+                <ComboBoxItem x:Uid="Browse_SortFollows" />
+                <ComboBoxItem x:Uid="Browse_SortNewest" />
+                <ComboBoxItem x:Uid="Browse_SortUpdated" />
+            </ComboBox>
+        </local:ToolbarPanel>
+
+        <StackPanel Grid.Row="3" Spacing="8">
+            <InfoBar IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.Error), Mode=OneWay, FallbackValue=False}" Severity="Error" Message="{x:Bind ViewModel.Error, Mode=OneWay}" IsClosable="False">
+                <InfoBar.ActionButton>
+                    <Button x:Uid="Browse_TryAgain" Command="{x:Bind ViewModel.SearchCommand}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                <Run Text="{x:Bind ViewModel.ResultSummary, Mode=OneWay}" /><Run Text="  " /><Run Text="{x:Bind ViewModel.TargetHint, Mode=OneWay}" />
+            </TextBlock>
+        </StackPanel>
+
+        <ScrollViewer x:Name="Scroller" Grid.Row="4" ViewChanged="Scroller_ViewChanged">
+            <StackPanel Spacing="12" Margin="0,0,0,36">
+                <ItemsRepeater ItemsSource="{x:Bind ViewModel.Results}">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout MinItemWidth="460" MinItemHeight="116" MinColumnSpacing="12" MinRowSpacing="12" ItemsStretch="Fill" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProjectCard">
+                            <Button Padding="12" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                    CornerRadius="8" Tag="{x:Bind}" Click="Card_Click" AutomationProperties.Name="{x:Bind Title}">
+                                <Grid ColumnSpacing="14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="64" Height="64" CornerRadius="10" VerticalAlignment="Center" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                                        <Grid>
+                                            <FontIcon Glyph="&#xE74C;" FontSize="24" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                            <Image Source="{x:Bind Icon}" Stretch="UniformToFill" />
+                                        </Grid>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+                                            <Run Text="{x:Bind Title}" FontWeight="SemiBold" /><Run Text="  " /><Run Text="{x:Bind Author}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" />
+                                        </TextBlock>
+                                        <TextBlock Text="{x:Bind Summary}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <!-- Meta line: icon + value pairs; only the tag list (last, star-sized) trims. -->
+                                        <Grid Margin="0,4,0,0" ColumnSpacing="14">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Orientation="Horizontal" Spacing="5" ToolTipService.ToolTip="{x:Bind DownloadsTooltip}">
+                                                <FontIcon Glyph="&#xE896;" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                                <TextBlock Text="{x:Bind DownloadsShort}" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="NoWrap" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" ToolTipService.ToolTip="{x:Bind UpdatedTooltip}"
+                                                        Visibility="{x:Bind local:Bind.VisibleIfText(UpdatedShort), FallbackValue=Collapsed}">
+                                                <FontIcon Glyph="&#xE823;" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                                <TextBlock Text="{x:Bind UpdatedShort}" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="NoWrap" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                            </StackPanel>
+                                            <Grid Grid.Column="2" ColumnSpacing="5" ToolTipService.ToolTip="{x:Bind TagsTooltip}"
+                                                  Visibility="{x:Bind local:Bind.VisibleIfText(TagsText), FallbackValue=Collapsed}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <FontIcon Glyph="&#xE8EC;" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                                <TextBlock Grid.Column="1" Text="{x:Bind TagsText}" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                            </Grid>
+                                        </Grid>
+                                    </StackPanel>
+                                    <Grid Grid.Column="2" VerticalAlignment="Center" MinWidth="96">
+                                        <Button Style="{StaticResource AccentButtonStyle}" Tag="{x:Bind}" Click="Install_Click" HorizontalAlignment="Right"
+                                                Visibility="{x:Bind local:Bind.Visible(CanInstall), Mode=OneWay}" x:Uid="Browse_InstallButton">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <FontIcon Glyph="&#xE896;" FontSize="12" />
+                                                <TextBlock x:Uid="Browse_Install" />
+                                            </StackPanel>
+                                        </Button>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Visibility="{x:Bind local:Bind.Visible(IsInstalled), Mode=OneWay}">
+                                            <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                                            <TextBlock x:Uid="Browse_Installed" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ProgressRing IsActive="{x:Bind IsInstalling, Mode=OneWay}" Width="24" Height="24" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+                <!-- Nothing found: why it may be, and the way back to results. -->
+                <StackPanel Spacing="12" HorizontalAlignment="Center" Margin="0,48,0,0" MaxWidth="520" Visibility="{x:Bind local:Bind.Visible(ViewModel.IsNoResults), Mode=OneWay}">
+                    <FontIcon Glyph="&#xE721;" FontSize="40" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    <TextBlock Text="{x:Bind ViewModel.NoResultsText, Mode=OneWay}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                    <TextBlock Text="{x:Bind ViewModel.NoResultsHint, Mode=OneWay}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.NoResultsHint), Mode=OneWay, FallbackValue=Collapsed}" />
+                    <Button x:Uid="Browse_ClearFilters" HorizontalAlignment="Center" Command="{x:Bind ViewModel.ClearFiltersCommand}"
+                            Visibility="{x:Bind local:Bind.Visible(ViewModel.HasClearableFilters), Mode=OneWay}" />
+                </StackPanel>
+                <ProgressRing IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" Width="32" Height="32" HorizontalAlignment="Center" />
+                <Button x:Uid="Browse_LoadMore" HorizontalAlignment="Center" Command="{x:Bind ViewModel.LoadMoreCommand}"
+                        Visibility="{x:Bind local:Bind.Visible(ViewModel.HasMore), Mode=OneWay}" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

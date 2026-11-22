@@ -1,0 +1,519 @@
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
+using Fluorite.Auth.Accounts;
+using Fluorite.Core.Instances;
+using Fluorite.Core.Launch;
+using Fluorite.Core.Logging;
+using Fluorite.Platform.Windows.Shell;
+using Microsoft.UI.Dispatching;
+
+namespace Fluorite.App.Services;
+
+/// <summary>A launch in progress or a running game, observable by the UI.</summary>
+public sealed partial class RunningGame : ProgressItem
+{
+    public RunningGame(GameInstance instance) => Instance = instance;
+
+    public GameInstance Instance { get; }
+    public string Name => Instance.Name;
+    public ObservableCollection<GameLogEntry> Log { get; } = [];
+    internal LaunchedGame? Launched { get; set; }
+    internal CancellationTokenSource Cancellation { get; } = new();
+
+    /// <summary>
+    /// Every line of the session, kept off the UI thread for crash analysis and uploads (<see cref="Log"/> is trimmed
+    /// for the view and fills in asynchronously).
+    /// </summary>
+    internal LogArchive Archive { get; } = new();
+
+    /// <summary>What must never leave the PC in a shared log (the access token, the sign-in name).</summary>
+    internal List<string> Secrets { get; } = [];
+
+    /// <summary>Why it crashed, when the analyzer could tell (set before <see cref="GameRunner.GameEnded"/>).</summary>
+    [ObservableProperty] public partial Core.Diagnostics.CrashAnalysis? Diagnosis { get; set; }
+
+    /// <summary>The user pressed Stop: the forced exit isn't a crash.</summary>
+    public bool StoppedByUser { get; private set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsActive))]
+    public partial bool IsRunning { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsActive))]
+    public partial bool IsPreparing { get; set; } = true;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CrashedOrFailed))]
+    public partial int? ExitCode { get; set; }
+
+    [ObservableProperty] public partial TimeSpan PlayTime { get; set; }
+
+    /// <summary>When the JVM started (null while preparing).</summary>
+    public DateTimeOffset? StartedAt { get; internal set; }
+
+    public bool IsActive => IsRunning || IsPreparing;
+    public bool CrashedOrFailed => ExitCode is not null and not 0 && !StoppedByUser;
+
+    public void Stop()
+    {
+        StoppedByUser = true;
+        Cancellation.Cancel();
+        Launched?.Process.Kill();
+    }
+}
+
+/// <summary>A session's log lines, capped (oldest dropped first), safe to add to from the output thread.</summary>
+internal sealed class LogArchive
+{
+    private const int MaxEntries = 100_000;
+    private readonly List<GameLogEntry> _entries = [];
+    private readonly Lock _lock = new();
+
+    public void Add(GameLogEntry entry)
+    {
+        lock (_lock)
+        {
+            _entries.Add(entry);
+            if (_entries.Count > MaxEntries + 10_000)
+                _entries.RemoveRange(0, _entries.Count - MaxEntries);
+        }
+    }
+
+    public void AddRange(IEnumerable<GameLogEntry> entries)
+    {
+        foreach (var e in entries)
+            Add(e);
+    }
+
+    public string ToText()
+    {
+        lock (_lock)
+            return ViewModels.InstanceViewModel.FormatLog(_entries);
+    }
+}
+
+/// <summary>Launches instances, streams their logs to the UI thread in batches and records play statistics.</summary>
+public sealed class GameRunner(
+    LaunchPipeline pipeline, AccountService accounts, SettingsService settings, InstanceRegistry registry,
+    Fluorite.Modding.Loaders.LoaderService loaders, Fluorite.Modding.Content.ContentService content, HttpClient http)
+{
+    private const int MaxLogLines = 20_000;
+    private const int LogTrimChunk = 2_000;
+    private readonly DispatcherQueue _ui = DispatcherQueue.GetForCurrentThread();
+
+    public ObservableCollection<RunningGame> Games { get; } = [];
+
+    /// <summary>Raised on the UI thread when the JVM has started.</summary>
+    public event EventHandler<RunningGame>? GameStarted;
+
+    /// <summary>Raised on the UI thread when a launch finished (exited, crashed, failed or was cancelled).</summary>
+    public event EventHandler<RunningGame>? GameEnded;
+
+    /// <summary>Raised on the UI thread whenever any game's status/progress changes.</summary>
+    public event EventHandler? ActivityChanged;
+
+    public int ActiveCount => Games.Count(g => g.IsActive);
+
+    public RunningGame? Find(GameInstance instance) =>
+        Games.FirstOrDefault(g => g.Instance.Directory == instance.Directory && g.IsActive);
+
+    public RunningGame? Latest(GameInstance instance) =>
+        Games.LastOrDefault(g => g.Instance.Directory == instance.Directory);
+
+    /// <param name="accountId">Play as this account this once ("Launch as"); null uses the instance's default or the selected one.</param>
+    public RunningGame Launch(GameInstance instance, QuickPlay? quickPlay = null, string? accountId = null)
+    {
+        if (Find(instance) is { } existing)
+            return existing;
+
+        var game = new RunningGame(instance) { Status = Loc.Get("Launch_Preparing") };
+        game.PropertyChanged += (_, _) => ActivityChanged?.Invoke(this, EventArgs.Empty);
+        Games.Add(game);
+        ActivityChanged?.Invoke(this, EventArgs.Empty);
+        _ = RunAsync(game, quickPlay, accountId);
+        return game;
+    }
+
+    public void ClearFinished()
+    {
+        foreach (var g in Games.Where(g => !g.IsActive).ToList())
+            Games.Remove(g);
+        ActivityChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Combined progress for the taskbar button.</summary>
+    public (TaskbarProgressState State, double Value) AggregateProgress()
+    {
+        var preparing = Games.Where(g => g.IsPreparing).ToList();
+        if (preparing.Count == 0)
+            return (TaskbarProgressState.None, 0);
+        if (preparing.Any(g => g.IsIndeterminate))
+            return (TaskbarProgressState.Indeterminate, 0);
+        return (TaskbarProgressState.Normal, preparing.Average(g => g.Progress) / 100.0);
+    }
+
+    private async Task<Account> ResolveAccountAsync(GameInstance instance, string? chosenId, CancellationToken ct)
+    {
+        if (chosenId is not null && (await accounts.GetAccountsAsync(ct)).FirstOrDefault(a => a.Id == chosenId) is { } chosen)
+            return chosen;
+        if (instance.Manifest.Settings.DefaultAccountId is { } id
+            && (await accounts.GetAccountsAsync(ct)).FirstOrDefault(a => a.Id == id) is { } preferred)
+            return preferred;
+        return await accounts.GetSelectedAsync(ct) ?? throw new InvalidOperationException(Loc.Get("Launch_NoAccount"));
+    }
+
+    private async Task RunAsync(RunningGame game, QuickPlay? quickPlay, string? accountId)
+    {
+        var ct = game.Cancellation.Token;
+        var started = new Stopwatch();
+        try
+        {
+            foreach (var w in game.Instance.Warnings)
+                AppendLocal(game, GameLogLevel.Warn, w);
+            var account = await ResolveAccountAsync(game.Instance, accountId, ct);
+            if (settings.Current.CheckModsBeforeLaunch && !await CheckModsAsync(game, ct))
+            {
+                game.Status = Loc.Get("Launch_Cancelled");
+                return;
+            }
+            var session = await GetSessionAsync(game, account, ct);
+            game.Secrets.Add(session.AccessToken);
+            if (account.LoginName is { } login)
+                game.Secrets.Add(login);
+            var options = BuildOptions(game.Instance, session, quickPlay, out var autoMemory);
+            if (autoMemory is { } auto)
+                AppendLocal(game, GameLogLevel.Info, Loc.Format("Launch_AutoMemory", options.MaxMemoryMb ?? 0, auto.Mods, auto.SystemGb));
+
+            // Install the mod loader profile on first launch (or after the user changed it).
+            var versionId = await EnsureLoaderAsync(game, ct);
+
+            var progress = new Progress<LaunchProgress>(p => OnProgress(game, p));
+            // Instances of an official/HMCL .minecraft launch from that folder's versions, libraries and assets.
+            var launched = await Task.Run(() => pipeline.ForStore(game.Instance.Store, http).LaunchAsync(versionId, options, progress, ct), ct);
+            game.Launched = launched;
+            foreach (var w in launched.Prepared.Warnings)
+                AppendLocal(game, GameLogLevel.Warn, w);
+
+            game.ClearDownload();
+            game.IsPreparing = false;
+            game.IsRunning = true;
+            game.Status = Loc.Get("Launch_Running");
+            var sessionStart = DateTimeOffset.UtcNow;
+            game.StartedAt = sessionStart;
+            started.Start();
+            GameStarted?.Invoke(this, game);
+
+            await PumpAsync(game, launched);
+            var exitCode = await launched.Process.Exited;
+            started.Stop();
+
+            game.PlayTime = started.Elapsed;
+            if (exitCode != 0 && !game.StoppedByUser)
+            {
+                // Before the exit is announced, so the page and the toast can say why.
+                game.Status = Loc.Get("Launch_Analyzing");
+                game.Diagnosis = await AnalyzeAsync(game, launched, exitCode, sessionStart);
+            }
+            game.IsRunning = false;
+            game.ExitCode = exitCode;
+            game.Status = game.StoppedByUser ? Loc.Get("Launch_Stopped")
+                : exitCode == 0 ? Loc.Get("Launch_Exited")
+                : Loc.Format("Launch_Crashed", exitCode);
+            await RecordStatsAsync(game.Instance, started.Elapsed);
+            // In the background: the window, toast and tray react to the exit without waiting for big worlds to zip.
+            if (settings.Current.AutoBackupWorlds)
+                _ = BackUpPlayedWorldsAsync(game, sessionStart);
+        }
+        catch (OperationCanceledException)
+        {
+            game.Status = Loc.Get("Launch_Cancelled");
+        }
+        catch (Exception ex)
+        {
+            var message = ex is Fluorite.Auth.Microsoft.AuthException auth ? ViewModels.AccountsViewModel.DescribeFailure(auth) : ex.Message;
+            game.Status = Loc.Format("Launch_Failed", message);
+            game.ExitCode = -1;
+            AppendLocal(game, GameLogLevel.Error, ex.ToString());
+        }
+        finally
+        {
+            game.ClearDownload();
+            game.IsPreparing = false;
+            game.IsRunning = false;
+            GameEnded?.Invoke(this, game);
+        }
+    }
+
+    /// <summary>The launch session; when a skin-site sign-in has expired, asks for the password and signs in again.</summary>
+    private async Task<GameSession> GetSessionAsync(RunningGame game, Account account, CancellationToken ct)
+    {
+        try
+        {
+            return await accounts.GetSessionAsync(account, ct);
+        }
+        catch (Fluorite.Auth.Microsoft.AuthException ex) when (ex.Failure == Fluorite.Auth.Microsoft.AuthFailure.SignInAgain && account.Kind == AccountKind.Yggdrasil)
+        {
+            game.Status = Loc.Get("Auth_SignInAgain");
+            string? error = null;
+            while (true)
+            {
+                var password = await AskPasswordAsync(account, error) ?? throw new OperationCanceledException();
+                try
+                {
+                    await accounts.ReauthenticateYggdrasilAsync(account, password, ct);
+                    return await accounts.GetSessionAsync(account, ct);
+                }
+                catch (Fluorite.Auth.Microsoft.AuthException again) when (again.Failure == Fluorite.Auth.Microsoft.AuthFailure.InvalidCredentials)
+                {
+                    error = Loc.Get("Auth_InvalidCredentials");
+                }
+            }
+        }
+    }
+
+    private static async Task<string?> AskPasswordAsync(Account account, string? error)
+    {
+        var server = account.YggdrasilServerName ?? account.YggdrasilServer ?? "";
+        var panel = new Microsoft.UI.Xaml.Controls.StackPanel { Spacing = 12 };
+        panel.Children.Add(Dialogs.Text(Loc.Format("Launch_PasswordHint", account.PlayerName, account.LoginName ?? account.PlayerName)));
+        if (error is not null)
+            panel.Children.Add(Dialogs.Bar(error, Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error));
+        var box = new Microsoft.UI.Xaml.Controls.PasswordBox { Header = Loc.Get("Accounts_YggPassword/Header") };
+        panel.Children.Add(box);
+        var dialog = Dialogs.Create(Loc.Format("Launch_PasswordTitle", server), panel, Loc.Get("Launch_PasswordButton"));
+        dialog.Opened += (_, _) => box.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
+        var result = await Dialogs.ShowAsync(dialog);
+        return result == Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary && box.Password.Length > 0 ? box.Password : null;
+    }
+
+    /// <summary>
+    /// Pre-launch mod checks: everything goes to the log; errors (missing dependencies, wrong loader…) ask the user
+    /// whether to launch anyway. Returns false to cancel.
+    /// </summary>
+    private async Task<bool> CheckModsAsync(RunningGame game, CancellationToken ct)
+    {
+        game.Status = Loc.Get("Launch_CheckingMods");
+        var instance = game.Instance;
+        IReadOnlyList<Fluorite.Modding.Content.ModIssue> issues;
+        try
+        {
+            var mods = await Task.Run(() => content.For(instance).ScanAsync(new Fluorite.Modding.Content.ContentLocation(Fluorite.Modding.Content.ContentKind.Mod), ct), ct);
+            issues = Fluorite.Modding.Content.ModChecker.Check(mods, instance.Manifest);
+        }
+        catch (IOException)
+        {
+            return true; // A check that can't run never blocks playing.
+        }
+        foreach (var issue in issues)
+        {
+            AppendLocal(game, issue.Severity == Fluorite.Modding.Content.ModIssueSeverity.Error ? GameLogLevel.Error : GameLogLevel.Warn,
+                ContentInstallService.Describe(issue));
+        }
+        if (!issues.Any(i => i.Severity == Fluorite.Modding.Content.ModIssueSeverity.Error))
+            return true;
+        return await ContentInstallService.ConfirmLaunchAsync(instance.Name, issues);
+    }
+
+    private async Task<string> EnsureLoaderAsync(RunningGame game, CancellationToken ct)
+    {
+        var instance = game.Instance;
+        var loader = ComponentResolver.PrimaryLoader(instance.Manifest);
+        if (loader is not null)
+        {
+            var name = loaders.Get(loader.Uid).DisplayName;
+            game.Status = Loc.Format("Launch_InstallingLoader", name);
+        }
+        // Detailed installer steps are English diagnostics; they go to the log, the status line stays localized.
+        var status = new Progress<string>(msg => AppendLocal(game, GameLogLevel.Info, msg));
+        var download = new Progress<Core.Net.DownloadProgress>(game.Report);
+        return await Task.Run(() => loaders.EnsureInstalledAsync(instance, () => registry.SaveAsync(instance), status, download, ct), ct);
+    }
+
+    /// <summary>Reads the session's log, Minecraft's crash report and Java's crash log for the cause of a crash.</summary>
+    private static async Task<Core.Diagnostics.CrashAnalysis?> AnalyzeAsync(RunningGame game, LaunchedGame launched, int exitCode, DateTimeOffset since)
+    {
+        try
+        {
+            return await Task.Run(() => Core.Diagnostics.CrashAnalyzer.Analyze(new Core.Diagnostics.CrashContext
+            {
+                Log = game.Archive.ToText(),
+                ExitCode = exitCode,
+                GameDirectory = game.Instance.GameDirectory,
+                Since = since,
+                JavaMajor = launched.Prepared.Java.Major,
+                JavaArch = launched.Prepared.Java.Arch,
+                RequiredJavaMajor = launched.Prepared.Version.JavaVersion?.MajorVersion,
+            }));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            return null; // Analysis is a bonus; the crash itself is still reported.
+        }
+    }
+
+    /// <param name="autoMemory">Set when the memory was sized automatically: the inputs, for the log.</param>
+    private LaunchOptions BuildOptions(GameInstance instance, GameSession session, QuickPlay? quickPlay, out (int Mods, long SystemGb)? autoMemory)
+    {
+        var g = settings.Current;
+        var o = instance.Manifest.Settings;
+        var jvm = CommandLine.Split(g.JvmArguments);
+        jvm.AddRange(CommandLine.Split(o.JvmArguments));
+        var env = new Dictionary<string, string?>();
+        foreach (var (k, v) in o.Environment ?? [])
+            env[k] = v;
+
+        autoMemory = null;
+        var maxMemory = o.MaxMemoryMb;
+        if (maxMemory is null && g.AutoMemory)
+        {
+            var mods = MemoryAdvisor.CountMods(instance.GameDirectory);
+            var system = MemoryAdvisor.SystemMemoryMb;
+            maxMemory = MemoryAdvisor.Recommend(system, mods);
+            autoMemory = (mods, (system + 512) / 1024);
+        }
+
+        return new LaunchOptions
+        {
+            GameDirectory = instance.GameDirectory,
+            NativesDirectory = instance.NativesDirectory,
+            Session = session,
+            MaxMemoryMb = maxMemory ?? g.MaxMemoryMb,
+            MinMemoryMb = o.MinMemoryMb ?? g.MinMemoryMb,
+            Priority = g.ProcessPriority,
+            JvmPreset = g.JvmPreset,
+            GpuPreference = g.GpuPreference,
+            Arm64Mode = o.Arm64Mode ?? Core.Libraries.Arm64Mode.Automatic,
+            ExtraJvmArguments = jvm,
+            ExtraGameArguments = CommandLine.Split(o.GameArguments),
+            JavaPath = o.JavaPath ?? g.JavaPath,
+            Resolution = (o.WindowWidth ?? g.WindowWidth, o.WindowHeight ?? g.WindowHeight),
+            Fullscreen = o.Fullscreen ?? g.Fullscreen,
+            QuickPlay = quickPlay,
+            Environment = env,
+            WrapperCommand = o.WrapperCommand,
+        };
+    }
+
+    private static void OnProgress(RunningGame game, LaunchProgress p)
+    {
+        game.Status = p.Stage switch
+        {
+            LaunchStage.ResolvingVersion => Loc.Get("Launch_Resolving"),
+            LaunchStage.PreparingJava => p.Download is null ? Loc.Get("Launch_Java") : Loc.Get("Launch_InstallingJava"),
+            LaunchStage.DownloadingLibraries => Loc.Get("Launch_Libraries"),
+            LaunchStage.DownloadingAssets => Loc.Get("Launch_Assets"),
+            LaunchStage.ExtractingNatives => Loc.Get("Launch_Natives"),
+            LaunchStage.Starting => Loc.Get("Launch_Starting"),
+            _ => game.Status,
+        };
+        if (p.Download is { } d)
+            game.Report(d);
+        else
+            game.ClearDownload();
+    }
+
+    /// <summary>Reads output on a background thread and appends to the UI collection in ~100 ms batches.</summary>
+    private async Task PumpAsync(RunningGame game, LaunchedGame launched)
+    {
+        var parser = new GameLogParser();
+        var batch = new List<GameLogEntry>();
+        var lastFlush = Stopwatch.StartNew();
+
+        await Task.Run(async () =>
+        {
+            await foreach (var line in launched.Process.Output.ReadAllAsync())
+            {
+                foreach (var entry in parser.Feed(line.Text, line.IsError, line.Timestamp))
+                {
+                    batch.Add(entry);
+                    game.Archive.Add(entry);
+                }
+                if (lastFlush.ElapsedMilliseconds > 100 || batch.Count > 500)
+                {
+                    Flush();
+                    lastFlush.Restart();
+                }
+            }
+            foreach (var entry in parser.Flush(DateTimeOffset.Now))
+            {
+                batch.Add(entry);
+                game.Archive.Add(entry);
+            }
+            Flush();
+        });
+
+        void Flush()
+        {
+            if (batch.Count == 0)
+                return;
+            var items = batch.ToArray();
+            batch.Clear();
+            _ui.TryEnqueue(() =>
+            {
+                foreach (var e in items)
+                    game.Log.Add(e);
+                // Trim in chunks: every removal shifts the list, so doing it per line keeps the view moving.
+                if (game.Log.Count > MaxLogLines + LogTrimChunk)
+                {
+                    while (game.Log.Count > MaxLogLines)
+                        game.Log.RemoveAt(0);
+                }
+            });
+        }
+    }
+
+    /// <summary>Zips the worlds this session saved (automatic backups, pruned to the configured count).</summary>
+    private async Task BackUpPlayedWorldsAsync(RunningGame game, DateTimeOffset since)
+    {
+        var store = new Core.Worlds.WorldStore(game.Instance.GameDirectory);
+        var keep = Math.Max(1, settings.Current.AutoBackupsToKeep);
+        var finalStatus = game.Status;
+        try
+        {
+            var worlds = await Task.Run(() => store.GetWorldsSavedSince(since));
+            foreach (var world in worlds)
+            {
+                game.Status = Loc.Format("Worlds_BackingUp", world.Name);
+                await Task.Run(() =>
+                {
+                    store.Backup(world, automatic: true);
+                    store.PruneAutomaticBackups(world.FolderName, keep);
+                });
+                AppendLocal(game, GameLogLevel.Info, Loc.Format("Worlds_AutoBackedUp", world.Name));
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            AppendLocal(game, GameLogLevel.Warn, Loc.Format("Worlds_AutoBackupFailed", ex.Message));
+        }
+        finally
+        {
+            game.Status = finalStatus;
+        }
+    }
+
+    private void AppendLocal(RunningGame game, GameLogLevel level, string message)
+    {
+        var entry = new GameLogEntry(DateTimeOffset.Now, level, "Fluorite", null, message, null, false);
+        game.Archive.Add(entry);
+        _ui.TryEnqueue(() => game.Log.Add(entry));
+    }
+
+    private async Task RecordStatsAsync(GameInstance instance, TimeSpan played)
+    {
+        var stats = instance.Manifest.Stats;
+        stats.LastPlayed = DateTimeOffset.Now;
+        stats.LastSessionSeconds = (long)played.TotalSeconds;
+        stats.TotalPlaySeconds += (long)played.TotalSeconds;
+        stats.LaunchCount++;
+        try
+        {
+            await registry.SaveAsync(instance); // Another launcher's instance: recorded in Fluorite's sidecar.
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+        }
+    }
+}

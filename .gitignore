@@ -1,0 +1,36 @@
+# Build output
+bin/
+obj/
+artifacts/
+AppPackages/
+BundleArtifacts/
+publish/
+*.msix
+*.msixbundle
+*.appxsym
+*.cer
+*.pfx
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+
+# Test output
+TestResults/
+*.received.*
+coverage*/
+
+# Python bytecode (tools/generate-assets.py)
+__pycache__/
+
+# Local runtime data from CLI/dev runs
+.fluorite-dev/
+tests/testdata/.cache/
+
+# Secrets
+appsettings.Local.json
+*.secrets.json
+Directory.Build.local.props

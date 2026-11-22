@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Fluorite.App.Views.ScreenshotsPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:vm="using:Fluorite.App.ViewModels">
+
+    <Grid RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Uid="Screenshots_Hint" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <ProgressRing Grid.Column="1" HorizontalAlignment="Left" Width="20" Height="20" IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+            <Button Grid.Column="2" Command="{x:Bind ViewModel.OpenFolderCommand, Mode=OneWay}" x:Uid="Common_OpenFolderButton">
+                <FontIcon Glyph="&#xE8B7;" FontSize="14" />
+            </Button>
+            <Button Grid.Column="3" Command="{x:Bind ViewModel.RefreshCommand, Mode=OneWay}" x:Uid="Content_RefreshButton">
+                <FontIcon Glyph="&#xE72C;" FontSize="14" />
+            </Button>
+        </Grid>
+
+        <StackPanel Grid.Row="1" Spacing="6">
+            <InfoBar Severity="Success" IsClosable="True" IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.Status), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.Status, Mode=OneWay}" />
+            <InfoBar Severity="Error" IsClosable="True" IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.Error), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.Error, Mode=OneWay}" />
+            <local:UndoBar Offer="{x:Bind ViewModel.PendingUndo, Mode=OneWay}" />
+        </StackPanel>
+
+        <GridView x:Name="Gallery" Grid.Row="2" ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}" SelectionMode="Extended"
+                  IsItemClickEnabled="True" ItemClick="Gallery_ItemClick" ContainerContentChanging="Gallery_ContainerContentChanging" KeyDown="Gallery_KeyDown">
+            <!-- On no screenshot (each has its own menu). -->
+            <GridView.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem x:Uid="Menu_OpenFolder" Command="{x:Bind ViewModel.OpenFolderCommand, Mode=OneWay}">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Uid="Menu_Refresh" Command="{x:Bind ViewModel.RefreshCommand, Mode=OneWay}" KeyboardAcceleratorTextOverride="F5">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE72C;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                </MenuFlyout>
+            </GridView.ContextFlyout>
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ScreenshotItemViewModel">
+                    <StackPanel Width="240" Spacing="4" Margin="0,0,0,4" AutomationProperties.Name="{x:Bind FileName}" Tag="{x:Bind}">
+                        <StackPanel.ContextFlyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem x:Uid="Screenshots_CopyItem" Tag="{x:Bind}" Click="Copy_Click" KeyboardAcceleratorTextOverride="Ctrl+C">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Uid="Screenshots_ShareItem" Tag="{x:Bind}" Click="Share_Click">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE72D;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Uid="Screenshots_OpenItem" Tag="{x:Bind}" Click="Open_Click">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A7;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Uid="Content_ShowInFolder" Tag="{x:Bind}" Click="ShowInFolder_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+O">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem x:Uid="Content_Delete" Tag="{x:Bind}" Click="Delete_Click" KeyboardAcceleratorTextOverride="Del">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </StackPanel.ContextFlyout>
+                        <Border Height="135" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                            <Grid>
+                                <FontIcon Glyph="&#xE91B;" FontSize="24" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                <Image Source="{x:Bind Thumbnail, Mode=OneWay}" Stretch="UniformToFill" />
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="{x:Bind Taken}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0" />
+                    </StackPanel>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
+
+        <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12"
+                    Visibility="{x:Bind local:Bind.Visible(ViewModel.IsEmpty), Mode=OneWay}">
+            <FontIcon Glyph="&#xE91B;" FontSize="40" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            <TextBlock x:Uid="Screenshots_Empty" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="3" Text="{x:Bind ViewModel.Summary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="0,0,0,8" />
+    </Grid>
+</UserControl>

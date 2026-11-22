@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(FluoriteWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(FluoriteMinWindows)</SupportedOSPlatformVersion>
+    <RootNamespace>Fluorite.Cli</RootNamespace>
+    <AssemblyName>fluorite</AssemblyName>
+    <Platforms>AnyCPU;x64;ARM64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <!-- CurseForge API key, as in Fluorite.App. Empty = CurseForge turned off, see CurseForgeApiKey. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="FluoriteCurseForgeApiKey" Value="$(FluoriteCurseForgeApiKey)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Fluorite.Core\Fluorite.Core.csproj" />
+    <ProjectReference Include="..\..\src\Fluorite.Auth\Fluorite.Auth.csproj" />
+    <ProjectReference Include="..\..\src\Fluorite.Modding\Fluorite.Modding.csproj" />
+    <ProjectReference Include="..\..\src\Fluorite.Platform.Windows\Fluorite.Platform.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

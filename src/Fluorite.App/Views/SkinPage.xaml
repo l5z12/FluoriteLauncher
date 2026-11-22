@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Fluorite.App.Views.SkinPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:vm="using:Fluorite.App.ViewModels">
+
+    <ScrollViewer>
+        <StackPanel Padding="36,24,36,36" Spacing="16">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{x:Bind ViewModel.Title, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.HeadingLevel="Level1" VerticalAlignment="Center" />
+                <ProgressRing Grid.Column="1" IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" Width="20" Height="20" />
+            </Grid>
+
+            <InfoBar IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.ErrorMessage), Mode=OneWay, FallbackValue=False}" Severity="Error"
+                     Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" IsClosable="True" />
+
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- 3D preview: drag to turn, double-click to face front. -->
+                <Border Style="{StaticResource CardBorderStyle}" VerticalAlignment="Top">
+                    <Grid Width="300" RowSpacing="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="380" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <local:PlayerModelView x:Name="Model" Visibility="{x:Bind local:Bind.Collapsed(ViewModel.IsDefaultSkin), Mode=OneWay}" />
+                        <StackPanel Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Visibility="{x:Bind ViewModel.IsDefaultSkin, Mode=OneWay}">
+                            <FontIcon Glyph="&#xE77B;" FontSize="48" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <TextBlock x:Uid="Skin_Default" HorizontalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <Grid Grid.Row="1" Visibility="{x:Bind local:Bind.Collapsed(ViewModel.IsDefaultSkin), Mode=OneWay}">
+                            <TextBlock x:Uid="Skin_DragHint" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <ToggleButton x:Name="WalkToggle" HorizontalAlignment="Right" IsChecked="True" Click="Walk_Click" x:Uid="Skin_Walk">
+                                <FontIcon Glyph="&#xE805;" FontSize="14" />
+                            </ToggleButton>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Column="1" Spacing="12">
+                    <!-- Skin -->
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel Spacing="12">
+                            <TextBlock x:Uid="Skin_SkinHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.CanChangeSkin, Mode=OneWay}">
+                                <ComboBox x:Uid="Skin_Model" MinWidth="240" SelectedIndex="{x:Bind ViewModel.ModelIndex, Mode=TwoWay}"
+                                          IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsBusy), Mode=OneWay}">
+                                    <ComboBoxItem x:Uid="Skin_ModelClassicItem" />
+                                    <ComboBoxItem x:Uid="Skin_ModelSlimItem" />
+                                </ComboBox>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button x:Uid="Skin_ChooseFile" Style="{StaticResource AccentButtonStyle}" Click="ChooseFile_Click"
+                                            IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsBusy), Mode=OneWay}" />
+                                    <Button x:Uid="Skin_Reset" Click="Reset_Click"
+                                            IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsBusy), Mode=OneWay}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Spacing="8" Visibility="{x:Bind local:Bind.Collapsed(ViewModel.CanChangeSkin), Mode=OneWay}">
+                                <TextBlock Text="{x:Bind ViewModel.ManageText, Mode=OneWay}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <Button x:Uid="Skin_OpenSite" Click="OpenSite_Click" Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.ManageUrl), Mode=OneWay, FallbackValue=Collapsed}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Cape (Microsoft accounts that own one) -->
+                    <Border Style="{StaticResource CardBorderStyle}" Visibility="{x:Bind ViewModel.HasCapes, Mode=OneWay}">
+                        <StackPanel Spacing="12">
+                            <TextBlock x:Uid="Skin_CapeHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <ComboBox MinWidth="240" ItemsSource="{x:Bind ViewModel.Capes}" SelectedIndex="{x:Bind ViewModel.CapeIndex, Mode=TwoWay}"
+                                      IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsBusy), Mode=OneWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:CapeOption">
+                                        <TextBlock Text="{x:Bind Name}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Name (Microsoft accounts) -->
+                    <Border Style="{StaticResource CardBorderStyle}" Visibility="{x:Bind ViewModel.IsMicrosoft, Mode=OneWay}">
+                        <StackPanel Spacing="12">
+                            <TextBlock x:Uid="Skin_NameHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBox x:Uid="Skin_NewName" Width="240" MaxLength="16" Text="{x:Bind ViewModel.NewName, Mode=TwoWay}" />
+                                <Button x:Uid="Skin_ChangeName" Click="ChangeName_Click" IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsBusy), Mode=OneWay}" />
+                            </StackPanel>
+                            <TextBlock Text="{x:Bind ViewModel.NameStatus, Mode=OneWay}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.NameStatus), Mode=OneWay, FallbackValue=Collapsed}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <!-- Library: every skin used from this launcher, ready to wear again. -->
+            <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.CanChangeSkin, Mode=OneWay}">
+                <TextBlock x:Uid="Skin_LibraryHeader" Style="{StaticResource SubtitleTextBlockStyle}" />
+                <TextBlock x:Uid="Skin_LibraryEmpty" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Visibility="{x:Bind local:Bind.VisibleIfZero(ViewModel.Library.Count), Mode=OneWay}" />
+                <GridView ItemsSource="{x:Bind ViewModel.Library}" SelectionMode="None" IsItemClickEnabled="True" ItemClick="Library_ItemClick">
+                    <GridView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LibrarySkinItem">
+                            <Grid Width="112" Padding="8" RowSpacing="6" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Image Source="{x:Bind Preview, Mode=OneWay}" Width="48" Height="96" HorizontalAlignment="Center" />
+                                <Grid Grid.Row="1">
+                                    <TextBlock Text="{x:Bind ModelText}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <Button HorizontalAlignment="Right" Padding="4" Style="{StaticResource SubtleButtonStyle}" Tag="{x:Bind}"
+                                            Click="RemoveLibrary_Click" x:Uid="Skin_RemoveFromLibrary">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="12" />
+                                    </Button>
+                                </Grid>
+                            </Grid>
+                        </DataTemplate>
+                    </GridView.ItemTemplate>
+                </GridView>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -1,0 +1,189 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Fluorite.App.Views.ContentPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:vm="using:Fluorite.App.ViewModels">
+
+    <Grid x:Name="Root" RowSpacing="8" AllowDrop="True" DragOver="Root_DragOver" Drop="Root_Drop" Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar; narrow panes: Add files and the update buttons go icon-only, then the filter takes a line of its own. -->
+        <local:ToolbarPanel>
+            <Button Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.BrowseCommand, Mode=OneWay}" x:Uid="Content_BrowseButton">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE719;" FontSize="14" />
+                    <TextBlock x:Uid="Content_Browse" />
+                </StackPanel>
+            </Button>
+            <Button local:ToolbarPanel.Shrink="True" Click="AddFiles_Click" x:Uid="Content_AddFilesButton">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE8E5;" FontSize="14" />
+                    <TextBlock x:Uid="Content_AddFiles" />
+                </StackPanel>
+            </Button>
+            <Button local:ToolbarPanel.Shrink="True" Command="{x:Bind ViewModel.CheckUpdatesCommand, Mode=OneWay}" IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsChecking), Mode=OneWay}" x:Uid="Content_CheckUpdatesButton">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE895;" FontSize="14" />
+                    <TextBlock x:Uid="Content_CheckUpdates" />
+                </StackPanel>
+            </Button>
+            <Button local:ToolbarPanel.Shrink="True" Command="{x:Bind ViewModel.UpdateAllCommand, Mode=OneWay}" Visibility="{x:Bind local:Bind.VisibleIfPositive(ViewModel.UpdateCount), Mode=OneWay}" x:Uid="Content_UpdateAllButton">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE896;" FontSize="14" />
+                    <TextBlock x:Uid="Content_UpdateAll" />
+                    <InfoBadge Value="{x:Bind ViewModel.UpdateCount, Mode=OneWay}" />
+                </StackPanel>
+            </Button>
+            <ComboBox x:Uid="Content_World" MinWidth="200" ItemsSource="{x:Bind ViewModel.Worlds, Mode=OneWay}" SelectedItem="{x:Bind ViewModel.SelectedWorld, Mode=TwoWay}"
+                      Visibility="{x:Bind local:Bind.Visible(ViewModel.IsDataPacks), Mode=OneWay}" />
+            <ProgressRing Width="20" Height="20" IsActive="{x:Bind local:Bind.Any(ViewModel.IsLoading, ViewModel.IsChecking), Mode=OneWay}" />
+            <TextBox local:ToolbarPanel.Far="True" x:Name="FilterBox" x:Uid="Content_Filter" Width="220" Text="{x:Bind ViewModel.Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Button local:ToolbarPanel.Far="True" Command="{x:Bind ViewModel.OpenFolderCommand, Mode=OneWay}" x:Uid="Common_OpenFolderButton">
+                <FontIcon Glyph="&#xE8B7;" FontSize="14" />
+            </Button>
+            <Button local:ToolbarPanel.Far="True" Command="{x:Bind ViewModel.RefreshCommand, Mode=OneWay}" x:Uid="Content_RefreshButton">
+                <FontIcon Glyph="&#xE72C;" FontSize="14" />
+            </Button>
+        </local:ToolbarPanel>
+
+        <StackPanel Grid.Row="1" Spacing="6">
+            <InfoBar x:Uid="Content_NoLoaderBar" Severity="Warning" IsClosable="False" IsOpen="{x:Bind ViewModel.NoLoader, Mode=OneWay}" />
+            <InfoBar Severity="{x:Bind local:Bind.Severity(ViewModel.IssueSummaryIsError), Mode=OneWay}" IsClosable="False"
+                     IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.IssueSummary), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.IssueSummary, Mode=OneWay}" />
+            <InfoBar Severity="Success" IsClosable="True" IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.Status), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.Status, Mode=OneWay}" />
+            <InfoBar Severity="Error" IsClosable="True" IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.Error), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.Error, Mode=OneWay}" />
+            <local:UndoBar Offer="{x:Bind ViewModel.PendingUndo, Mode=OneWay}" />
+        </StackPanel>
+
+        <ListView x:Name="List" Grid.Row="2" ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}" SelectionMode="Extended"
+                  ContainerContentChanging="List_ContainerContentChanging">
+            <!-- The row's own (a mod's info and manifest), the selection's actions (when there is one), then the list's own. -->
+            <ListView.ContextFlyout>
+                <MenuFlyout x:Name="ListMenu" Opening="ListMenu_Opening">
+                    <!-- On a mod's row (the one right-clicked, not the selection). -->
+                    <MenuFlyoutItem x:Name="MenuModInfo" x:Uid="Content_ModInfo" Click="ModInfo_Click" KeyboardAcceleratorTextOverride="Alt+Enter">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE946;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Name="MenuEditManifest" x:Uid="Content_EditManifest" Click="EditManifest_Click">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE70F;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator x:Name="MenuRowSeparator" />
+                    <MenuFlyoutItem x:Name="MenuEnable" x:Uid="Content_EnableSelected" Click="EnableSelected_Click" KeyboardAcceleratorTextOverride="Ctrl+E">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE73E;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Name="MenuDisable" x:Uid="Content_DisableSelected" Click="DisableSelected_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+E">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE711;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Name="MenuDelete" x:Uid="Content_DeleteSelected" Click="DeleteSelected_Click" KeyboardAcceleratorTextOverride="Del">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator x:Name="MenuSelectionSeparator" />
+                    <MenuFlyoutItem x:Uid="ContentMenu_Browse" Command="{x:Bind ViewModel.BrowseCommand, Mode=OneWay}">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE719;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Uid="ContentMenu_AddFiles" Click="AddFiles_Click">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8E5;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Uid="Content_CheckUpdates" Command="{x:Bind ViewModel.CheckUpdatesCommand, Mode=OneWay}" IsEnabled="{x:Bind local:Bind.Not(ViewModel.IsChecking), Mode=OneWay}">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE895;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem x:Uid="Menu_OpenFolder" Command="{x:Bind ViewModel.OpenFolderCommand, Mode=OneWay}">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Uid="Menu_Refresh" Command="{x:Bind ViewModel.RefreshCommand, Mode=OneWay}" KeyboardAcceleratorTextOverride="F5">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE72C;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                </MenuFlyout>
+            </ListView.ContextFlyout>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ContentItemViewModel">
+                    <Grid ColumnSpacing="12" Padding="0,6" Opacity="{x:Bind local:Bind.EnabledOpacity(Enabled), Mode=OneWay}" AutomationProperties.Name="{x:Bind Name, Mode=OneWay}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="40" Height="40" CornerRadius="6" VerticalAlignment="Center" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                            <Grid>
+                                <FontIcon Glyph="&#xE74C;" FontSize="16" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                <Image Source="{x:Bind Icon, Mode=OneWay}" Stretch="UniformToFill" />
+                            </Grid>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{x:Bind Name, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                <FontIcon Glyph="&#xE718;" FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Visibility="{x:Bind local:Bind.Visible(IsPinned), Mode=OneWay}" x:Uid="Content_PinnedIcon" />
+                                <TextBlock Text="{x:Bind Subtitle, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <TextBlock Text="{x:Bind Description, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                            <TextBlock Text="{x:Bind Issue, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                                       Foreground="{x:Bind local:Bind.IssueBrush(IssueIsError), Mode=OneWay}" Visibility="{x:Bind local:Bind.VisibleIfText(Issue), Mode=OneWay, FallbackValue=Collapsed}" />
+                        </StackPanel>
+                        <Grid Grid.Column="2" VerticalAlignment="Center">
+                            <Button Tag="{x:Bind}" Click="Update_Click" Visibility="{x:Bind local:Bind.Visible(HasUpdate), Mode=OneWay}" IsEnabled="{x:Bind local:Bind.Not(IsBusy), Mode=OneWay}" AutomationProperties.Name="{x:Bind UpdateText, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE896;" FontSize="12" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                    <TextBlock Text="{x:Bind UpdateText, Mode=OneWay}" MaxWidth="220" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <ProgressRing Grid.Column="3" IsActive="{x:Bind IsBusy, Mode=OneWay}" Width="16" Height="16" />
+                        <TextBlock Grid.Column="4" Text="{x:Bind SourceText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" MinWidth="72" />
+                        <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <ToggleSwitch IsOn="{x:Bind Enabled, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" Width="44" x:Uid="Content_EnabledToggle" />
+                            <Button Style="{StaticResource SubtleButtonStyle}" x:Uid="Content_MoreButton">
+                                <FontIcon Glyph="&#xE712;" FontSize="14" />
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem x:Uid="Content_ModInfo" Tag="{x:Bind}" Click="ModInfo_Click" KeyboardAcceleratorTextOverride="Alt+Enter" Visibility="{x:Bind local:Bind.Visible(IsMod)}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE946;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Uid="Content_EditManifest" Tag="{x:Bind}" Click="EditManifest_Click" Visibility="{x:Bind local:Bind.Visible(IsMod)}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE70F;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator Visibility="{x:Bind local:Bind.Visible(IsMod)}" />
+                                        <MenuFlyoutItem x:Uid="Content_OpenProject" Tag="{x:Bind}" Click="OpenProject_Click" KeyboardAcceleratorTextOverride="Enter" IsEnabled="{x:Bind HasSource, Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A7;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Uid="Content_Changelog" Tag="{x:Bind}" Click="Changelog_Click" IsEnabled="{x:Bind HasUpdate, Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE81C;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="{x:Bind local:Bind.PinText(IsPinned), Mode=OneWay}" Tag="{x:Bind}" Click="Pin_Click" IsEnabled="{x:Bind HasSource, Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE718;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Uid="Content_ShowInFolder" Tag="{x:Bind}" Click="ShowInFolder_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+O">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
+                                        <MenuFlyoutItem x:Uid="Content_Delete" Tag="{x:Bind}" Click="Delete_Click" KeyboardAcceleratorTextOverride="Del">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12"
+                    Visibility="{x:Bind local:Bind.Visible(ViewModel.IsEmpty), Mode=OneWay}">
+            <FontIcon Glyph="&#xE74C;" FontSize="40" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            <TextBlock Text="{x:Bind ViewModel.EmptyText, Mode=OneWay}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="3" Text="{x:Bind ViewModel.Summary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="0,0,0,8" />
+    </Grid>
+</UserControl>
