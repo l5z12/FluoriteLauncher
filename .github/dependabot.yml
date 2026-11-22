@@ -1,0 +1,63 @@
+version: 2
+
+updates:
+  # NuGet: versions live in Directory.Packages.props (central package management). Related packages move together,
+  # so one PR updates what has to stay in step (Windows App SDK + toolkit, Microsoft.Extensions, MSAL…).
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3 # Let a fresh release settle (and get pulled if it's bad) before proposing it.
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      windows-app:
+        patterns:
+          - Microsoft.WindowsAppSDK
+          - Microsoft.Windows.SDK.BuildTools
+          - CommunityToolkit.*
+          - WinUIEx
+          - H.NotifyIcon.*
+      microsoft-extensions:
+        patterns:
+          - Microsoft.Extensions.*
+      msal:
+        patterns:
+          - Microsoft.Identity.Client*
+      serilog:
+        patterns:
+          - Serilog*
+      tests:
+        patterns:
+          - Microsoft.NET.Test.Sdk
+          - xunit*
+          - Verify.*
+
+  # The SDK in global.json (rollForward: latestFeature, so this is the minimum CI and contributors need).
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # Actions in .github/workflows, all in one PR.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns:
+          - "*"

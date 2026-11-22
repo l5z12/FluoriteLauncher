@@ -1,0 +1,38 @@
+name: Feature request
+description: Something Fluorite could do, or do better.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Not sure yet what it should look like? Talk it over in [Ideas](https://github.com/l5z12/FluoriteLauncher/discussions/categories/ideas) first.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The problem or the moment it would help, more than the solution. "When I … I have to …".
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help
+      description: How you'd like it to work. Mock-ups or screenshots welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do now instead
+      description: Workarounds you use, or other ways it could be solved.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the existing issues and discussions for this.
+          required: true

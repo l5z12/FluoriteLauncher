@@ -1,0 +1,17 @@
+# Categories for GitHub's generated release notes: a PR goes in the first category whose label it has.
+changelog:
+  exclude:
+    labels: [duplicate, invalid, wontfix]
+  categories:
+    - title: New features
+      labels: [enhancement]
+    - title: Fixes
+      labels: [bug]
+    - title: Accessibility
+      labels: [accessibility]
+    - title: Documentation
+      labels: [documentation]
+    - title: Dependencies
+      labels: [dependencies]
+    - title: Other changes
+      labels: ["*"]
