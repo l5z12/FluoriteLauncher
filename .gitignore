@@ -34,3 +34,10 @@ tests/testdata/.cache/
 appsettings.Local.json
 *.secrets.json
 Directory.Build.local.props
+
+# Website (website/)
+node_modules/
+website/.astro/
+website/dist/
+website/dist/
+website/.wrangler/

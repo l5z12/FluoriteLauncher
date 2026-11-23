@@ -74,6 +74,21 @@ Scripts:
 | `src/Fluorite.App` | WinUI 3 app (MVVM, Generic Host DI), packaged as MSIX |
 | `tools/Fluorite.Cli` | Headless developer CLI |
 | `tests/` | xUnit v3 tests |
+| `website/` | The website, https://fluorite.l5z12.dev (see below) |
+
+## Website
+
+`website/` is an [Astro](https://astro.build) site that builds to static files. It follows WinUI's look (`src/styles/fluent.css`), and its text is in English and Simplified Chinese (`src/i18n/en.json`, `src/i18n/zh-hans.json`; both files must have the same keys). The privacy and terms pages render `PRIVACY.md` and `TERMS.md` from the repo root, so edit those files, not the site. It needs Node.js 22.23.4+ and pnpm.
+
+```powershell
+cd website
+pnpm install
+pnpm dev        # live preview at http://localhost:4321
+pnpm check      # type check (CI runs it too)
+pnpm preview    # build, then serve dist/ the way Cloudflare does (headers, 404 page, redirects)
+```
+
+When Fluorite is released, set `storeUrl` in `website/src/site.ts`. Home then links to the Store instead of saying Fluorite isn't released yet.
 
 ## Configuration
 

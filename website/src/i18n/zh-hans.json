@@ -1,0 +1,92 @@
+{
+  "skip": "跳到正文",
+  "navLabel": "网站",
+  "nav": { "features": "功能", "faq": "常见问题", "privacy": "隐私", "terms": "条款" },
+  "switchTo": "Read this site in English",
+
+  "title": "Fluorite Launcher：Windows 原生 Minecraft: Java Edition 启动器",
+  "description": "Fluorite Launcher 是一款 Windows 原生 Minecraft 启动器：支持所有版本、所有主流模组加载器和各大平台的整合包，还能直接启动其他启动器里的实例。",
+  "logoAlt": "Fluorite Launcher 标志：一块带条纹的绿色萤石",
+
+  "tagline": "适用于 Windows 的 Minecraft: Java 版启动器。",
+  "unreleasedTitle": "尚未发布",
+  "unreleased": "若你是普通用户，请等待其 Microsoft Store 上架。",
+  "getFromStore": "从 Microsoft Store 获取",
+  "viewSource": "查看源代码",
+  "buildIt": "自行构建",
+  "facts": {
+    "windows": "Windows 10 (>2004) & Windows 11",
+    "arch": "x64 和 ARM64",
+    "license": "GPL 3.0 开源"
+  },
+
+  "featuresTitle": "全面性",
+  "features": {
+    "versions": { "title": "任意版本", "text": "<code>rd-132211</code> ~ 最新快照" },
+    "loaders": { "title": "自动安装模组加载器", "text": "支持 Fabric、Quilt、Forge、NeoForge、OptiFine 等" },
+    "content": { "title": "模组和光影", "text": "Modrinth & CurseForge 源，自动安装前置依赖" },
+    "modpacks": { "title": "整合包", "text": "增量更新，保留更改" },
+    "launchers": { "title": "快速导入", "text": "直接启动实例或复制" },
+    "accounts": { "title": "账户支持", "text": "官方、离线和第三方账户" },
+    "skins": { "title": "皮肤和披风", "text": "更换皮肤并 3D 预览" },
+    "worlds": { "title": "世界和服务器", "text": "备份或启动到世界 / 服务器" },
+    "java": { "title": "自动安装 Java", "text": "为每个版本自动选择并下载合适的 Java" },
+    "mirrors": { "title": "镜像源", "text": "BMCLAPI 和 MCIM 镜像" },
+    "languages": { "title": "多种语言", "text": "简体中文或 English" },
+    "windows": { "title": "为 Windows 而生", "text": "原生 WinUI 3，按 <kbd>Ctrl</kbd>+<kbd>K</kbd> 打开命令面板。" }
+  },
+
+  "privacyTitle": "数据只留在你的电脑上",
+  "privacyText": "没有遥测、广告和追踪数据",
+  "privacyLink": "阅读隐私政策（英文）",
+
+  "faqTitle": "常见问题",
+  "faq": {
+    "free": {
+      "q": "Fluorite 免费吗？",
+      "a": "是的。它是以 <a href=\"{license}\">GPL-3.0</a> 发布的自由软件，没有广告，也没有任何收费项目。"
+    },
+    "download": {
+      "q": "什么时候可以下载？",
+      "a": "尚未发布，正式版将首先上架 Microsoft Store。在此之前，你可以<a href=\"{contributing}\">自行构建</a>。",
+      "released": "可以从 <a href=\"{store}\">Microsoft Store</a> 获取。"
+    },
+    "own": {
+      "q": "需要购买 Minecraft 吗？",
+      "a": "是的。当你验证你有 Minecraft 正版后，离线账户会对你开放。"
+    },
+    "others": {
+      "q": "会影响其他启动器里的实例吗？",
+      "a": "不会。Fluorite 原地启动它们，但更改的数据不会同步到其他启动器。换句话讲，Fluorite 是独立的。"
+    },
+    "report": {
+      "q": "如何反馈问题？",
+      "a": "请<a href=\"{issues}\">在 GitHub 上提交 issue</a>。安全问题请按照<a href=\"{security}\">安全策略</a>报告。"
+    }
+  },
+
+  "doc": {
+    "home": "首页",
+    "onThisPage": "本页内容",
+    "source": "在 GitHub 上查看",
+    "history": "修改历史"
+  },
+
+  "notFound": {
+    "title": "找不到页面",
+    "text": "这个地址没有内容，可能已经移动，或者链接有误。",
+    "home": "前往首页"
+  },
+
+  "footer": {
+    "links": {
+      "privacy": "隐私政策（英文）",
+      "terms": "使用条款（英文）",
+      "source": "源代码",
+      "license": "许可证",
+      "notices": "第三方声明",
+      "issues": "反馈问题"
+    },
+    "disclaimer": "非 Minecraft 官方产品。未经 Mojang 或 Microsoft 批准，也与 Mojang 或 Microsoft 无关。Minecraft 是 Mojang Synergies AB 的商标。"
+  }
+}

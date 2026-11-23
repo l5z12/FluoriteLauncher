@@ -1,0 +1,23 @@
+{
+  "name": "fluorite-website",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "check": "astro check",
+    "preview": "astro build && wrangler dev"
+  },
+  "dependencies": {
+    "@astrojs/markdown-satteri": "0.4.7",
+    "astro": "7.4.7",
+    "fluentui-astro-icons": "1.1.347",
+    "satteri": "0.11.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "typescript": "6.0.3",
+    "wrangler": "4.157.0"
+  }
+}

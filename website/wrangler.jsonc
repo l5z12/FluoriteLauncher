@@ -1,0 +1,15 @@
+// An assets-only Worker: Cloudflare serves the built site (dist/, from `pnpm build`) as static files.
+// There's no Worker script, so every request is a plain file lookup. .github/workflows/website.yml deploys it.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fluorite-website",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // /privacy serves /privacy/index.html by redirecting to /privacy/.
+    "html_handling": "auto-trailing-slash",
+    // A missing path gets the nearest 404.html with a 404 status: /zh-hans/… gets zh-hans/404.html.
+    "not_found_handling": "404-page"
+  },
+  "routes": [{ "pattern": "fluorite.l5z12.dev", "custom_domain": true }]
+}

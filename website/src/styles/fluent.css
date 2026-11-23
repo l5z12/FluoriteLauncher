@@ -1,0 +1,1048 @@
+/* Fluent 2 / WinUI 3 look for a static page: WinUI's theme resources as CSS variables, its type ramp, and its
+   controls (Button, HyperlinkButton, NavigationView items, InfoBar, Expander, cards) in plain HTML and CSS.
+   The accent is the logo's green instead of the Windows accent colour. */
+
+:root {
+    color-scheme: light dark;
+
+    --font-text: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial,
+        "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
+    --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+        Arial, "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
+    --font-mono: "Cascadia Mono", Consolas, ui-monospace, "SF Mono", Menlo, monospace;
+
+    --pad: clamp(16px, 4vw, 48px);
+    --titlebar-height: 56px;
+
+    /* Light theme (WinUI's Light theme dictionary) */
+    --bg: #f3f3f3;
+    --layer: rgb(255 255 255 / 0.5);
+    --layer-stroke: rgb(0 0 0 / 0.0578);
+    --card: rgb(255 255 255 / 0.7);
+    --card-secondary: rgb(246 246 246 / 0.5);
+    --card-stroke: rgb(0 0 0 / 0.0578);
+    --divider: rgb(0 0 0 / 0.0803);
+    --control: rgb(255 255 255 / 0.7);
+    --control-hover: rgb(249 249 249 / 0.5);
+    --control-pressed: rgb(249 249 249 / 0.3);
+    --control-stroke: rgb(0 0 0 / 0.0578);
+    --control-stroke-bottom: rgb(0 0 0 / 0.1622);
+    --subtle-hover: rgb(0 0 0 / 0.0373);
+    --subtle-pressed: rgb(0 0 0 / 0.0241);
+    --text-1: rgb(0 0 0 / 0.8956);
+    --text-2: rgb(0 0 0 / 0.6063);
+    --text-3: rgb(0 0 0 / 0.4458);
+
+    --accent: #1f7f62;
+    --accent-hover: rgb(31 127 98 / 0.9);
+    --accent-pressed: rgb(31 127 98 / 0.8);
+    --accent-text: #1a6e55;
+    --accent-stroke: rgb(255 255 255 / 0.08);
+    --accent-stroke-bottom: rgb(0 0 0 / 0.4);
+    --on-accent: #fff;
+    --on-accent-pressed: rgb(255 255 255 / 0.7);
+
+    --focus-outer: rgb(0 0 0 / 0.8956);
+    --focus-inner: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Dark theme (WinUI's Dark theme dictionary) */
+        --bg: #202020;
+        --layer: rgb(58 58 58 / 0.3);
+        --layer-stroke: rgb(0 0 0 / 0.1);
+        --card: rgb(255 255 255 / 0.0512);
+        --card-secondary: rgb(255 255 255 / 0.0326);
+        --card-stroke: rgb(0 0 0 / 0.1);
+        --divider: rgb(255 255 255 / 0.0837);
+        --control: rgb(255 255 255 / 0.0605);
+        --control-hover: rgb(255 255 255 / 0.0837);
+        --control-pressed: rgb(255 255 255 / 0.0326);
+        --control-stroke: rgb(255 255 255 / 0.093);
+        --control-stroke-bottom: rgb(255 255 255 / 0.0698);
+        --subtle-hover: rgb(255 255 255 / 0.0605);
+        --subtle-pressed: rgb(255 255 255 / 0.0419);
+        --text-1: #fff;
+        --text-2: rgb(255 255 255 / 0.786);
+        --text-3: rgb(255 255 255 / 0.5442);
+
+        --accent: #72d3ae;
+        --accent-hover: rgb(114 211 174 / 0.9);
+        --accent-pressed: rgb(114 211 174 / 0.8);
+        --accent-text: #86ddbb;
+        --accent-stroke: rgb(255 255 255 / 0.08);
+        --accent-stroke-bottom: rgb(0 0 0 / 0.14);
+        --on-accent: #000;
+        --on-accent-pressed: rgb(0 0 0 / 0.5);
+
+        --focus-outer: #fff;
+        --focus-inner: rgb(0 0 0 / 0.7);
+    }
+}
+
+/* Chinese text gets a Chinese font before system-ui, which can fall back to Japanese glyph shapes. */
+:lang(zh) {
+    --font-text: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC",
+        system-ui, sans-serif;
+    --font-display: "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+        "Noto Sans SC", system-ui, sans-serif;
+}
+
+/* A Chinese phrase inside an English page: the inherited font-family was resolved with the English list. */
+body [lang|="zh"] {
+    font-family: var(--font-text);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    background: var(--bg);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text-1);
+    font: 400 14px/20px var(--font-text);
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+    background: var(--accent);
+    color: var(--on-accent);
+}
+
+a {
+    color: var(--accent-text);
+}
+
+img,
+svg {
+    max-width: 100%;
+}
+
+code,
+kbd {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+}
+
+code {
+    padding: 1px 5px;
+    border: 1px solid var(--card-stroke);
+    border-radius: 4px;
+    background: var(--subtle-hover);
+}
+
+kbd {
+    display: inline-block;
+    min-width: 1.6em;
+    padding: 0 5px;
+    border: 1px solid var(--control-stroke);
+    border-bottom-color: var(--control-stroke-bottom);
+    border-radius: 4px;
+    background: var(--control);
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* WinUI focus visual: a 2px outer ring with a 1px inner ring of the opposite colour. */
+:focus-visible {
+    outline: 2px solid var(--focus-outer);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 1px var(--focus-inner);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.skip {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 100;
+    transform: translateY(-200%);
+}
+
+.skip:focus {
+    transform: none;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────────────────── */
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 32px;
+    padding: 5px 11px 6px;
+    border: 1px solid var(--control-stroke);
+    border-bottom-color: var(--control-stroke-bottom);
+    border-radius: 4px;
+    background: var(--control);
+    background-clip: padding-box;
+    color: var(--text-1);
+    font: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.button:hover {
+    background-color: var(--control-hover);
+}
+
+.button:active {
+    background-color: var(--control-pressed);
+    border-bottom-color: var(--control-stroke);
+    color: var(--text-2);
+}
+
+.button.accent {
+    border-color: var(--accent-stroke);
+    border-bottom-color: var(--accent-stroke-bottom);
+    background-color: var(--accent);
+    color: var(--on-accent);
+}
+
+.button.accent:hover {
+    background-color: var(--accent-hover);
+}
+
+.button.accent:active {
+    background-color: var(--accent-pressed);
+    border-bottom-color: var(--accent-stroke);
+    color: var(--on-accent-pressed);
+}
+
+/* Subtle: no fill or border until hovered, like title bar and hyperlink buttons. */
+.button.subtle {
+    border-color: transparent;
+    background-color: transparent;
+}
+
+.button.subtle:hover {
+    background-color: var(--subtle-hover);
+}
+
+.button.subtle:active {
+    background-color: var(--subtle-pressed);
+}
+
+.button.link {
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--accent-text);
+}
+
+.button.link:hover {
+    background-color: var(--subtle-hover);
+}
+
+.button.link:active {
+    background-color: var(--subtle-pressed);
+    color: var(--accent-text);
+    opacity: 0.8;
+}
+
+.button svg {
+    font-size: 16px;
+}
+
+/* ── Title bar and navigation ─────────────────────────────────────────────────────────── */
+
+.titlebar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 24px;
+    min-height: var(--titlebar-height);
+    padding: 8px var(--pad);
+    background: var(--bg);
+}
+
+@media (min-width: 720px) {
+    .titlebar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: -8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    color: var(--text-1);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.brand:hover {
+    background: var(--subtle-hover);
+}
+
+.brand img {
+    display: block;
+}
+
+.nav {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+}
+
+.nav a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 4px;
+    color: var(--text-1);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.nav a:hover {
+    background: var(--subtle-hover);
+}
+
+.nav a:active {
+    background: var(--subtle-pressed);
+    color: var(--text-2);
+}
+
+/* NavigationView's selection pill, under the item as in Top mode. */
+.nav a[aria-current="page"] {
+    font-weight: 600;
+}
+
+.nav a[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 1px;
+    width: 16px;
+    height: 3px;
+    margin-left: -8px;
+    border-radius: 2px;
+    background: var(--accent);
+}
+
+.titlebar-tools {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    margin-right: -8px;
+}
+
+@media (max-width: 719px) {
+    .nav {
+        order: 3;
+        flex-basis: 100%;
+        margin: 0 -12px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .titlebar-tools .label-wide {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+
+/* ── Content layer ────────────────────────────────────────────────────────────────────── */
+
+/* The page sits on a layer above the Mica-coloured title bar, like a WinUI NavigationView's content. */
+.layer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--layer-stroke);
+    background: var(--layer);
+}
+
+main {
+    flex: 1;
+}
+
+section,
+[id] {
+    scroll-margin-top: calc(var(--titlebar-height) + 16px);
+}
+
+/* ── Type ramp ────────────────────────────────────────────────────────────────────────── */
+
+.display {
+    margin: 0;
+    font: 600 clamp(40px, 7vw, 68px) / 1.15 var(--font-display);
+    letter-spacing: -0.01em;
+}
+
+.title {
+    margin: 0;
+    font: 600 28px/36px var(--font-display);
+}
+
+.subtitle {
+    margin: 0;
+    font: 600 20px/28px var(--font-display);
+}
+
+
+/* ── Cards ────────────────────────────────────────────────────────────────────────────── */
+
+.card {
+    border: 1px solid var(--card-stroke);
+    border-radius: 8px;
+    background: var(--card);
+    background-clip: padding-box;
+    padding: 16px;
+}
+
+/* ── InfoBar ──────────────────────────────────────────────────────────────────────────── */
+
+.infobar {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 16px;
+    border: 1px solid var(--card-stroke);
+    border-radius: 4px;
+    background: var(--card-secondary);
+}
+
+.infobar > svg {
+    flex: none;
+    margin-top: 2px;
+    color: var(--accent-text);
+    font-size: 16px;
+}
+
+.infobar p {
+    margin: 0;
+}
+
+.infobar strong {
+    font-weight: 600;
+    margin-right: 12px;
+}
+
+/* ── Expander ─────────────────────────────────────────────────────────────────────────── */
+
+.expander {
+    border: 1px solid var(--card-stroke);
+    border-radius: 8px;
+    background: var(--card);
+    background-clip: padding-box;
+}
+
+.expander + .expander {
+    margin-top: 4px;
+}
+
+.expander summary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 48px;
+    padding: 8px 8px 8px 16px;
+    border-radius: 7px;
+    list-style: none;
+    cursor: pointer;
+}
+
+.expander summary::-webkit-details-marker {
+    display: none;
+}
+
+.expander summary:hover .chevron {
+    background: var(--subtle-hover);
+}
+
+.expander summary:active .chevron {
+    background: var(--subtle-pressed);
+}
+
+.chevron {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    margin-left: auto;
+    border-radius: 4px;
+    color: var(--text-1);
+    font-size: 12px;
+}
+
+.chevron svg {
+    transition: transform 0.167s cubic-bezier(0, 0, 0, 1);
+}
+
+.expander[open] .chevron svg {
+    transform: rotate(180deg);
+}
+
+.expander[open] summary {
+    border-bottom: 1px solid var(--card-stroke);
+    border-radius: 7px 7px 0 0;
+}
+
+.expander-content {
+    padding: 16px;
+    border-radius: 0 0 7px 7px;
+    background: var(--card-secondary);
+}
+
+.expander-content p {
+    margin: 0;
+}
+
+/* ── Home ─────────────────────────────────────────────────────────────────────────────── */
+
+.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: center;
+    gap: 32px 64px;
+    padding: clamp(32px, 6vw, 72px) var(--pad) clamp(32px, 5vw, 56px);
+}
+
+.hero-text {
+    display: grid;
+    gap: 16px;
+    justify-items: start;
+}
+
+.hero .tagline {
+    margin: 0;
+    font: 600 clamp(20px, 2.4vw, 28px) / 1.3 var(--font-display);
+}
+
+.hero .infobar {
+    justify-self: stretch;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--text-2);
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.facts li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.facts svg {
+    font-size: 16px;
+}
+
+.hero-art {
+    justify-self: center;
+}
+
+/* The logo is pixel art drawn on a 256 px grid: show it at whole multiples so every texel is the same size. */
+.hero-art img {
+    display: block;
+    width: 256px;
+    height: 256px;
+}
+
+@media (max-width: 1023px) {
+    .hero-art img {
+        width: 192px;
+        height: 192px;
+    }
+}
+
+@media (max-width: 719px) {
+    .hero {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .hero-art {
+        order: -1;
+    }
+
+    .hero-art img {
+        width: 128px;
+        height: 128px;
+    }
+}
+
+.section {
+    padding: 24px var(--pad) 40px;
+}
+
+.section-head {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 20px;
+}
+
+.section-head p {
+    margin: 0;
+}
+
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.feature {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: start;
+    gap: 4px 16px;
+}
+
+.feature > svg {
+    grid-row: span 2;
+    margin-top: 1px;
+    color: var(--accent-text);
+    font-size: 24px;
+}
+
+.feature h3 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 600;
+}
+
+.feature p {
+    margin: 0;
+    color: var(--text-2);
+}
+
+.privacy {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 20px;
+    padding: 24px;
+}
+
+.privacy > svg {
+    grid-row: span 3;
+    color: var(--accent-text);
+    font-size: 40px;
+}
+
+.privacy p {
+    margin: 0;
+    color: var(--text-2);
+}
+
+.privacy .button {
+    justify-self: start;
+    margin-left: -12px;
+}
+
+@media (max-width: 539px) {
+    .privacy {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .privacy > svg {
+        grid-row: auto;
+        font-size: 32px;
+    }
+}
+
+/* ── Documents (privacy policy, terms) ────────────────────────────────────────────────── */
+
+.doc {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    align-items: start;
+    gap: 24px 56px;
+    padding: 20px var(--pad) 56px;
+}
+
+@media (max-width: 1023px) {
+    .doc {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .toc-nav {
+        display: none;
+    }
+}
+
+.breadcrumb ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 12px;
+    padding: 0;
+    list-style: none;
+    color: var(--text-2);
+}
+
+.breadcrumb li {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.breadcrumb svg {
+    font-size: 12px;
+    color: var(--text-3);
+}
+
+.breadcrumb a {
+    color: var(--text-2);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--text-1);
+    text-decoration: underline;
+}
+
+.prose {
+    min-width: 0;
+    font-size: 15px;
+    line-height: 24px;
+}
+
+.prose h1 {
+    margin: 0 0 4px;
+    font: 600 clamp(28px, 4vw, 40px) / 1.3 var(--font-display);
+}
+
+/* "Last updated: …", the line under the title. */
+.prose h1 + p {
+    margin-top: 0;
+    color: var(--text-2);
+    font-size: 14px;
+}
+
+.prose h2 {
+    margin: 40px 0 12px;
+    font: 600 20px/28px var(--font-display);
+}
+
+.prose h3 {
+    margin: 28px 0 8px;
+    font: 600 16px/22px var(--font-text);
+}
+
+.prose li + li {
+    margin-top: 6px;
+}
+
+.prose a:not(.heading-link) {
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.prose a:not(.heading-link):hover {
+    text-decoration-color: currentColor;
+}
+
+.heading-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.heading-link::after {
+    content: "#";
+    margin-left: 8px;
+    color: var(--text-3);
+    font-weight: 400;
+    opacity: 0;
+}
+
+.heading-link:hover::after,
+.heading-link:focus-visible::after {
+    opacity: 1;
+}
+
+.table-wrap {
+    margin: 16px 0;
+    overflow-x: auto;
+    border: 1px solid var(--card-stroke);
+    border-radius: 8px;
+    background: var(--card);
+    background-clip: padding-box;
+}
+
+.table-wrap table {
+    width: 100%;
+    min-width: 600px;
+    border-collapse: collapse;
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.table-wrap th,
+.table-wrap td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--divider);
+    text-align: left;
+    vertical-align: top;
+}
+
+.table-wrap th {
+    background: var(--card-secondary);
+    color: var(--text-2);
+    font-weight: 600;
+}
+
+.table-wrap tr:last-child td {
+    border-bottom: 0;
+}
+
+.table-wrap td:first-child {
+    width: 28%;
+}
+
+.toc {
+    position: sticky;
+    top: calc(var(--titlebar-height) + 20px);
+    display: grid;
+    gap: 16px;
+}
+
+@media (max-width: 1023px) {
+    .toc {
+        position: static;
+    }
+}
+
+.toc h2 {
+    margin: 0 0 4px 12px;
+    color: var(--text-2);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+}
+
+.toc ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.toc-nav a {
+    display: block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    color: var(--text-1);
+    text-decoration: none;
+}
+
+.toc-nav a:hover {
+    background: var(--subtle-hover);
+}
+
+.toc-nav a:active {
+    background: var(--subtle-pressed);
+    color: var(--text-2);
+}
+
+.doc-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--divider);
+}
+
+@media (max-width: 1023px) {
+    .doc-tools {
+        margin-left: -12px;
+        padding-top: 0;
+        border-top: 0;
+    }
+}
+
+/* ── 404 ──────────────────────────────────────────────────────────────────────────────── */
+
+.not-found {
+    display: grid;
+    gap: 32px;
+    padding: clamp(32px, 8vw, 96px) var(--pad);
+}
+
+.not-found > div {
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+}
+
+.not-found p {
+    margin: 0 0 8px;
+    color: var(--text-2);
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────────────────── */
+
+.footer {
+    display: grid;
+    gap: 12px;
+    padding: 24px var(--pad) 32px;
+    border-top: 1px solid var(--divider);
+    color: var(--text-2);
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.footer-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 24px;
+}
+
+.footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-1);
+    font-weight: 600;
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.footer a {
+    color: var(--text-2);
+    text-decoration: none;
+}
+
+.footer a:hover {
+    color: var(--text-1);
+    text-decoration: underline;
+}
+
+.footer p {
+    margin: 0;
+}
+
+.footer .languages {
+    margin-left: auto;
+}
+
+.footer .languages [aria-current] {
+    color: var(--text-1);
+    font-weight: 600;
+}
+
+/* ── High contrast and print ──────────────────────────────────────────────────────────── */
+
+@media (forced-colors: active) {
+    .card,
+    .expander,
+    .infobar,
+    .table-wrap,
+    .button {
+        border-color: CanvasText;
+    }
+
+    .button.accent {
+        border-color: Highlight;
+    }
+
+    .nav a[aria-current="page"]::after {
+        background: Highlight;
+    }
+
+    :focus-visible {
+        outline-color: Highlight;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chevron svg {
+        transition: none;
+    }
+}
+
+@media print {
+    html,
+    body,
+    .layer,
+    .card,
+    .table-wrap {
+        background: #fff;
+        color: #000;
+    }
+
+    .titlebar,
+    .skip,
+    .toc,
+    .footer-links,
+    .footer .languages,
+    .heading-link::after {
+        display: none;
+    }
+
+    .doc {
+        display: block;
+    }
+}
