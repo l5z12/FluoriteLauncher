@@ -154,10 +154,16 @@ public sealed partial class MainWindow : Window
         if (IsBusyWithOverlay())
             return;
         args.Handled = true;
+        StartNewInstance();
+    }
+
+    /// <summary>The new-instance dialog on the Library page, with <paramref name="versionId"/> picked if given.</summary>
+    public void StartNewInstance(string? versionId = null)
+    {
         if (ContentFrame.Content is LibraryPage library)
-            library.StartNewInstance();
+            library.StartNewInstance(versionId);
         else
-            NavigateTo("Library", "NewInstance");
+            NavigateTo("Library", versionId is null ? "NewInstance" : new LibraryPage.NewInstanceRequest(versionId));
     }
 
     /// <summary>Ctrl+O: import a modpack file, from anywhere.</summary>

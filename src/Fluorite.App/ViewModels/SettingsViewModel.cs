@@ -36,6 +36,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         LanguageIndex = Array.IndexOf(s_languages, s.Language) is var li and >= 0 ? li : 0;
         OnGameStartIndex = (int)s.OnGameStart;
         HomeLoadingIndex = (int)s.HomeLoading;
+        VersionCardClickIndex = (int)s.VersionCardClick;
         LauncherWindowIndex = (int)s.LauncherWindow;
         LauncherWidth = s.LauncherWidth == DefaultLauncherWidth ? double.NaN : s.LauncherWidth;
         LauncherHeight = s.LauncherHeight == DefaultLauncherHeight ? double.NaN : s.LauncherHeight;
@@ -120,6 +121,12 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     partial void OnHomeLoadingIndexChanged(int value) =>
         Persist(s => s.HomeLoading = (Core.Settings.HomeLoadingStyle)Math.Clamp(value, 0, 2));
+
+    /// <summary>Settings › Clicking a version card, in <see cref="Core.Settings.VersionCardAction"/>'s order.</summary>
+    [ObservableProperty] public partial int VersionCardClickIndex { get; set; }
+
+    partial void OnVersionCardClickIndexChanged(int value) =>
+        Persist(s => s.VersionCardClick = (Core.Settings.VersionCardAction)Math.Clamp(value, 0, 2));
 
     // ── Launcher window ──────────────────────────────────────────────────
 

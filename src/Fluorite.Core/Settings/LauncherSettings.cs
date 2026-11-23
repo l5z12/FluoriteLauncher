@@ -23,6 +23,19 @@ public enum HomeLoadingStyle
     Hide,
 }
 
+/// <summary>What clicking Home's Latest release or Latest snapshot card does. Its right-click menu always has all three.</summary>
+public enum VersionCardAction
+{
+    /// <summary>The new-instance dialog, with the card's version picked.</summary>
+    NewInstance,
+
+    /// <summary>The version's patch notes; until the feed has them, the card's menu opens instead.</summary>
+    PatchNotes,
+
+    /// <summary>The version number, to the clipboard.</summary>
+    CopyVersion,
+}
+
 /// <summary>How the launcher's own window opens (Settings › Launcher window size). It can be resized either way.</summary>
 public enum LauncherWindowMode
 {
@@ -85,6 +98,7 @@ public sealed class LauncherSettings
 
     public GameStartBehavior OnGameStart { get; set; } = GameStartBehavior.KeepOpen;
     public HomeLoadingStyle HomeLoading { get; set; } = HomeLoadingStyle.Indicator;
+    public VersionCardAction VersionCardClick { get; set; } = VersionCardAction.NewInstance;
     public bool CloseToTray { get; set; }
     public bool ShowLogOnLaunch { get; set; }
     public bool ShowLogOnCrash { get; set; } = true;

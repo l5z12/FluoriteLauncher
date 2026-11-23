@@ -87,24 +87,71 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Style="{StaticResource CardBorderStyle}">
-                    <StackPanel Spacing="4">
-                        <TextBlock x:Uid="Home_LatestRelease" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <Grid>
-                            <TextBlock Text="{x:Bind ViewModel.LatestRelease, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" Foreground="{ThemeResource FluoriteBrandBrush}" />
-                            <ProgressRing x:Uid="Home_LoadingVersions" IsActive="{x:Bind ViewModel.IsLoadingVersions, Mode=OneWay}" Width="20" Height="20" HorizontalAlignment="Left" />
-                        </Grid>
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
-                    <StackPanel Spacing="4">
-                        <TextBlock x:Uid="Home_LatestSnapshot" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <Grid>
-                            <TextBlock Text="{x:Bind ViewModel.LatestSnapshot, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" Foreground="{ThemeResource FluoriteTealBrush}" />
-                            <ProgressRing x:Uid="Home_LoadingVersions" IsActive="{x:Bind ViewModel.IsLoadingVersions, Mode=OneWay}" Width="20" Height="20" HorizontalAlignment="Left" />
-                        </Grid>
-                    </StackPanel>
-                </Border>
+                <!-- Once its version is in, a click does what Settings › Clicking a version card says; the menu has every choice. -->
+                <Button x:Name="ReleaseCard" Tag="release" Click="VersionCard_Click" IsEnabled="{x:Bind ViewModel.HasLatestRelease, Mode=OneWay}"
+                        Padding="16" CornerRadius="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        AutomationProperties.Name="{x:Bind ViewModel.ReleaseCardName, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.ReleaseCardTip, Mode=OneWay}">
+                    <Button.ContextFlyout>
+                        <MenuFlyout Opening="VersionMenu_Opening">
+                            <MenuFlyoutItem x:Uid="Home_VersionNewInstance" Tag="release" Click="VersionNewInstance_Click">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE710;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem x:Name="ReleasePatchNotesItem" x:Uid="Home_VersionPatchNotes" Tag="release" Click="VersionPatchNotes_Click">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A5;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem x:Uid="Home_VersionCopy" Tag="release" Click="VersionCopy_Click">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </Button.ContextFlyout>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBlock x:Uid="Home_LatestRelease" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <Grid>
+                                <TextBlock Text="{x:Bind ViewModel.LatestRelease, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" Foreground="{ThemeResource FluoriteBrandBrush}" />
+                                <ProgressRing x:Uid="Home_LoadingVersions" IsActive="{x:Bind ViewModel.IsLoadingVersions, Mode=OneWay}" Width="20" Height="20" HorizontalAlignment="Left" />
+                            </Grid>
+                        </StackPanel>
+                        <FontIcon Grid.Column="1" Glyph="{x:Bind ViewModel.CardActionGlyph, Mode=OneWay}" FontSize="16" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                  Visibility="{x:Bind local:Bind.Visible(ViewModel.HasLatestRelease), Mode=OneWay}" />
+                    </Grid>
+                </Button>
+                <Button x:Name="SnapshotCard" Grid.Column="1" Tag="snapshot" Click="VersionCard_Click" IsEnabled="{x:Bind ViewModel.HasLatestSnapshot, Mode=OneWay}"
+                        Padding="16" CornerRadius="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        AutomationProperties.Name="{x:Bind ViewModel.SnapshotCardName, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.SnapshotCardTip, Mode=OneWay}">
+                    <Button.ContextFlyout>
+                        <MenuFlyout Opening="VersionMenu_Opening">
+                            <MenuFlyoutItem x:Uid="Home_VersionNewInstance" Tag="snapshot" Click="VersionNewInstance_Click">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE710;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem x:Name="SnapshotPatchNotesItem" x:Uid="Home_VersionPatchNotes" Tag="snapshot" Click="VersionPatchNotes_Click">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A5;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem x:Uid="Home_VersionCopy" Tag="snapshot" Click="VersionCopy_Click">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </Button.ContextFlyout>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBlock x:Uid="Home_LatestSnapshot" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <Grid>
+                                <TextBlock Text="{x:Bind ViewModel.LatestSnapshot, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" Foreground="{ThemeResource FluoriteTealBrush}" />
+                                <ProgressRing x:Uid="Home_LoadingVersions" IsActive="{x:Bind ViewModel.IsLoadingVersions, Mode=OneWay}" Width="20" Height="20" HorizontalAlignment="Left" />
+                            </Grid>
+                        </StackPanel>
+                        <FontIcon Grid.Column="1" Glyph="{x:Bind ViewModel.CardActionGlyph, Mode=OneWay}" FontSize="16" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                  Visibility="{x:Bind local:Bind.Visible(ViewModel.HasLatestSnapshot), Mode=OneWay}" />
+                    </Grid>
+                </Button>
             </Grid>
 
             <!-- Patch notes -->

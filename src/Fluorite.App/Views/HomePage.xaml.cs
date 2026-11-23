@@ -1,3 +1,4 @@
+using Fluorite.App.Services;
 using Fluorite.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -47,6 +48,72 @@ public sealed partial class HomePage : Page
     {
         if (Bind.ItemOf<NewsCard>(sender) is { PatchNote: { } note })
             Frame.Navigate(typeof(PatchNotesPage), note, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+    }
+
+    /// <summary>The version a latest-version card (or an item of its menu) stands for: by its tag.</summary>
+    private string? VersionOf(object sender) =>
+        (sender as FrameworkElement)?.Tag as string == "snapshot" ? ViewModel.LatestSnapshot : ViewModel.LatestRelease;
+
+    private Button CardOf(object sender) => (sender as FrameworkElement)?.Tag as string == "snapshot" ? SnapshotCard : ReleaseCard;
+
+    /// <summary>A click on a latest-version card: what Settings › Clicking a version card says.</summary>
+    private void VersionCard_Click(object sender, RoutedEventArgs e)
+    {
+        switch (ViewModel.CardAction)
+        {
+            case Core.Settings.VersionCardAction.PatchNotes:
+                // Until the feed has them (Mojang posts them a little after the version), the menu offers the rest.
+                if (!OpenPatchNotes(VersionOf(sender)))
+                    CardOf(sender).ContextFlyout?.ShowAt(CardOf(sender));
+                break;
+            case Core.Settings.VersionCardAction.CopyVersion:
+                CopyVersion(sender);
+                break;
+            default:
+                NewInstance(sender);
+                break;
+        }
+    }
+
+    private void VersionNewInstance_Click(object sender, RoutedEventArgs e) => NewInstance(sender);
+
+    /// <summary>The Library's new-instance dialog, with the card's version picked.</summary>
+    private void NewInstance(object sender)
+    {
+        if (VersionOf(sender) is { } version)
+            App.Window?.StartNewInstance(version);
+    }
+
+    private void VersionMenu_Opening(object sender, object e)
+    {
+        // Patch notes only when they're among those loaded: Mojang posts them a little after the version.
+        ReleasePatchNotesItem.IsEnabled = ViewModel.PatchNoteFor(ViewModel.LatestRelease) is not null;
+        SnapshotPatchNotesItem.IsEnabled = ViewModel.PatchNoteFor(ViewModel.LatestSnapshot) is not null;
+    }
+
+    private void VersionPatchNotes_Click(object sender, RoutedEventArgs e) => OpenPatchNotes(VersionOf(sender));
+
+    /// <returns>False when the feed has no patch notes for <paramref name="version"/> (yet).</returns>
+    private bool OpenPatchNotes(string? version)
+    {
+        if (ViewModel.PatchNoteFor(version) is not { } note)
+            return false;
+        Frame.Navigate(typeof(PatchNotesPage), note, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+        return true;
+    }
+
+    private void VersionCopy_Click(object sender, RoutedEventArgs e) => CopyVersion(sender);
+
+    /// <summary>The card's version number to the clipboard, with "Copied" under the card.</summary>
+    private void CopyVersion(object sender)
+    {
+        if (VersionOf(sender) is not { } version)
+            return;
+        var dp = new Windows.ApplicationModel.DataTransfer.DataPackage();
+        dp.SetText(version);
+        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
+        // Under the card, also when it came from the menu (which has closed).
+        CopiedFeedback.Show(CardOf(sender));
     }
 
     private void News_Click(object sender, RoutedEventArgs e)

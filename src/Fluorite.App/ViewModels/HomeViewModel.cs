@@ -32,10 +32,47 @@ public sealed partial class HomeViewModel(
     [ObservableProperty] public partial string Greeting { get; set; } = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowVersionCards))]
+    [NotifyPropertyChangedFor(nameof(ShowVersionCards), nameof(HasLatestRelease), nameof(ReleaseCardTip), nameof(ReleaseCardName))]
     public partial string? LatestRelease { get; set; }
 
-    [ObservableProperty] public partial string? LatestSnapshot { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLatestSnapshot), nameof(SnapshotCardTip), nameof(SnapshotCardName))]
+    public partial string? LatestSnapshot { get; set; }
+
+    // A version card does something once its version is in: what Settings › Clicking a version card says.
+    public bool HasLatestRelease => LatestRelease is not null;
+    public bool HasLatestSnapshot => LatestSnapshot is not null;
+    public string? ReleaseCardTip => CardTip(LatestRelease);
+    public string? SnapshotCardTip => CardTip(LatestSnapshot);
+
+    /// <summary>Settings › Clicking a version card, read again on each visit (Home stays cached).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ReleaseCardTip), nameof(SnapshotCardTip), nameof(CardActionGlyph))]
+    public partial Core.Settings.VersionCardAction CardAction { get; set; } = settings.Current.VersionCardClick;
+
+    /// <summary>The hint at the card's end: what a click does.</summary>
+    public string CardActionGlyph => CardAction switch
+    {
+        Core.Settings.VersionCardAction.PatchNotes => "",
+        Core.Settings.VersionCardAction.CopyVersion => "",
+        _ => "",
+    };
+
+    private string? CardTip(string? version) => version is null ? null : Loc.Format(CardAction switch
+    {
+        Core.Settings.VersionCardAction.PatchNotes => "Home_VersionCardTipPatchNotes",
+        Core.Settings.VersionCardAction.CopyVersion => "Home_VersionCardTipCopy",
+        _ => "Home_VersionCardTip",
+    }, version);
+    public string ReleaseCardName => Loc.Format("Home_VersionCardName", Loc.Get("Home_LatestRelease/Text"), LatestRelease ?? "");
+    public string SnapshotCardName => Loc.Format("Home_VersionCardName", Loc.Get("Home_LatestSnapshot/Text"), LatestSnapshot ?? "");
+
+    /// <summary>The whole patch-notes feed: Home shows the newest few, but the latest release's can be older.</summary>
+    private IReadOnlyList<PatchNoteEntry> _allPatchNotes = [];
+
+    /// <summary>The patch notes of <paramref name="version"/>, once the feed has them.</summary>
+    public PatchNoteEntry? PatchNoteFor(string? version) =>
+        version is null ? null : _allPatchNotes.FirstOrDefault(n => n.Version == version);
     [ObservableProperty] public partial bool HasRecent { get; set; }
     [ObservableProperty] public partial bool NeedsAccount { get; set; }
 
@@ -90,6 +127,7 @@ public sealed partial class HomeViewModel(
 
     private async Task LoadCoreAsync()
     {
+        CardAction = settings.Current.VersionCardClick;
         // Started first: the network is the slow part, and it needn't wait for the local reads below.
         IsLoadingVersions = LatestRelease is null;
         var manifestTask = versions.GetManifestAsync();
@@ -149,6 +187,7 @@ public sealed partial class HomeViewModel(
         var notes = await notesTask;
         var articles = await newsTask;
 
+        _allPatchNotes = [.. notes];
         PatchNotes.Clear();
         foreach (var n in notes.DistinctBy(n => n.Id).Take(8))
         {
