@@ -336,6 +336,7 @@ public sealed partial class MainWindow : Window
             await OpenInstanceAsync(openId, launch: false);
         if (request.Files is { Count: > 0 } || request.InstallLocation is not null)
         {
+            await WhenLoadedAsync(); // Opened with a pack file at startup: its dialogs need the window in place.
             BringToFront();
             NavigateTo("Library");
             var packs = App.Get<ModpackInstallService>();
@@ -633,18 +634,30 @@ public sealed partial class MainWindow : Window
 
     private const int MonitorDpiEffective = 0;
 
+    /// <summary>
+    /// Done once the window's content is in the visual tree. A dialog needs its XamlRoot, which at startup (the
+    /// welcome screen, a pack file opened with Fluorite) isn't there yet: showing one then throws.
+    /// </summary>
+    private Task WhenLoadedAsync()
+    {
+        if (Content.XamlRoot is not null)
+            return Task.CompletedTask;
+        var loaded = new TaskCompletionSource();
+        void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            RootGrid.Loaded -= OnLoaded;
+            loaded.TrySetResult();
+        }
+        RootGrid.Loaded += OnLoaded;
+        return loaded.Task;
+    }
+
     /// <param name="force">Show it even after the first run (<c>--welcome</c>).</param>
     public async Task ShowWelcomeIfFirstRunAsync(bool force = false)
     {
         if (_settings.Current.FirstRunCompleted && !force)
             return;
-        // Wait for the visual tree so the dialog has a XamlRoot.
-        if (Content.XamlRoot is null)
-        {
-            var loaded = new TaskCompletionSource();
-            RootGrid.Loaded += (_, _) => loaded.TrySetResult();
-            await loaded.Task;
-        }
+        await WhenLoadedAsync();
         var dialog = new WelcomeDialog(again: _settings.Current.FirstRunCompleted) { XamlRoot = Content.XamlRoot, RequestedTheme = RootGrid.RequestedTheme };
         var result = await dialog.ShowAsync();
         if (dialog.RestartForLanguage)
