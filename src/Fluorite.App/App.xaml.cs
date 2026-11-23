@@ -22,6 +22,8 @@ public partial class App : Application
         InitializeComponent();
         UnhandledException += OnUnhandledException;
         TraceFirstChanceExceptions();
+        var keepLogsDays = Get<SettingsService>().Current.LogRetentionDays;
+        _ = Task.Run(() => Fluorite.Core.Diagnostics.LogRetention.Prune(AppPaths.LogsDir, keepLogsDays, DateTime.Now));
     }
 
     /// <summary>

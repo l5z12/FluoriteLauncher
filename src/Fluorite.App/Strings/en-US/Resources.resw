@@ -229,6 +229,11 @@
   <data name="Settings_DataRoot.Header" xml:space="preserve"><value>Data folder</value></data>
   <data name="Settings_OpenFolder.Content" xml:space="preserve"><value>Open</value></data>
   <data name="Settings_ChangeFolder.Content" xml:space="preserve"><value>Change…</value></data>
+  <data name="Settings_LogRetention.Header" xml:space="preserve"><value>Days to keep Fluorite's logs</value></data>
+  <data name="Settings_LogRetention.Description" xml:space="preserve"><value>Older logs are deleted automatically. The game's own logs in each instance aren't affected.</value></data>
+  <data name="Settings_LogRetentionBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Days to keep logs</value></data>
+  <data name="Settings_OpenLogs.Content" xml:space="preserve"><value>Open</value></data>
+  <data name="Settings_OpenLogs.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Open logs folder</value></data>
   <data name="Settings_GroupAbout.Text" xml:space="preserve"><value>About</value></data>
   <data name="Settings_About.Header" xml:space="preserve"><value>Fluorite Launcher</value></data>
   <!-- Browse -->

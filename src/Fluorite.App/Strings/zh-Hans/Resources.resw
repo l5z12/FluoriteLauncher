@@ -229,6 +229,11 @@
   <data name="Settings_DataRoot.Header" xml:space="preserve"><value>数据文件夹</value></data>
   <data name="Settings_OpenFolder.Content" xml:space="preserve"><value>打开</value></data>
   <data name="Settings_ChangeFolder.Content" xml:space="preserve"><value>更改…</value></data>
+  <data name="Settings_LogRetention.Header" xml:space="preserve"><value>Fluorite 日志保留天数</value></data>
+  <data name="Settings_LogRetention.Description" xml:space="preserve"><value>更早的日志会被自动删除。各实例中游戏自己的日志不受影响。</value></data>
+  <data name="Settings_LogRetentionBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>日志保留天数</value></data>
+  <data name="Settings_OpenLogs.Content" xml:space="preserve"><value>打开</value></data>
+  <data name="Settings_OpenLogs.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>打开日志文件夹</value></data>
   <data name="Settings_GroupAbout.Text" xml:space="preserve"><value>关于</value></data>
   <data name="Settings_About.Header" xml:space="preserve"><value>Fluorite Launcher</value></data>
   <!-- 浏览 -->

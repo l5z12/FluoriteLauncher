@@ -16,7 +16,7 @@ internal static class PaletteCommands
         "Settings_Parallel", "Settings_DownloadDetails", "Settings_OnGameStart", "Settings_CloseToTray",
         "Settings_ShowLogOnCrash", "Settings_NotifyExit", "Settings_DiscordPresence", "Settings_CheckMods",
         "Settings_LoaderAvailability", "Settings_AutoBackup", "Settings_Language", "Settings_Theme", "Settings_LauncherWindow",
-        "Settings_DataRoot", "Settings_About",
+        "Settings_DataRoot", "Settings_LogRetention", "Settings_About",
     ];
 
     private static readonly (string Tag, string Glyph)[] s_pages =

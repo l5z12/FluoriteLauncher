@@ -266,6 +266,15 @@
                     <Button x:Uid="Settings_ChangeFolder" Click="ChangeDataRoot_Click" />
                 </StackPanel>
             </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_LogRetention">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8A5;" /></toolkit:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <!-- Empty means the default, shown as the placeholder. -->
+                    <NumberBox x:Uid="Settings_LogRetentionBox" Width="110" Minimum="1" Maximum="365" SpinButtonPlacementMode="Compact"
+                               Value="{x:Bind ViewModel.LogRetentionDays, Mode=TwoWay}" PlaceholderText="{x:Bind vm:SettingsViewModel.DefaultLogRetentionText}" />
+                    <Button x:Uid="Settings_OpenLogs" Command="{x:Bind ViewModel.OpenLogsFolderCommand}" />
+                </StackPanel>
+            </toolkit:SettingsCard>
 
             <TextBlock x:Uid="Settings_GroupAbout" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
             <toolkit:SettingsCard x:Uid="Settings_About" Description="{x:Bind ViewModel.Version}">
