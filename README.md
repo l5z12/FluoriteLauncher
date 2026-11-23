@@ -12,6 +12,8 @@
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4" alt="Windows 10 and 11">
 </p>
 
+<p align="center"><b>English</b> · <a href="README.zh-Hans.md">简体中文</a></p>
+
 > NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
 ## Features
@@ -37,6 +39,10 @@ Fluorite is still in development and hasn't been released yet. It will come to t
 ## Where your data lives
 
 Fluorite keeps its instances and downloads in `%LOCALAPPDATA%\FluoriteLauncher`. You can move this folder in **Settings**.
+
+## Privacy
+
+Fluorite has no telemetry or analytics, and its developers don't run any servers. See the [Privacy Policy](PRIVACY.md) and the [Terms of Use](TERMS.md).
 
 ## License
 
