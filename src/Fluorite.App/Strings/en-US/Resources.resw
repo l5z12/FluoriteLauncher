@@ -54,6 +54,8 @@
   <data name="NewInstance_Name.Header" xml:space="preserve"><value>Name</value></data>
   <data name="NewInstance_Name.PlaceholderText" xml:space="preserve"><value>Defaults to the version and mod loader</value></data>
   <data name="NewInstance_Version.Header" xml:space="preserve"><value>Minecraft version</value></data>
+  <data name="NewInstance_VersionMissing" xml:space="preserve"><value>Minecraft {0} isn't in the version list. Pick a version.</value></data>
+  <data name="NewInstance_PickVersion" xml:space="preserve"><value>Pick a Minecraft version.</value></data>
   <data name="NewInstance_Snapshots.Content" xml:space="preserve"><value>Snapshots</value></data>
   <data name="NewInstance_Old.Content" xml:space="preserve"><value>Old beta and alpha</value></data>
   <data name="Instance_LastPlayed" xml:space="preserve"><value>Last played {0}</value></data>

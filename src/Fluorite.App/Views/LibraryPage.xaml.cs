@@ -563,24 +563,42 @@ public sealed partial class LibraryPage : Page
 
     private async void NewInstance_Click(object sender, RoutedEventArgs e) => await OpenNewInstanceAsync(null);
 
+    /// <summary>The dialog is loading or open: another Ctrl+N or click mustn't fill it again or open a second one.</summary>
+    private bool _newInstanceOpen;
+
     /// <param name="versionId">The version to pick; null picks the newest in the list.</param>
     private async Task OpenNewInstanceAsync(string? versionId)
     {
-        NewInstanceName.Text = "";
-        NewInstanceGroup.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(ViewModel.GroupNames); // AOT: a concrete list type.
-        NewInstanceGroup.SelectedIndex = -1;
-        NewInstanceGroup.Text = "";
-        ShowError(null);
-        Picker.SelectedOptionIndex = 0;
-        await LoadVersionsAsync(versionId);
-        await NewInstanceDialog.ShowAsync();
+        if (_newInstanceOpen)
+            return;
+        _newInstanceOpen = true;
+        try
+        {
+            NewInstanceName.Text = "";
+            NewInstanceGroup.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(ViewModel.GroupNames); // AOT: a concrete list type.
+            NewInstanceGroup.SelectedIndex = -1;
+            NewInstanceGroup.Text = "";
+            ShowError(null);
+            Picker.SelectedOptionIndex = 0;
+            await LoadVersionsAsync(versionId);
+            await NewInstanceDialog.ShowAsync();
+        }
+        finally
+        {
+            _newInstanceOpen = false;
+        }
     }
 
     private void NewInstanceVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         Picker.MinecraftVersion = (NewInstanceVersion.SelectedItem as VersionManifestEntry)?.Id;
         UpdateNamePlaceholder();
+        if (NewInstanceVersion.SelectedItem is not null && _askedToPickVersion)
+            ShowError(null); // "Pick a version": done.
     }
+
+    /// <summary>The error line asks for a Minecraft version (none picked): picking one clears it.</summary>
+    private bool _askedToPickVersion;
 
     private async void VersionFilter_Click(object sender, RoutedEventArgs e) => await LoadVersionsAsync();
 
@@ -596,8 +614,18 @@ public sealed partial class LibraryPage : Page
                 list = await ViewModel.GetVersionsAsync(includeSnapshots: true, ShowOld.IsChecked == true);
             }
             NewInstanceVersion.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<Fluorite.Core.Versions.VersionManifestEntry>(list); // AOT: a concrete list type.
-            var picked = select is null ? -1 : list.Select(v => v.Id).ToList().IndexOf(select);
-            NewInstanceVersion.SelectedIndex = picked >= 0 ? picked : list.Count > 0 ? 0 : -1;
+            if (select is null)
+            {
+                NewInstanceVersion.SelectedIndex = list.Count > 0 ? 0 : -1;
+                return;
+            }
+            // The asked-for version or none: never quietly another one, which Create would then make.
+            NewInstanceVersion.SelectedIndex = list.Select(v => v.Id).ToList().IndexOf(select);
+            if (NewInstanceVersion.SelectedIndex < 0)
+            {
+                ShowError(Loc.Format("NewInstance_VersionMissing", select));
+                _askedToPickVersion = true;
+            }
         }
         catch (HttpRequestException ex)
         {
@@ -608,6 +636,7 @@ public sealed partial class LibraryPage : Page
     /// <summary>The error line takes no space (and adds no StackPanel spacing) until there is something to say.</summary>
     private void ShowError(string? message)
     {
+        _askedToPickVersion = false;
         NewInstanceError.Text = message ?? "";
         NewInstanceError.Visibility = string.IsNullOrEmpty(message) ? Visibility.Collapsed : Visibility.Visible;
     }
@@ -616,7 +645,8 @@ public sealed partial class LibraryPage : Page
     {
         if (NewInstanceVersion.SelectedItem is not VersionManifestEntry version || Picker.IsIncomplete)
         {
-            ShowError(Picker.IsIncomplete ? Loc.Get("Loader_PickVersion") : null);
+            ShowError(Picker.IsIncomplete ? Loc.Get("Loader_PickVersion") : Loc.Get("NewInstance_PickVersion"));
+            _askedToPickVersion = !Picker.IsIncomplete;
             args.Cancel = true;
             return;
         }

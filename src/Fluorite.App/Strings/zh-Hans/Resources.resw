@@ -54,6 +54,8 @@
   <data name="NewInstance_Name.Header" xml:space="preserve"><value>名称</value></data>
   <data name="NewInstance_Name.PlaceholderText" xml:space="preserve"><value>默认为版本号和模组加载器</value></data>
   <data name="NewInstance_Version.Header" xml:space="preserve"><value>Minecraft 版本</value></data>
+  <data name="NewInstance_VersionMissing" xml:space="preserve"><value>版本列表中没有 Minecraft {0}，请选择一个版本。</value></data>
+  <data name="NewInstance_PickVersion" xml:space="preserve"><value>请选择 Minecraft 版本。</value></data>
   <data name="NewInstance_Snapshots.Content" xml:space="preserve"><value>快照</value></data>
   <data name="NewInstance_Old.Content" xml:space="preserve"><value>远古 Beta 与 Alpha</value></data>
   <data name="Instance_LastPlayed" xml:space="preserve"><value>上次游玩：{0}</value></data>
