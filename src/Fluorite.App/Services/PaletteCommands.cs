@@ -16,6 +16,7 @@ internal static class PaletteCommands
         "Settings_Parallel", "Settings_DownloadDetails", "Settings_OnGameStart", "Settings_CloseToTray",
         "Settings_ShowLogOnCrash", "Settings_NotifyExit", "Settings_DiscordPresence", "Settings_CheckMods",
         "Settings_LoaderAvailability", "Settings_AutoBackup", "Settings_Language", "Settings_Theme", "Settings_LauncherWindow",
+        "Settings_HomeLoading", "Settings_VersionCardClick",
         "Settings_DataRoot", "Settings_LogRetention", "Settings_About",
     ];
 

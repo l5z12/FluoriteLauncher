@@ -36,6 +36,8 @@
   <data name="Home_LatestRelease.Text" xml:space="preserve"><value>Latest release</value></data>
   <data name="Home_LatestSnapshot.Text" xml:space="preserve"><value>Latest snapshot</value></data>
   <data name="Home_VersionCardTip" xml:space="preserve"><value>New instance with Minecraft {0}</value></data>
+  <data name="Home_VersionCardTipPatchNotes" xml:space="preserve"><value>Patch notes for Minecraft {0}</value></data>
+  <data name="Home_VersionCardTipCopy" xml:space="preserve"><value>Copy {0}</value></data>
   <data name="Home_VersionCardName" xml:space="preserve"><value>{0}: {1}</value></data>
   <data name="Home_VersionNewInstance.Text" xml:space="preserve"><value>New instance</value></data>
   <data name="Home_VersionPatchNotes.Text" xml:space="preserve"><value>Patch notes</value></data>
@@ -320,6 +322,11 @@
   <data name="Settings_HomeLoadingWindow.Content" xml:space="preserve"><value>Show a launch window</value></data>
   <data name="Settings_HomeLoadingIndicator.Content" xml:space="preserve"><value>Show loading indicators</value></data>
   <data name="Settings_HomeLoadingHide.Content" xml:space="preserve"><value>Hide the cards until loaded</value></data>
+  <data name="Settings_VersionCardClick.Header" xml:space="preserve"><value>Clicking a version card</value></data>
+  <data name="Settings_VersionCardClick.Description" xml:space="preserve"><value>What clicking Latest release or Latest snapshot on Home does. Right-click a card for the other choices.</value></data>
+  <data name="Settings_VersionCardNewInstance.Content" xml:space="preserve"><value>Start a new instance</value></data>
+  <data name="Settings_VersionCardPatchNotes.Content" xml:space="preserve"><value>Open the patch notes</value></data>
+  <data name="Settings_VersionCardCopy.Content" xml:space="preserve"><value>Copy the version number</value></data>
   <data name="LaunchWindow_Starting" xml:space="preserve"><value>Starting Fluorite</value></data>
   <data name="Home_LoadingVersions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Loading the latest versions</value></data>
   <data name="Home_LoadingNews.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Loading patch notes and news</value></data>

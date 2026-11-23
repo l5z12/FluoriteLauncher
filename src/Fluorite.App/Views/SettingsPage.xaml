@@ -259,6 +259,15 @@
                     <ComboBoxItem x:Uid="Settings_HomeLoadingHide" />
                 </ComboBox>
             </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_VersionCardClick">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8B0;" /></toolkit:SettingsCard.HeaderIcon>
+                <!-- In VersionCardAction's order. -->
+                <ComboBox SelectedIndex="{x:Bind ViewModel.VersionCardClickIndex, Mode=TwoWay}" MinWidth="200">
+                    <ComboBoxItem x:Uid="Settings_VersionCardNewInstance" />
+                    <ComboBoxItem x:Uid="Settings_VersionCardPatchNotes" />
+                    <ComboBoxItem x:Uid="Settings_VersionCardCopy" />
+                </ComboBox>
+            </toolkit:SettingsCard>
             <toolkit:SettingsCard x:Uid="Settings_DataRoot" Description="{x:Bind ViewModel.DataRoot}">
                 <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8B7;" /></toolkit:SettingsCard.HeaderIcon>
                 <StackPanel Orientation="Horizontal" Spacing="8">

@@ -87,13 +87,13 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <!-- Once its version is in, a card starts a new instance of it; its menu also has the patch notes. -->
+                <!-- Once its version is in, a click does what Settings › Clicking a version card says; the menu has every choice. -->
                 <Button x:Name="ReleaseCard" Tag="release" Click="VersionCard_Click" IsEnabled="{x:Bind ViewModel.HasLatestRelease, Mode=OneWay}"
                         Padding="16" CornerRadius="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         AutomationProperties.Name="{x:Bind ViewModel.ReleaseCardName, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.ReleaseCardTip, Mode=OneWay}">
                     <Button.ContextFlyout>
                         <MenuFlyout Opening="VersionMenu_Opening">
-                            <MenuFlyoutItem x:Uid="Home_VersionNewInstance" Tag="release" Click="VersionCard_Click">
+                            <MenuFlyoutItem x:Uid="Home_VersionNewInstance" Tag="release" Click="VersionNewInstance_Click">
                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE710;" /></MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                             <MenuFlyoutItem x:Name="ReleasePatchNotesItem" x:Uid="Home_VersionPatchNotes" Tag="release" Click="VersionPatchNotes_Click">
@@ -116,7 +116,7 @@
                                 <ProgressRing x:Uid="Home_LoadingVersions" IsActive="{x:Bind ViewModel.IsLoadingVersions, Mode=OneWay}" Width="20" Height="20" HorizontalAlignment="Left" />
                             </Grid>
                         </StackPanel>
-                        <FontIcon Grid.Column="1" Glyph="&#xE710;" FontSize="16" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        <FontIcon Grid.Column="1" Glyph="{x:Bind ViewModel.CardActionGlyph, Mode=OneWay}" FontSize="16" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                   Visibility="{x:Bind local:Bind.Visible(ViewModel.HasLatestRelease), Mode=OneWay}" />
                     </Grid>
                 </Button>
@@ -125,7 +125,7 @@
                         AutomationProperties.Name="{x:Bind ViewModel.SnapshotCardName, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.SnapshotCardTip, Mode=OneWay}">
                     <Button.ContextFlyout>
                         <MenuFlyout Opening="VersionMenu_Opening">
-                            <MenuFlyoutItem x:Uid="Home_VersionNewInstance" Tag="snapshot" Click="VersionCard_Click">
+                            <MenuFlyoutItem x:Uid="Home_VersionNewInstance" Tag="snapshot" Click="VersionNewInstance_Click">
                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE710;" /></MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                             <MenuFlyoutItem x:Name="SnapshotPatchNotesItem" x:Uid="Home_VersionPatchNotes" Tag="snapshot" Click="VersionPatchNotes_Click">
@@ -148,7 +148,7 @@
                                 <ProgressRing x:Uid="Home_LoadingVersions" IsActive="{x:Bind ViewModel.IsLoadingVersions, Mode=OneWay}" Width="20" Height="20" HorizontalAlignment="Left" />
                             </Grid>
                         </StackPanel>
-                        <FontIcon Grid.Column="1" Glyph="&#xE710;" FontSize="16" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        <FontIcon Grid.Column="1" Glyph="{x:Bind ViewModel.CardActionGlyph, Mode=OneWay}" FontSize="16" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                   Visibility="{x:Bind local:Bind.Visible(ViewModel.HasLatestSnapshot), Mode=OneWay}" />
                     </Grid>
                 </Button>

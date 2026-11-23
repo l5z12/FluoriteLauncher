@@ -36,6 +36,8 @@
   <data name="Home_LatestRelease.Text" xml:space="preserve"><value>最新正式版</value></data>
   <data name="Home_LatestSnapshot.Text" xml:space="preserve"><value>最新快照</value></data>
   <data name="Home_VersionCardTip" xml:space="preserve"><value>用 Minecraft {0} 新建实例</value></data>
+  <data name="Home_VersionCardTipPatchNotes" xml:space="preserve"><value>Minecraft {0} 的更新日志</value></data>
+  <data name="Home_VersionCardTipCopy" xml:space="preserve"><value>复制 {0}</value></data>
   <data name="Home_VersionCardName" xml:space="preserve"><value>{0}：{1}</value></data>
   <data name="Home_VersionNewInstance.Text" xml:space="preserve"><value>新建实例</value></data>
   <data name="Home_VersionPatchNotes.Text" xml:space="preserve"><value>更新日志</value></data>
@@ -320,6 +322,11 @@
   <data name="Settings_HomeLoadingWindow.Content" xml:space="preserve"><value>显示启动窗口</value></data>
   <data name="Settings_HomeLoadingIndicator.Content" xml:space="preserve"><value>显示加载指示器</value></data>
   <data name="Settings_HomeLoadingHide.Content" xml:space="preserve"><value>加载完成前隐藏卡片</value></data>
+  <data name="Settings_VersionCardClick.Header" xml:space="preserve"><value>点击版本卡片时</value></data>
+  <data name="Settings_VersionCardClick.Description" xml:space="preserve"><value>点击主页上的“最新正式版”或“最新快照”时执行的操作。右键点击卡片可使用其他选项。</value></data>
+  <data name="Settings_VersionCardNewInstance.Content" xml:space="preserve"><value>新建实例</value></data>
+  <data name="Settings_VersionCardPatchNotes.Content" xml:space="preserve"><value>打开更新日志</value></data>
+  <data name="Settings_VersionCardCopy.Content" xml:space="preserve"><value>复制版本号</value></data>
   <data name="LaunchWindow_Starting" xml:space="preserve"><value>正在启动 Fluorite</value></data>
   <data name="Home_LoadingVersions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>正在加载最新版本</value></data>
   <data name="Home_LoadingNews.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>正在加载更新日志和新闻</value></data>

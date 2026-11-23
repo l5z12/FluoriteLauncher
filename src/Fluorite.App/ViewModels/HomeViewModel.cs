@@ -39,11 +39,31 @@ public sealed partial class HomeViewModel(
     [NotifyPropertyChangedFor(nameof(HasLatestSnapshot), nameof(SnapshotCardTip), nameof(SnapshotCardName))]
     public partial string? LatestSnapshot { get; set; }
 
-    // A version card does something once its version is in: a click starts a new instance of it.
+    // A version card does something once its version is in: what Settings › Clicking a version card says.
     public bool HasLatestRelease => LatestRelease is not null;
     public bool HasLatestSnapshot => LatestSnapshot is not null;
-    public string? ReleaseCardTip => LatestRelease is null ? null : Loc.Format("Home_VersionCardTip", LatestRelease);
-    public string? SnapshotCardTip => LatestSnapshot is null ? null : Loc.Format("Home_VersionCardTip", LatestSnapshot);
+    public string? ReleaseCardTip => CardTip(LatestRelease);
+    public string? SnapshotCardTip => CardTip(LatestSnapshot);
+
+    /// <summary>Settings › Clicking a version card, read again on each visit (Home stays cached).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ReleaseCardTip), nameof(SnapshotCardTip), nameof(CardActionGlyph))]
+    public partial Core.Settings.VersionCardAction CardAction { get; set; } = settings.Current.VersionCardClick;
+
+    /// <summary>The hint at the card's end: what a click does.</summary>
+    public string CardActionGlyph => CardAction switch
+    {
+        Core.Settings.VersionCardAction.PatchNotes => "",
+        Core.Settings.VersionCardAction.CopyVersion => "",
+        _ => "",
+    };
+
+    private string? CardTip(string? version) => version is null ? null : Loc.Format(CardAction switch
+    {
+        Core.Settings.VersionCardAction.PatchNotes => "Home_VersionCardTipPatchNotes",
+        Core.Settings.VersionCardAction.CopyVersion => "Home_VersionCardTipCopy",
+        _ => "Home_VersionCardTip",
+    }, version);
     public string ReleaseCardName => Loc.Format("Home_VersionCardName", Loc.Get("Home_LatestRelease/Text"), LatestRelease ?? "");
     public string SnapshotCardName => Loc.Format("Home_VersionCardName", Loc.Get("Home_LatestSnapshot/Text"), LatestSnapshot ?? "");
 
@@ -107,6 +127,7 @@ public sealed partial class HomeViewModel(
 
     private async Task LoadCoreAsync()
     {
+        CardAction = settings.Current.VersionCardClick;
         // Started first: the network is the slow part, and it needn't wait for the local reads below.
         IsLoadingVersions = LatestRelease is null;
         var manifestTask = versions.GetManifestAsync();
