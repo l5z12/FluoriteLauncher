@@ -51,7 +51,15 @@
             </StackPanel>
         </Grid>
 
-        <TextBox x:Name="NameBox" x:Uid="ModpackConfirm_NameBox" MaxLength="100" />
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="180" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="NameBox" x:Uid="ModpackConfirm_NameBox" MaxLength="100" />
+            <!-- As in New instance: pick a group in use or type a new one; empty leaves it ungrouped. -->
+            <ComboBox x:Name="GroupBox" x:Uid="NewInstance_Group" Grid.Column="1" IsEditable="True" HorizontalAlignment="Stretch" />
+        </Grid>
         <CheckBox x:Name="OptionalBox" IsChecked="True" Visibility="Collapsed" Margin="0,-8,0,0" />
         <StackPanel x:Name="Notices" Spacing="8" Visibility="Collapsed" />
     </StackPanel>

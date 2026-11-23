@@ -42,6 +42,7 @@ public sealed class ModpackInstallService(
     private async Task<GameInstance?> InstallAsync(string what, Func<string, IProgress<DownloadProgress>, CancellationToken, Task<PackManifest>> load)
     {
         var work = NewWorkDir();
+        var groups = Task.Run(GroupNamesAsync); // For the dialog's group box; read while the pack is.
         try
         {
             PackManifest manifest;
@@ -60,11 +61,11 @@ public sealed class ModpackInstallService(
                 return null;
             }
 
-            var choice = await ConfirmAsync(manifest);
+            var choice = await ConfirmAsync(manifest, await groups);
             if (choice is not { } c)
                 return null;
 
-            var instance = await ModpackInstaller.CreateInstanceAsync(layout, manifest, c.Name);
+            var instance = await ModpackInstaller.CreateInstanceAsync(layout, manifest, c.Name, c.Group);
             await TryDownloadIconAsync(instance, manifest.IconUrl);
             var job = jobs.Start(manifest.Name, instance, null);
             job.Status = Loc.Get("Modpack_Installing");
@@ -91,14 +92,36 @@ public sealed class ModpackInstallService(
         }
     }
 
-    private sealed record InstallChoice(string Name, bool IncludeOptional);
+    private sealed record InstallChoice(string Name, string? Group, bool IncludeOptional);
 
-    private static async Task<InstallChoice?> ConfirmAsync(PackManifest m)
+    private static async Task<InstallChoice?> ConfirmAsync(PackManifest m, IReadOnlyList<string> groups)
     {
-        var panel = new Views.ModpackConfirmPanel(m);
+        var panel = new Views.ModpackConfirmPanel(m, groups);
         var dialog = Dialogs.Create(Loc.Get("Modpack_InstallTitle"), Dialogs.Scroll(panel, 560), Loc.Get("Content_Install"));
         dialog.Opened += (_, _) => panel.FocusName();
-        return await Dialogs.ShowAsync(dialog) == ContentDialogResult.Primary ? new InstallChoice(panel.InstanceName, panel.IncludeOptional) : null;
+        return await Dialogs.ShowAsync(dialog) == ContentDialogResult.Primary ? new InstallChoice(panel.InstanceName, panel.Group, panel.IncludeOptional) : null;
+    }
+
+    /// <summary>
+    /// Every Library group, A–Z, as New instance and "Move to group" offer them: those in use and the empty ones made
+    /// with "New group…". Read here rather than from the Library, which may not have loaded (installing from Browse).
+    /// </summary>
+    private async Task<IReadOnlyList<string>> GroupNamesAsync()
+    {
+        IEnumerable<string?> inUse;
+        try
+        {
+            inUse = (await registry.GetInstancesAsync()).Select(i => i.Manifest.Group);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            inUse = [];
+        }
+        return inUse.Where(g => !string.IsNullOrWhiteSpace(g)).Select(g => g!.Trim())
+            .Concat(settings.Current.CreatedGroups)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
     }
 
     // ── Updates ───────────────────────────────────────────────────────────

@@ -41,7 +41,7 @@ internal static class PackCommands
             var work = WorkDir(s);
             var m = await s.Packs.LoadLocationAsync(pr.GetValue(locationArg)!, work, (IProgress<Fluorite.Core.Net.DownloadProgress>)new ConsoleProgress(), ct);
             Print(m);
-            var instance = await ModpackInstaller.CreateInstanceAsync(s.Layout, m, pr.GetValue(nameOption), ct);
+            var instance = await ModpackInstaller.CreateInstanceAsync(s.Layout, m, pr.GetValue(nameOption), ct: ct);
             var progress = new ConsoleProgress(); IProgress<Fluorite.Core.Net.DownloadProgress> dl = progress;
             PackInstallResult result;
             try

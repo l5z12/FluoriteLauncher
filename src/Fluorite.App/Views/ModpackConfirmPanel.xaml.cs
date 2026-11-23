@@ -8,13 +8,14 @@ using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Fluorite.App.Views;
 
-/// <summary>The Install modpack dialog's body: the pack, what it runs on, the instance's name, optional files, notices.</summary>
+/// <summary>The Install modpack dialog's body: the pack, what it runs on, the instance's name and group, optional files, notices.</summary>
 public sealed partial class ModpackConfirmPanel : UserControl
 {
     private const int IconSize = 64;
     private readonly string _packName;
 
-    public ModpackConfirmPanel(PackManifest m)
+    /// <param name="groups">The Library's groups, for the group box.</param>
+    public ModpackConfirmPanel(PackManifest m, IReadOnlyList<string> groups)
     {
         InitializeComponent();
         _packName = m.Name;
@@ -40,6 +41,7 @@ public sealed partial class ModpackConfirmPanel : UserControl
 
         NameBox.Text = m.Name;
         NameBox.PlaceholderText = m.Name; // Emptied: the pack's name.
+        GroupBox.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(groups); // AOT: a concrete list type.
 
         var optional = m.Files.Count(f => f.Client == PackSide.Optional);
         if (optional > 0)
@@ -59,6 +61,9 @@ public sealed partial class ModpackConfirmPanel : UserControl
 
     /// <summary>What to call the instance: as typed, or the pack's name when left empty.</summary>
     public string InstanceName => string.IsNullOrWhiteSpace(NameBox.Text) ? _packName : NameBox.Text.Trim();
+
+    /// <summary>The Library group picked or typed; null for none.</summary>
+    public string? Group => string.IsNullOrWhiteSpace(GroupBox.Text) ? null : GroupBox.Text.Trim();
 
     public bool IncludeOptional => OptionalBox.Visibility == Visibility.Collapsed || OptionalBox.IsChecked != false;
 
