@@ -23,6 +23,13 @@ on:
 permissions:
   contents: read
 
+# One run per branch at a time, build and deploy together, so runs on main deploy in push order and an older commit
+# can't overwrite a newer one. A newer run replaces any run still waiting, so main's latest commit always deploys
+# last. A main run is never cancelled halfway through a deploy; a pull request's newer push cancels its older build.
+concurrency:
+  group: website-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   ASTRO_TELEMETRY_DISABLED: 1
   WRANGLER_SEND_METRICS: false
@@ -66,10 +73,6 @@ jobs:
     environment:
       name: website
       url: https://fluorite.l5z12.dev
-    # One deploy at a time, and never cancel one halfway.
-    concurrency:
-      group: website-deploy
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
 

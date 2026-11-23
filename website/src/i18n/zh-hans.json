@@ -15,7 +15,7 @@
   "viewSource": "查看源代码",
   "buildIt": "自行构建",
   "facts": {
-    "windows": "Windows 10 (>2004) & Windows 11",
+    "windows": "Windows 10 (2004+) & Windows 11",
     "arch": "x64 和 ARM64",
     "license": "GPL 3.0 开源"
   },
