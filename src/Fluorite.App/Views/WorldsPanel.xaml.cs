@@ -210,11 +210,14 @@ public sealed partial class WorldsPanel : UserControl
             return;
         e.Handled = true;
         var items = await e.DataView.GetStorageItemsAsync();
-        var paths = items.Where(i => i is StorageFolder || (i is StorageFile f && f.FileType.Equals(".zip", StringComparison.OrdinalIgnoreCase))).Select(i => i.Path).ToList();
-        if (paths.Count > 0)
-            await vm.ImportAsync(paths);
-        // A .mrpack is never a world: it installs as its own instance, as anywhere else in the window.
-        else if (items.OfType<StorageFile>().FirstOrDefault(f => f.FileType.Equals(".mrpack", StringComparison.OrdinalIgnoreCase)) is { } pack && App.Window is { } window)
-            await window.InstallModpackAsync(pack.Path);
+        // A modpack is never a world: it installs as its own instance, as anywhere else in the window.
+        var (packs, files) = await ModpackInstallService.SplitModpacksAsync(items.OfType<StorageFile>().Select(f => f.Path));
+        var worlds = items.OfType<StorageFolder>().Select(f => f.Path)
+            .Concat(files.Where(p => p.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        if (worlds.Count > 0)
+            await vm.ImportAsync(worlds);
+        if (packs.Count > 0 && App.Window is { } window)
+            await window.InstallModpackAsync(packs[0]); // One at a time; each install asks for confirmation.
     }
 }

@@ -250,19 +250,16 @@ public sealed partial class ContentPanel : UserControl
 
     private async void Root_Drop(object sender, DragEventArgs e)
     {
-        if (ViewModel is not { Location: { } location } vm || !e.DataView.Contains(StandardDataFormats.StorageItems))
+        if (ViewModel is not { Location: not null } vm || !e.DataView.Contains(StandardDataFormats.StorageItems))
             return;
         e.Handled = true;
         var items = await e.DataView.GetStorageItemsAsync();
-        var paths = items.OfType<StorageFile>().Select(f => f.Path).ToList();
-        // A .mrpack is never content: it installs as its own instance, as anywhere else in the window.
-        if (!paths.Any(p => location.Accepts(Path.GetFileName(p)))
-            && paths.FirstOrDefault(p => p.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase)) is { } pack && App.Window is { } window)
-        {
-            await window.InstallModpackAsync(pack);
-            return;
-        }
-        ReportImported(await vm.ImportAsync(paths));
+        // A modpack is never content: it installs as its own instance, as anywhere else in the window.
+        var (packs, files) = await ModpackInstallService.SplitModpacksAsync(items.OfType<StorageFile>().Select(f => f.Path));
+        if (files.Count > 0 || packs.Count == 0)
+            ReportImported(await vm.ImportAsync(files));
+        if (packs.Count > 0 && App.Window is { } window)
+            await window.InstallModpackAsync(packs[0]); // One at a time; each install asks for confirmation.
     }
 
     private void ReportImported(int count)

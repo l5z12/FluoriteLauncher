@@ -24,6 +24,26 @@ public static class ModpackReader
         return manifest;
     }
 
+    /// <summary>
+    /// Whether a zip is a modpack <see cref="Read(ZipArchive)"/> takes, by the same tests, without reading the pack:
+    /// tells a pack zip from a world, resource pack or mod zip. False for anything that can't be opened.
+    /// </summary>
+    public static bool IsModpack(string archivePath)
+    {
+        try
+        {
+            using var zip = ZipFile.OpenRead(archivePath);
+            return zip.GetEntry("modrinth.index.json") is not null
+                || (zip.GetEntry("manifest.json") is { } cf && Str(Parse(cf), "manifestType") is null or "minecraftModpack")
+                || FindInstanceCfg(zip) is not null
+                || zip.GetEntry("bin/modpack.jar") is not null || zip.GetEntry("bin/version.json") is not null;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException)
+        {
+            return false;
+        }
+    }
+
     public static PackManifest Read(ZipArchive zip)
     {
         if (zip.GetEntry("modrinth.index.json") is { } mr)

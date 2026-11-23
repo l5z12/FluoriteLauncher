@@ -20,6 +20,27 @@ public sealed class ModpackInstallService(
     /// <summary>Raised on the UI thread after a pack was installed into a new instance.</summary>
     public event EventHandler<GameInstance>? InstanceCreated;
 
+    /// <summary>A modpack file by its name: a .mrpack, or a .zip (which may still turn out to be something else).</summary>
+    public static bool HasModpackExtension(string path) =>
+        path.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Dropped files split into modpacks (a .mrpack, or a zip that holds a pack) and the rest, for the panels that take
+    /// zips of their own (worlds, resource packs): a pack dropped there installs instead of being added as content.
+    /// </summary>
+    public static Task<(List<string> Packs, List<string> Others)> SplitModpacksAsync(IEnumerable<string> paths) => Task.Run(() =>
+    {
+        var packs = new List<string>();
+        var others = new List<string>();
+        foreach (var path in paths)
+        {
+            var isPack = path.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase)
+                || (path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) && ModpackReader.IsModpack(path));
+            (isPack ? packs : others).Add(path);
+        }
+        return (packs, others);
+    });
+
     private static string NewWorkDir() => Path.Combine(AppPaths.DataRoot, "cache", "packs", Guid.NewGuid().ToString("N")[..8]);
 
     public Task<GameInstance?> InstallFromFileAsync(string path) =>
