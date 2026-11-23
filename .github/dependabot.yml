@@ -57,6 +57,11 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # astro check (pnpm check) refuses TypeScript 7. Astro's TS 7.1+ route is @astrojs/ts-content-mapper; drop this
+      # rule when we move to it or astro check supports 7.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       website:
         patterns:
