@@ -45,6 +45,8 @@ public sealed class ModpackService(ContentService content, HttpClient http, Down
     /// finds it on its own platform, for the icon and summary a pack installed from the site gets. Best effort: offline,
     /// or for a pack that was never published, it just keeps none.
     /// </summary>
+    private static readonly TimeSpan s_lookupTimeout = TimeSpan.FromSeconds(15);
+
     private async Task FindProjectAsync(PackManifest manifest, string archive, CancellationToken ct)
     {
         if (manifest.IconEntry is not null || manifest.IconUrl is not null || manifest.IconKey is not null)
@@ -61,8 +63,11 @@ public sealed class ModpackService(ContentService content, HttpClient http, Down
         {
             var client = content.Get(p);
             var hashes = await ContentHashes.ComputeAsync(archive, ct).ConfigureAwait(false);
-            var matches = await client.IdentifyAsync([hashes], ct).ConfigureAwait(false);
-            if (matches.Count == 0 || await TryGetProjectAsync(client, matches[0].Version.ProjectId, ct).ConfigureAwait(false) is not { } project)
+            // The shared HttpClient never times out; a stalled answer mustn't keep the pack from installing.
+            using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            limit.CancelAfter(s_lookupTimeout);
+            var matches = await client.IdentifyAsync([hashes], limit.Token).ConfigureAwait(false);
+            if (matches.Count == 0 || await TryGetProjectAsync(client, matches[0].Version.ProjectId, limit.Token).ConfigureAwait(false) is not { } project)
                 return;
             manifest.IconUrl = project.IconUrl;
             manifest.Summary ??= project.Summary;
