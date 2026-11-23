@@ -4,6 +4,7 @@ using Fluorite.Modding.Content;
 using Fluorite.Modding.Platforms;
 using Fluorite.Modding.Platforms.CurseForge;
 using Fluorite.Modding.Platforms.Modrinth;
+using Fluorite.Modding.Util;
 
 namespace Fluorite.Modding.Modpacks;
 
@@ -24,11 +25,52 @@ public sealed class ModpackService(ContentService content, HttpClient http, Down
 
     private CurseForgeClient? CurseForge => content.Has(ContentPlatform.CurseForge) ? (CurseForgeClient)content.Get(ContentPlatform.CurseForge) : null;
 
+    /// <summary>A pack file on disk or behind a direct link; given its project's icon when it carries none.</summary>
     public async Task<PackManifest> LoadFileAsync(string archive, CancellationToken ct = default)
+    {
+        var manifest = await ReadFileAsync(archive, ct).ConfigureAwait(false);
+        await FindProjectAsync(manifest, archive, ct).ConfigureAwait(false);
+        return manifest;
+    }
+
+    private async Task<PackManifest> ReadFileAsync(string archive, CancellationToken ct)
     {
         var manifest = await Task.Run(() => ModpackReader.Read(archive), ct).ConfigureAwait(false);
         await ResolveAsync(manifest, ct).ConfigureAwait(false);
         return manifest;
+    }
+
+    /// <summary>
+    /// A Modrinth or CurseForge pack file doesn't say which project it's from, and rarely carries an icon. Its hash
+    /// finds it on its own platform, for the icon and summary a pack installed from the site gets. Best effort: offline,
+    /// or for a pack that was never published, it just keeps none.
+    /// </summary>
+    private async Task FindProjectAsync(PackManifest manifest, string archive, CancellationToken ct)
+    {
+        if (manifest.IconEntry is not null || manifest.IconUrl is not null || manifest.IconKey is not null)
+            return;
+        ContentPlatform? platform = manifest.Format switch
+        {
+            PackFormat.Modrinth => ContentPlatform.Modrinth,
+            PackFormat.CurseForge => ContentPlatform.CurseForge,
+            _ => null,
+        };
+        if (platform is not { } p || !content.Has(p))
+            return;
+        try
+        {
+            var client = content.Get(p);
+            var hashes = await ContentHashes.ComputeAsync(archive, ct).ConfigureAwait(false);
+            var matches = await client.IdentifyAsync([hashes], ct).ConfigureAwait(false);
+            if (matches.Count == 0 || await TryGetProjectAsync(client, matches[0].Version.ProjectId, ct).ConfigureAwait(false) is not { } project)
+                return;
+            manifest.IconUrl = project.IconUrl;
+            manifest.Summary ??= project.Summary;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or IOException or System.Text.Json.JsonException
+                                   || (ex is OperationCanceledException && !ct.IsCancellationRequested))
+        {
+        }
     }
 
     private IContentPlatform? Modrinth => content.Has(ContentPlatform.Modrinth) ? content.Get(ContentPlatform.Modrinth) : null;
@@ -52,7 +94,8 @@ public sealed class ModpackService(ContentService content, HttpClient http, Down
         Directory.CreateDirectory(workDir);
         var path = Path.Combine(workDir, PackPaths.Sanitize(file.FileName)?.Replace('/', '_') ?? "pack.zip");
         await downloader.DownloadAllAsync([new DownloadItem(mirrors.Candidates(file.Url), path, file.Sha1, file.Size > 0 ? file.Size : null) { DisplayName = file.FileName }], progress, ct).ConfigureAwait(false);
-        var manifest = await LoadFileAsync(path, ct).ConfigureAwait(false);
+        // Not LoadFileAsync: the project is known, and LoadProjectAsync takes its icon from there.
+        var manifest = await ReadFileAsync(path, ct).ConfigureAwait(false);
         manifest.Source = new PackSource(version.Platform == ContentPlatform.Modrinth ? PackFormat.Modrinth : PackFormat.CurseForge, version.ProjectId, version.Id, version.VersionNumber);
         manifest.Version ??= version.VersionNumber;
         return manifest;
