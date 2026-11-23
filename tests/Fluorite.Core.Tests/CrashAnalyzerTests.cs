@@ -97,6 +97,13 @@ public class CrashAnalyzerTests
         Assert.Contains(@"C:\Users\<user>\AppData", text);
     }
 
+    [Fact]
+    public void Redactor_MasksShortSignInNamesWhereTheyStandAlone()
+    {
+        var text = LogRedactor.Redact("Signed in as Bob (Bob@x). Loading Bobsleigh mod", ["Bob"]);
+        Assert.Equal($"Signed in as {LogRedactor.Mask} ({LogRedactor.Mask}@x). Loading Bobsleigh mod", text);
+    }
+
     [Theory]
     [InlineData(16384, 0, 2048)]
     [InlineData(16384, 100, 4608)]

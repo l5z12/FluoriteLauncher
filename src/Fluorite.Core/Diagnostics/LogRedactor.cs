@@ -15,8 +15,12 @@ public static partial class LogRedactor
     {
         foreach (var secret in secrets)
         {
-            if (secret is { Length: >= 6 })
-                text = text.Replace(secret, Mask, StringComparison.Ordinal);
+            if (string.IsNullOrWhiteSpace(secret))
+                continue;
+            // A short sign-in name ("Bob") is masked only where it stands alone, so words that merely contain it survive.
+            text = secret.Length >= 6
+                ? text.Replace(secret, Mask, StringComparison.Ordinal)
+                : Regex.Replace(text, $@"(?<!\w){Regex.Escape(secret)}(?!\w)", Mask);
         }
         text = TokenArgument().Replace(text, "${name}" + Mask);
         text = SessionToken().Replace(text, "token:" + Mask + ":");
