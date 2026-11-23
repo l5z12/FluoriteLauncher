@@ -7,8 +7,7 @@
     xmlns:local="using:Fluorite.App.Views"
     xmlns:vm="using:Fluorite.App.ViewModels"
     xmlns:versions="using:Fluorite.Core.Versions"
-    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
-    AllowDrop="True" DragOver="Page_DragOver" Drop="Page_Drop">
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls">
 
     <Page.Resources>
         <!-- The eye-slash on a hidden instance's icon (bottom-right, a little outside it). -->

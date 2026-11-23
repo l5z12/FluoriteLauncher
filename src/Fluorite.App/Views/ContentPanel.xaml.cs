@@ -242,6 +242,7 @@ public sealed partial class ContentPanel : UserControl
     {
         if (e.DataView.Contains(StandardDataFormats.StorageItems) && ViewModel?.Location is not null)
         {
+            e.Handled = true; // Not the window's modpack drop too.
             e.AcceptedOperation = DataPackageOperation.Copy;
             e.DragUIOverride.Caption = Loc.Get("Content_DropCaption");
         }
@@ -249,10 +250,19 @@ public sealed partial class ContentPanel : UserControl
 
     private async void Root_Drop(object sender, DragEventArgs e)
     {
-        if (ViewModel is not { } vm || !e.DataView.Contains(StandardDataFormats.StorageItems))
+        if (ViewModel is not { Location: { } location } vm || !e.DataView.Contains(StandardDataFormats.StorageItems))
             return;
+        e.Handled = true;
         var items = await e.DataView.GetStorageItemsAsync();
-        ReportImported(await vm.ImportAsync(items.OfType<StorageFile>().Select(f => f.Path)));
+        var paths = items.OfType<StorageFile>().Select(f => f.Path).ToList();
+        // A .mrpack is never content: it installs as its own instance, as anywhere else in the window.
+        if (!paths.Any(p => location.Accepts(Path.GetFileName(p)))
+            && paths.FirstOrDefault(p => p.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase)) is { } pack && App.Window is { } window)
+        {
+            await window.InstallModpackAsync(pack);
+            return;
+        }
+        ReportImported(await vm.ImportAsync(paths));
     }
 
     private void ReportImported(int count)

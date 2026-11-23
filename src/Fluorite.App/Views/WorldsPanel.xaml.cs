@@ -198,6 +198,7 @@ public sealed partial class WorldsPanel : UserControl
     {
         if (e.DataView.Contains(StandardDataFormats.StorageItems))
         {
+            e.Handled = true; // Not the window's modpack drop too.
             e.AcceptedOperation = DataPackageOperation.Copy;
             e.DragUIOverride.Caption = Loc.Get("Worlds_DropCaption");
         }
@@ -207,9 +208,13 @@ public sealed partial class WorldsPanel : UserControl
     {
         if (ViewModel is not { } vm || !e.DataView.Contains(StandardDataFormats.StorageItems))
             return;
+        e.Handled = true;
         var items = await e.DataView.GetStorageItemsAsync();
         var paths = items.Where(i => i is StorageFolder || (i is StorageFile f && f.FileType.Equals(".zip", StringComparison.OrdinalIgnoreCase))).Select(i => i.Path).ToList();
         if (paths.Count > 0)
             await vm.ImportAsync(paths);
+        // A .mrpack is never a world: it installs as its own instance, as anywhere else in the window.
+        else if (items.OfType<StorageFile>().FirstOrDefault(f => f.FileType.Equals(".mrpack", StringComparison.OrdinalIgnoreCase)) is { } pack && App.Window is { } window)
+            await window.InstallModpackAsync(pack.Path);
     }
 }

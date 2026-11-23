@@ -9,6 +9,8 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 
 namespace Fluorite.App;
 
@@ -345,6 +347,50 @@ public sealed partial class MainWindow : Window
             foreach (var file in request.Files ?? [])
                 await packs.InstallFromFileAsync(file);
         }
+    }
+
+    // ── Modpack files dropped anywhere ────────────────────────────────────
+
+    /// <summary>
+    /// A modpack file (.mrpack, .zip) can be dropped anywhere in the window. Panels that take files of their own (an
+    /// instance's mods, worlds) handle their drops first, so this only sees what they leave.
+    /// </summary>
+    private void RootGrid_DragOver(object sender, DragEventArgs e)
+    {
+        if (IsBusyWithOverlay() || !e.DataView.Contains(StandardDataFormats.StorageItems))
+            return;
+        e.AcceptedOperation = DataPackageOperation.Copy;
+        e.DragUIOverride.Caption = Loc.Get("Import_DropCaption");
+    }
+
+    private async void RootGrid_Drop(object sender, DragEventArgs e)
+    {
+        if (IsBusyWithOverlay() || !e.DataView.Contains(StandardDataFormats.StorageItems))
+            return;
+        // The source keeps its data until the files are read; not for the whole install, which waits on dialogs.
+        var deferral = e.GetDeferral();
+        IReadOnlyList<IStorageItem> items;
+        try
+        {
+            items = await e.DataView.GetStorageItemsAsync();
+        }
+        finally
+        {
+            deferral.Complete();
+        }
+        // One at a time; each install asks for confirmation.
+        if (items.OfType<StorageFile>().Select(f => f.Path).FirstOrDefault(IsModpackFile) is { } path)
+            await InstallModpackAsync(path);
+    }
+
+    private static bool IsModpackFile(string path) =>
+        path.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Installs a modpack file as a new instance, from the Library, where it shows up and opens when done.</summary>
+    public async Task InstallModpackAsync(string path)
+    {
+        NavigateTo("Library");
+        await App.Get<ModpackInstallService>().InstallFromFileAsync(path);
     }
 
     public async Task OpenInstanceAsync(string id, bool launch, Core.Launch.QuickPlay? quickPlay = null)
