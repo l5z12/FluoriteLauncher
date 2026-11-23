@@ -3,7 +3,8 @@ import '../styles/fluent.css';
 import icon16 from '../../../src/Fluorite.App/Assets/Square44x44Logo.targetsize-16_altform-unplated.png?url';
 import icon32 from '../../../src/Fluorite.App/Assets/Square44x44Logo.targetsize-32_altform-unplated.png?url';
 import icon48 from '../../../src/Fluorite.App/Assets/Square44x44Logo.targetsize-48_altform-unplated.png?url';
-import ogImage from '../../../src/Fluorite.App/Assets/Wide310x150Logo.scale-400.png?url';
+import cardEn from '../assets/social-en.png?url';
+import cardZhHans from '../assets/social-zh-hans.png?url';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { type Lang, locales, strings } from '../i18n';
@@ -28,6 +29,8 @@ const s = strings[lang];
 const site = Astro.site!;
 const canonical = new URL(Astro.url.pathname, site).href;
 const altEntries = Object.entries(alternates) as [Lang, string][];
+// Link previews, made by tools/generate-assets.py.
+const cards: Record<Lang, string> = { en: cardEn, 'zh-hans': cardZhHans };
 ---
 
 <!doctype html>
@@ -55,10 +58,10 @@ const altEntries = Object.entries(alternates) as [Lang, string][];
         <meta property="og:url" content={canonical} />
         <meta property="og:locale" content={locales[lang].ogLocale} />
         {altEntries.filter(([l]) => l !== lang).map(([l]) => <meta property="og:locale:alternate" content={locales[l].ogLocale} />)}
-        <meta property="og:image" content={new URL(ogImage, site).href} />
-        <meta property="og:image:width" content="1240" />
-        <meta property="og:image:height" content="600" />
-        <meta property="og:image:alt" content={s.logoAlt} />
+        <meta property="og:image" content={new URL(cards[lang], site).href} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={s.cardAlt} />
         <meta name="twitter:card" content="summary_large_image" />
         {
             structuredData && (
