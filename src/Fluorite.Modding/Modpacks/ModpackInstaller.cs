@@ -123,11 +123,13 @@ public sealed record PackInstallResult(IReadOnlyList<PackFile> Blocked, IReadOnl
 public sealed class ModpackInstaller(DownloadEngine downloader, MirrorTable mirrors)
 {
     /// <summary>Creates a Fluorite instance for the pack (components, settings, icon); files are installed by <see cref="InstallAsync"/>.</summary>
-    public static async Task<GameInstance> CreateInstanceAsync(FluoriteLayout layout, PackManifest manifest, string? name = null, CancellationToken ct = default)
+    /// <param name="group">The Library group to put it in; null or blank for none.</param>
+    public static async Task<GameInstance> CreateInstanceAsync(FluoriteLayout layout, PackManifest manifest, string? name = null, string? group = null, CancellationToken ct = default)
     {
         var m = new InstanceManifest
         {
             Name = string.IsNullOrWhiteSpace(name) ? manifest.Name : name.Trim(),
+            Group = string.IsNullOrWhiteSpace(group) ? null : group.Trim(),
             Notes = manifest.Summary,
             IconKey = manifest.IconKey,
             Components = manifest.Components(),

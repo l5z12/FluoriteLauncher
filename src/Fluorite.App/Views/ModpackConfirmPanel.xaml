@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Install modpack dialog's body: the pack (icon, name, version, summary), what it runs on, then the choices. -->
+<UserControl
+    x:Class="Fluorite.App.Views.ModpackConfirmPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <StackPanel Spacing="16" Width="520">
+        <Grid ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <!-- The brand tile with the initial until the icon has loaded (icons may be transparent, or there's none). -->
+            <Border Width="64" Height="64" CornerRadius="8" VerticalAlignment="Top">
+                <Grid>
+                    <Border x:Name="InitialTile" Background="{ThemeResource FluoriteBrandBrush}">
+                        <TextBlock x:Name="InitialText" FontSize="28" FontWeight="SemiBold" Foreground="{ThemeResource FluoriteOnBrandBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <Image x:Name="IconImage" Stretch="Uniform" ImageOpened="IconImage_ImageOpened" />
+                </Grid>
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <TextBlock x:Name="PackName" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="Byline" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="Summary" Margin="0,4,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Grid>
+
+        <!-- What it runs on and what it brings. -->
+        <Grid Padding="16,12" CornerRadius="8" BorderThickness="1"
+              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="2">
+                <TextBlock x:Uid="ModpackConfirm_Minecraft" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock x:Name="MinecraftText" IsTextSelectionEnabled="True" />
+            </StackPanel>
+            <StackPanel x:Name="LoaderFact" Grid.Column="1" Spacing="2" Margin="32,0,0,0">
+                <TextBlock x:Uid="ModpackConfirm_Loader" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock x:Name="LoaderText" IsTextSelectionEnabled="True" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="2" Margin="32,0,0,0">
+                <TextBlock x:Uid="ModpackConfirm_Files" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock x:Name="FilesText" TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="180" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="NameBox" x:Uid="ModpackConfirm_NameBox" MaxLength="100" />
+            <!-- As in New instance: pick a group in use or type a new one; empty leaves it ungrouped. -->
+            <ComboBox x:Name="GroupBox" x:Uid="NewInstance_Group" Grid.Column="1" IsEditable="True" HorizontalAlignment="Stretch" />
+        </Grid>
+        <CheckBox x:Name="OptionalBox" IsChecked="True" Visibility="Collapsed" Margin="0,-8,0,0" />
+        <StackPanel x:Name="Notices" Spacing="8" Visibility="Collapsed" />
+    </StackPanel>
+</UserControl>

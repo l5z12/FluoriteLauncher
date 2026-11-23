@@ -159,6 +159,21 @@ public class ModpackReaderTests
         Assert.Throws<InvalidDataException>(() => ModpackReader.Read(tmp.File("x.zip", Jar.Build(("readme.txt", "hi")))));
     }
 
+    /// <summary>A pack zip dropped on an instance's worlds or resource packs installs; their own zips are added.</summary>
+    [Fact]
+    public void IsModpack_TellsPacksFromOtherZips()
+    {
+        using var tmp = new TempFolder();
+        Assert.True(ModpackReader.IsModpack(tmp.File("mr.zip", Jar.Build(("modrinth.index.json", MrIndex)))));
+        Assert.True(ModpackReader.IsModpack(tmp.File("cf.zip", Jar.Build(("manifest.json", """{"manifestType":"minecraftModpack"}""")))));
+        Assert.True(ModpackReader.IsModpack(tmp.File("prism.zip", Jar.Build(("My Pack/instance.cfg", "[General]\n")))));
+        Assert.True(ModpackReader.IsModpack(tmp.File("technic.zip", Jar.Build(("bin/version.json", "{}")))));
+        Assert.False(ModpackReader.IsModpack(tmp.File("world.zip", Jar.Build(("My World/level.dat", "x")))));
+        Assert.False(ModpackReader.IsModpack(tmp.File("resources.zip", Jar.Build(("pack.mcmeta", "{}"), ("assets/x.png", "x")))));
+        Assert.False(ModpackReader.IsModpack(tmp.File("other.zip", Jar.Build(("manifest.json", """{"manifestType":"somethingElse"}""")))));
+        Assert.False(ModpackReader.IsModpack(tmp.File("broken.zip", "not a zip"u8.ToArray())));
+    }
+
     [Theory]
     [InlineData("modrinth:fabulously-optimized", "modrinth", "fabulously-optimized", null)]
     [InlineData("curseforge:396246@5000000", "curseforge", "396246", "5000000")]

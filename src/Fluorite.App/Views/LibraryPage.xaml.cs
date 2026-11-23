@@ -167,26 +167,7 @@ public sealed partial class LibraryPage : Page
 
     private async void ImportLauncher_Click(object sender, RoutedEventArgs e) => await Launchers.ShowImportDialogAsync();
 
-    private void Page_DragOver(object sender, DragEventArgs e)
-    {
-        if (e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.StorageItems))
-        {
-            e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy;
-            e.DragUIOverride.Caption = Loc.Get("Import_DropCaption");
-        }
-    }
-
-    private async void Page_Drop(object sender, DragEventArgs e)
-    {
-        if (!e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.StorageItems))
-            return;
-        var items = await e.DataView.GetStorageItemsAsync();
-        foreach (var file in items.OfType<Windows.Storage.StorageFile>().Where(f => f.Path.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase) || f.Path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)))
-        {
-            await Packs.InstallFromFileAsync(file.Path);
-            break; // One at a time; each install asks for confirmation.
-        }
-    }
+    // Modpack files dropped on this page are the window's (MainWindow.RootGrid_Drop): they install from anywhere.
 
     /// <summary>A click opens the instance; on a card or row, Ctrl+click and Shift+click select instead.</summary>
     private void Instance_Click(object sender, RoutedEventArgs e)

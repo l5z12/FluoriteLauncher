@@ -242,6 +242,7 @@ public sealed partial class ContentPanel : UserControl
     {
         if (e.DataView.Contains(StandardDataFormats.StorageItems) && ViewModel?.Location is not null)
         {
+            e.Handled = true; // Not the window's modpack drop too.
             e.AcceptedOperation = DataPackageOperation.Copy;
             e.DragUIOverride.Caption = Loc.Get("Content_DropCaption");
         }
@@ -249,10 +250,16 @@ public sealed partial class ContentPanel : UserControl
 
     private async void Root_Drop(object sender, DragEventArgs e)
     {
-        if (ViewModel is not { } vm || !e.DataView.Contains(StandardDataFormats.StorageItems))
+        if (ViewModel is not { Location: not null } vm || !e.DataView.Contains(StandardDataFormats.StorageItems))
             return;
+        e.Handled = true;
         var items = await e.DataView.GetStorageItemsAsync();
-        ReportImported(await vm.ImportAsync(items.OfType<StorageFile>().Select(f => f.Path)));
+        // A modpack is never content: it installs as its own instance, as anywhere else in the window.
+        var (packs, files) = await ModpackInstallService.SplitModpacksAsync(items.OfType<StorageFile>().Select(f => f.Path));
+        if (files.Count > 0 || packs.Count == 0)
+            ReportImported(await vm.ImportAsync(files));
+        if (packs.Count > 0 && App.Window is { } window)
+            await window.InstallModpackAsync(packs[0]); // One at a time; each install asks for confirmation.
     }
 
     private void ReportImported(int count)

@@ -9,6 +9,8 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 
 namespace Fluorite.App;
 
@@ -336,6 +338,7 @@ public sealed partial class MainWindow : Window
             await OpenInstanceAsync(openId, launch: false);
         if (request.Files is { Count: > 0 } || request.InstallLocation is not null)
         {
+            await WhenLoadedAsync(); // Opened with a pack file at startup: its dialogs need the window in place.
             BringToFront();
             NavigateTo("Library");
             var packs = App.Get<ModpackInstallService>();
@@ -344,6 +347,82 @@ public sealed partial class MainWindow : Window
             foreach (var file in request.Files ?? [])
                 await packs.InstallFromFileAsync(file);
         }
+    }
+
+    // ── Modpack files dropped anywhere ────────────────────────────────────
+
+    /// <summary>
+    /// A modpack file (.mrpack, .zip) can be dropped anywhere in the window. Panels that take files of their own (an
+    /// instance's mods, worlds) handle their drops first, so this only sees what they leave.
+    /// </summary>
+    private async void RootGrid_DragOver(object sender, DragEventArgs e)
+    {
+        if (IsBusyWithOverlay() || !e.DataView.Contains(StandardDataFormats.StorageItems))
+            return;
+        // Taken only with a modpack file in it, else a folder or a screenshot would look welcome and then do nothing.
+        // What's dragged takes a read to know: once per drag, with the answer deferred until then.
+        var view = e.DataView;
+        if (!ReferenceEquals(view, _draggedView))
+        {
+            var deferral = e.GetDeferral();
+            try
+            {
+                var items = await view.GetStorageItemsAsync();
+                _draggedHasPack = items.OfType<StorageFile>().Any(f => ModpackInstallService.HasModpackExtension(f.Path));
+                _draggedView = view;
+            }
+            catch (Exception ex) when (ex is COMException or IOException or UnauthorizedAccessException)
+            {
+                _draggedHasPack = false;
+            }
+            finally
+            {
+                AcceptModpackDrop(e);
+                deferral.Complete();
+            }
+            return;
+        }
+        AcceptModpackDrop(e);
+    }
+
+    /// <summary>The drag last read by <see cref="RootGrid_DragOver"/>, and whether it holds a modpack file.</summary>
+    private DataPackageView? _draggedView;
+    private bool _draggedHasPack;
+
+    private void AcceptModpackDrop(DragEventArgs e)
+    {
+        if (!_draggedHasPack)
+            return;
+        e.AcceptedOperation = DataPackageOperation.Copy;
+        e.DragUIOverride.Caption = Loc.Get("Import_DropCaption");
+    }
+
+    private async void RootGrid_Drop(object sender, DragEventArgs e)
+    {
+        _draggedView = null;
+        if (IsBusyWithOverlay() || !e.DataView.Contains(StandardDataFormats.StorageItems))
+            return;
+        // The source keeps its data until the files are read; not for the whole install, which waits on dialogs.
+        var deferral = e.GetDeferral();
+        IReadOnlyList<IStorageItem> items;
+        try
+        {
+            items = await e.DataView.GetStorageItemsAsync();
+        }
+        finally
+        {
+            deferral.Complete();
+        }
+        // One at a time; each install asks for confirmation.
+        if (items.OfType<StorageFile>().Select(f => f.Path).FirstOrDefault(ModpackInstallService.HasModpackExtension) is { } path)
+            await InstallModpackAsync(path);
+    }
+
+    /// <summary>Installs a modpack file as a new instance, from the Library, where it shows up and opens when done.</summary>
+    public async Task InstallModpackAsync(string path)
+    {
+        NavigateTo("Library");
+        await App.Get<ModpackInstallService>().InstallFromFileAsync(path);
     }
 
     public async Task OpenInstanceAsync(string id, bool launch, Core.Launch.QuickPlay? quickPlay = null)
@@ -633,18 +712,30 @@ public sealed partial class MainWindow : Window
 
     private const int MonitorDpiEffective = 0;
 
+    /// <summary>
+    /// Done once the window's content is in the visual tree. A dialog needs its XamlRoot, which at startup (the
+    /// welcome screen, a pack file opened with Fluorite) isn't there yet: showing one then throws.
+    /// </summary>
+    private Task WhenLoadedAsync()
+    {
+        if (Content.XamlRoot is not null)
+            return Task.CompletedTask;
+        var loaded = new TaskCompletionSource();
+        void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            RootGrid.Loaded -= OnLoaded;
+            loaded.TrySetResult();
+        }
+        RootGrid.Loaded += OnLoaded;
+        return loaded.Task;
+    }
+
     /// <param name="force">Show it even after the first run (<c>--welcome</c>).</param>
     public async Task ShowWelcomeIfFirstRunAsync(bool force = false)
     {
         if (_settings.Current.FirstRunCompleted && !force)
             return;
-        // Wait for the visual tree so the dialog has a XamlRoot.
-        if (Content.XamlRoot is null)
-        {
-            var loaded = new TaskCompletionSource();
-            RootGrid.Loaded += (_, _) => loaded.TrySetResult();
-            await loaded.Task;
-        }
+        await WhenLoadedAsync();
         var dialog = new WelcomeDialog(again: _settings.Current.FirstRunCompleted) { XamlRoot = Content.XamlRoot, RequestedTheme = RootGrid.RequestedTheme };
         var result = await dialog.ShowAsync();
         if (dialog.RestartForLanguage)

@@ -20,6 +20,27 @@ public sealed class ModpackInstallService(
     /// <summary>Raised on the UI thread after a pack was installed into a new instance.</summary>
     public event EventHandler<GameInstance>? InstanceCreated;
 
+    /// <summary>A modpack file by its name: a .mrpack, or a .zip (which may still turn out to be something else).</summary>
+    public static bool HasModpackExtension(string path) =>
+        path.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Dropped files split into modpacks (a .mrpack, or a zip that holds a pack) and the rest, for the panels that take
+    /// zips of their own (worlds, resource packs): a pack dropped there installs instead of being added as content.
+    /// </summary>
+    public static Task<(List<string> Packs, List<string> Others)> SplitModpacksAsync(IEnumerable<string> paths) => Task.Run(() =>
+    {
+        var packs = new List<string>();
+        var others = new List<string>();
+        foreach (var path in paths)
+        {
+            var isPack = path.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase)
+                || (path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) && ModpackReader.IsModpack(path));
+            (isPack ? packs : others).Add(path);
+        }
+        return (packs, others);
+    });
+
     private static string NewWorkDir() => Path.Combine(AppPaths.DataRoot, "cache", "packs", Guid.NewGuid().ToString("N")[..8]);
 
     public Task<GameInstance?> InstallFromFileAsync(string path) =>
@@ -42,6 +63,7 @@ public sealed class ModpackInstallService(
     private async Task<GameInstance?> InstallAsync(string what, Func<string, IProgress<DownloadProgress>, CancellationToken, Task<PackManifest>> load)
     {
         var work = NewWorkDir();
+        var groups = Task.Run(GroupNamesAsync); // For the dialog's group box; read while the pack is.
         try
         {
             PackManifest manifest;
@@ -60,11 +82,11 @@ public sealed class ModpackInstallService(
                 return null;
             }
 
-            var choice = await ConfirmAsync(manifest);
+            var choice = await ConfirmAsync(manifest, await groups);
             if (choice is not { } c)
                 return null;
 
-            var instance = await ModpackInstaller.CreateInstanceAsync(layout, manifest, c.Name);
+            var instance = await ModpackInstaller.CreateInstanceAsync(layout, manifest, c.Name, c.Group);
             await TryDownloadIconAsync(instance, manifest.IconUrl);
             var job = jobs.Start(manifest.Name, instance, null);
             job.Status = Loc.Get("Modpack_Installing");
@@ -91,35 +113,36 @@ public sealed class ModpackInstallService(
         }
     }
 
-    private sealed record InstallChoice(string Name, bool IncludeOptional);
+    private sealed record InstallChoice(string Name, string? Group, bool IncludeOptional);
 
-    private static async Task<InstallChoice?> ConfirmAsync(PackManifest m)
+    private static async Task<InstallChoice?> ConfirmAsync(PackManifest m, IReadOnlyList<string> groups)
     {
-        var panel = new StackPanel { Spacing = 10, MinWidth = 460 };
-        var name = new TextBox { Header = Loc.Get("Modpack_InstanceName"), Text = m.Name, PlaceholderText = m.Name }; // Emptied: the pack's name.
-        panel.Children.Add(name);
-        var loader = m.LoaderUid is null ? "" : $" · {ViewModels.InstanceItem.LoaderName(m.LoaderUid)} {m.LoaderVersion}";
-        panel.Children.Add(Dialogs.Text($"{m.Name} {m.Version}".Trim() + $"\nMinecraft {m.MinecraftVersion}{loader}"));
-        panel.Children.Add(Dialogs.Text(Loc.Format("Modpack_Contents", m.Files.Count(f => f.Client != PackSide.Unsupported), m.Overrides.Count), secondary: true));
-        if (!string.IsNullOrWhiteSpace(m.Summary))
-            panel.Children.Add(Dialogs.Text(m.Summary, secondary: true));
-        CheckBox? optional = null;
-        var optionalCount = m.Files.Count(f => f.Client == PackSide.Optional);
-        if (optionalCount > 0)
-        {
-            optional = new CheckBox { Content = Loc.Format("Modpack_IncludeOptional", optionalCount), IsChecked = true };
-            panel.Children.Add(optional);
-        }
-        var blocked = m.Files.Where(f => f.IsBlocked).ToList();
-        if (blocked.Count > 0)
-            panel.Children.Add(Dialogs.Bar(Loc.Format("Modpack_ManualNeeded", blocked.Count), InfoBarSeverity.Informational));
-        if (m.Warnings.Count > 0)
-            panel.Children.Add(Dialogs.Bar(string.Join("\n", m.Warnings.Take(8)), InfoBarSeverity.Warning));
+        var panel = new Views.ModpackConfirmPanel(m, groups);
+        var dialog = Dialogs.Create(Loc.Get("Modpack_InstallTitle"), Dialogs.Scroll(panel, 560), Loc.Get("Content_Install"));
+        dialog.Opened += (_, _) => panel.FocusName();
+        return await Dialogs.ShowAsync(dialog) == ContentDialogResult.Primary ? new InstallChoice(panel.InstanceName, panel.Group, panel.IncludeOptional) : null;
+    }
 
-        var result = await Dialogs.ShowAsync(Loc.Get("Modpack_InstallTitle"), Dialogs.Scroll(panel, 520), Loc.Get("Content_Install"));
-        return result == ContentDialogResult.Primary
-            ? new InstallChoice(string.IsNullOrWhiteSpace(name.Text) ? m.Name : name.Text.Trim(), optional?.IsChecked != false)
-            : null;
+    /// <summary>
+    /// Every Library group, A–Z, as New instance and "Move to group" offer them: those in use and the empty ones made
+    /// with "New group…". Read here rather than from the Library, which may not have loaded (installing from Browse).
+    /// </summary>
+    private async Task<IReadOnlyList<string>> GroupNamesAsync()
+    {
+        IEnumerable<string?> inUse;
+        try
+        {
+            inUse = (await registry.GetInstancesAsync()).Select(i => i.Manifest.Group);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            inUse = [];
+        }
+        return inUse.Where(g => !string.IsNullOrWhiteSpace(g)).Select(g => g!.Trim())
+            .Concat(settings.Current.CreatedGroups)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
     }
 
     // ── Updates ───────────────────────────────────────────────────────────

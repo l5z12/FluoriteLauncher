@@ -8,7 +8,8 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid">
+    <!-- Transparent (not null) so a modpack file dropped on an empty spot still lands here. -->
+    <Grid x:Name="RootGrid" Background="Transparent" AllowDrop="True" DragOver="RootGrid_DragOver" Drop="RootGrid_Drop">
         <Grid.RowDefinitions>
             <RowDefinition Height="48" />
             <RowDefinition Height="*" />
