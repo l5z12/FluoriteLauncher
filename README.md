@@ -38,7 +38,7 @@ Fluorite is still in development and hasn't been released yet. It will come to t
 
 ## Where your data lives
 
-Fluorite keeps its instances and downloads in `%LOCALAPPDATA%\FluoriteLauncher`. You can move this folder in **Settings**.
+Fluorite keeps its instances and downloads in `%LOCALAPPDATA%\FluoriteLauncher`. You can choose a different folder in **Settings**, but Fluorite doesn't move your existing files there, so copy them over yourself.
 
 ## Privacy
 

@@ -38,7 +38,7 @@ Fluorite 仍在开发中，尚未发布，正式版将首先上架 Microsoft Sto
 
 ## 数据存放位置
 
-Fluorite 将实例和下载的文件保存在 `%LOCALAPPDATA%\FluoriteLauncher`。你可以在 **设置** 中移动这个文件夹。
+Fluorite 将实例和下载的文件保存在 `%LOCALAPPDATA%\FluoriteLauncher`。你可以在 **设置** 中改用其他文件夹，但 Fluorite 不会把现有文件搬过去，需要你自己复制。
 
 ## 隐私
 

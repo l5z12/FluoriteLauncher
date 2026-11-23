@@ -170,14 +170,16 @@ public sealed class AccountService(
     {
         var data = await store.LoadAsync(ct).ConfigureAwait(false);
         var account = data.Accounts.FirstOrDefault(a => a.Id == accountId);
+        data.Accounts.RemoveAll(a => a.Id == accountId);
+        if (data.SelectedAccountId == accountId)
+            data.SelectedAccountId = data.Accounts.FirstOrDefault()?.Id;
+        // Remove it from disk first: if Fluorite closes before the sign-outs below finish, the account is gone rather
+        // than left listed with tokens that no longer work. Both sign-outs are best effort.
+        await store.SaveAsync(ct).ConfigureAwait(false);
         if (account is { Kind: AccountKind.Yggdrasil, YggdrasilServer: { } api, AccessToken: { } token })
             await yggdrasil.InvalidateAsync(api, token, account.RefreshToken, ct).ConfigureAwait(false);
         if (account is { BrokerAccountId: { } brokerId } && Broker is { } broker)
             await broker.ForgetAsync(brokerId, ct).ConfigureAwait(false);
-        data.Accounts.RemoveAll(a => a.Id == accountId);
-        if (data.SelectedAccountId == accountId)
-            data.SelectedAccountId = data.Accounts.FirstOrDefault()?.Id;
-        await store.SaveAsync(ct).ConfigureAwait(false);
     }
 
     /// <summary>Ensures a fresh token (refreshing silently when needed) and builds the launch session.</summary>
