@@ -171,12 +171,12 @@ def save(img, name):
 # ── Link previews ─────────────────────────────────────────────────────────────────────
 # Text is set in the website's fonts: Segoe UI Variable, and Microsoft YaHei for Chinese.
 FONTS = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"
+SEGOE, YAHEI = FONTS / "SegUIVar.ttf", FONTS / "msyh.ttc"
 INK, INK2, ACCENT = (26, 26, 26), (96, 96, 96), (31, 127, 98)
 CARD_TEXT = {
-    "en": ("A Minecraft: Java Edition launcher for Windows", ["Windows 10 & 11", "x64 & ARM64", "GPL-3.0"]),
-    "zh-hans": ("适用于 Windows 的 Minecraft: Java 版启动器", ["Windows 10 & 11", "x64 和 ARM64", "GPL 3.0 开源"]),
+    "en": ("A Minecraft: Java Edition launcher for Windows", ["Windows 10 (2004+) & 11", "x64 & ARM64", "GPL-3.0"]),
+    "zh-hans": ("适用于 Windows 的 Minecraft: Java 版启动器", ["Windows 10 (2004+) & 11", "x64 和 ARM64", "GPL 3.0 开源"]),
 }
-
 
 CARD_SIZE, CARD_BG = (1200, 630), (243, 243, 243)
 CARD_LOGO = (96, 155, 320)  # x, y, size
@@ -202,8 +202,8 @@ def opsz(size):
 def card_font(lang, size, weight):
     """Segoe UI Variable at a weight; Chinese lines use Microsoft YaHei, drawn from its regular file."""
     if lang != "en":
-        return ImageFont.truetype(str(FONTS / "msyh.ttc"), size)
-    font = ImageFont.truetype(str(FONTS / "SegUIVar.ttf"), size)
+        return ImageFont.truetype(str(YAHEI), size)
+    font = ImageFont.truetype(str(SEGOE), size)
     font.set_variation_by_axes([weight, opsz(size)])
     return font
 
@@ -250,6 +250,11 @@ SCALES = (100, 125, 150, 200, 400)
 
 
 def main():
+    # Check the fonts before writing anything, so a missing one can't leave the outputs half regenerated.
+    missing = [str(f) for f in (SEGOE, YAHEI) if not f.is_file()]
+    if missing:
+        sys.exit(f"The link previews need these fonts, which aren't installed: {', '.join(missing)}")
+
     OUT.mkdir(parents=True, exist_ok=True)
     for old in OUT.glob("Logo*.png"):
         old.unlink()
