@@ -29,12 +29,13 @@ public static class AppHost
         builder.Services.AddSerilog((sp, lc) => lc
             .MinimumLevel.Is(StartupFlags.Current.Verbose ? Serilog.Events.LogEventLevel.Debug : Serilog.Events.LogEventLevel.Information)
             .WriteTo.File(
-                Path.Combine(AppPaths.LogsDir, "launcher-.log"),
+                Path.Combine(AppPaths.LogsDir, Fluorite.Core.Diagnostics.LogRetention.FileTemplate),
                 formatProvider: System.Globalization.CultureInfo.InvariantCulture,
                 rollingInterval: RollingInterval.Day,
                 // By age, not file count, so days Fluorite isn't used don't stretch how long older logs are kept.
+                // The sink applies it when it writes; App also prunes at startup.
                 retainedFileCountLimit: null,
-                retainedFileTimeLimit: TimeSpan.FromDays(Math.Clamp(sp.GetRequiredService<SettingsService>().Current.LogRetentionDays, 1, 365)),
+                retainedFileTimeLimit: Fluorite.Core.Diagnostics.LogRetention.Limit(sp.GetRequiredService<SettingsService>().Current.LogRetentionDays),
                 shared: true));
 
         var s = builder.Services;

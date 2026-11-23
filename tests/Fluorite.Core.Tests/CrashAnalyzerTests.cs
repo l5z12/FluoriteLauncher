@@ -98,6 +98,32 @@ public class CrashAnalyzerTests
     }
 
     [Fact]
+    public void LogRetention_DeletesLauncherLogsOlderThanTheLimit()
+    {
+        var dir = Directory.CreateTempSubdirectory("fluorite-logs-").FullName;
+        try
+        {
+            string[] files =
+            [
+                "launcher-20261101.log", "launcher-20261108.log", "launcher-20261108_001.log", "launcher-20261109.log",
+                "launcher-20261122.log", "exceptions.log", "launcher-notes.log",
+            ];
+            foreach (var f in files)
+                File.WriteAllText(Path.Combine(dir, f), "x");
+
+            LogRetention.Prune(dir, 14, new DateTime(2026, 11, 22, 20, 0, 0));
+
+            Assert.Equal(
+                ["exceptions.log", "launcher-20261109.log", "launcher-20261122.log", "launcher-notes.log"],
+                Directory.GetFiles(dir).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Redactor_MasksShortSignInNamesWhereTheyStandAlone()
     {
         var text = LogRedactor.Redact("Signed in as Bob (Bob@x). Loading Bobsleigh mod", ["Bob"]);

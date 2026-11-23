@@ -243,7 +243,16 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     partial void OnLogRetentionDaysChanged(double value)
     {
-        var days = double.IsNaN(value) ? DefaultLogRetention : Math.Clamp((int)value, 1, 365);
+        var days = DefaultLogRetention;
+        if (!double.IsNaN(value))
+        {
+            days = Math.Clamp((int)Math.Round(value, MidpointRounding.AwayFromZero), Core.Diagnostics.LogRetention.MinDays, Core.Diagnostics.LogRetention.MaxDays);
+            if (value != days)
+            {
+                LogRetentionDays = days; // Show whole days, as saved; this comes back here with them.
+                return;
+            }
+        }
         if (days != _settings.Current.LogRetentionDays)
             Persist(s => s.LogRetentionDays = days, restart: true); // The log file sink reads it at startup.
     }
