@@ -355,9 +355,43 @@ public sealed partial class MainWindow : Window
     /// A modpack file (.mrpack, .zip) can be dropped anywhere in the window. Panels that take files of their own (an
     /// instance's mods, worlds) handle their drops first, so this only sees what they leave.
     /// </summary>
-    private void RootGrid_DragOver(object sender, DragEventArgs e)
+    private async void RootGrid_DragOver(object sender, DragEventArgs e)
     {
         if (IsBusyWithOverlay() || !e.DataView.Contains(StandardDataFormats.StorageItems))
+            return;
+        // Taken only with a modpack file in it, else a folder or a screenshot would look welcome and then do nothing.
+        // What's dragged takes a read to know: once per drag, with the answer deferred until then.
+        var view = e.DataView;
+        if (!ReferenceEquals(view, _draggedView))
+        {
+            var deferral = e.GetDeferral();
+            try
+            {
+                var items = await view.GetStorageItemsAsync();
+                _draggedHasPack = items.OfType<StorageFile>().Any(f => ModpackInstallService.HasModpackExtension(f.Path));
+                _draggedView = view;
+            }
+            catch (Exception ex) when (ex is COMException or IOException or UnauthorizedAccessException)
+            {
+                _draggedHasPack = false;
+            }
+            finally
+            {
+                AcceptModpackDrop(e);
+                deferral.Complete();
+            }
+            return;
+        }
+        AcceptModpackDrop(e);
+    }
+
+    /// <summary>The drag last read by <see cref="RootGrid_DragOver"/>, and whether it holds a modpack file.</summary>
+    private DataPackageView? _draggedView;
+    private bool _draggedHasPack;
+
+    private void AcceptModpackDrop(DragEventArgs e)
+    {
+        if (!_draggedHasPack)
             return;
         e.AcceptedOperation = DataPackageOperation.Copy;
         e.DragUIOverride.Caption = Loc.Get("Import_DropCaption");
@@ -365,6 +399,7 @@ public sealed partial class MainWindow : Window
 
     private async void RootGrid_Drop(object sender, DragEventArgs e)
     {
+        _draggedView = null;
         if (IsBusyWithOverlay() || !e.DataView.Contains(StandardDataFormats.StorageItems))
             return;
         // The source keeps its data until the files are read; not for the whole install, which waits on dialogs.
@@ -379,12 +414,9 @@ public sealed partial class MainWindow : Window
             deferral.Complete();
         }
         // One at a time; each install asks for confirmation.
-        if (items.OfType<StorageFile>().Select(f => f.Path).FirstOrDefault(IsModpackFile) is { } path)
+        if (items.OfType<StorageFile>().Select(f => f.Path).FirstOrDefault(ModpackInstallService.HasModpackExtension) is { } path)
             await InstallModpackAsync(path);
     }
-
-    private static bool IsModpackFile(string path) =>
-        path.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Installs a modpack file as a new instance, from the Library, where it shows up and opens when done.</summary>
     public async Task InstallModpackAsync(string path)
