@@ -9,7 +9,7 @@ This policy covers Fluorite Launcher ("Fluorite"), the Minecraft: Java Edition l
 - Fluorite has no telemetry, analytics, ads or tracking. We don't run any servers, and Fluorite never sends anything to us.
 - Your accounts, settings, instances and logs stay on your PC. Sign-in tokens are encrypted so that only your Windows user can read them, or kept by Windows itself for accounts you add through Windows' sign-in.
 - To do its job, Fluorite connects directly to the services you'd expect: Microsoft and Mojang to sign you in and download the game, mod sites to find mods, and the mirrors and skin sites you choose. They see your IP address and what Fluorite asks them for, under their own privacy policies.
-- Nothing is made public unless you ask for it, such as a log upload. The one exception is **Show on Discord**: in builds that offer it, it's on by default and shows people who can see your Discord activity what you're playing. You can turn it off in **Settings**.
+- Nothing is shared unless you ask for it, such as uploading a log or turning on **Show on Discord**.
 
 ## What Fluorite keeps on your PC
 
@@ -46,7 +46,7 @@ Every request Fluorite sends itself carries the header `User-Agent: FluoriteLaun
 
 - **Upload log** sends the game session's log to mclo.gs and gives you a link that anyone can open. Before uploading, Fluorite removes your access tokens, sign-in names and Windows user name. Your player name and mod list stay in it. mclo.gs keeps the log under its own privacy policy.
 - **Save diagnostics** writes a zip file to a place you pick and sends nothing. It holds the session log, the game's logs and crash reports, the launch command, your Windows version, CPU, memory and graphics cards, and your mod list, with the same details removed as for an upload.
-- **Show on Discord** (in **Settings**, on by default in builds that offer it) tells the Discord app on your PC, over a local connection, the name of the instance you're playing, its Minecraft version and mod loader, and how long you've played. Discord shows that to people who can see your activity, under Discord's privacy policy. Fluorite does nothing if Discord isn't running.
+- **Show on Discord** (in **Settings** in builds that offer it, and off until you turn it on) tells the Discord app on your PC, over a local connection, the name of the instance you're playing, its Minecraft version and mod loader, and how long you've played. Discord shows that to people who can see your activity, under Discord's privacy policy. Fluorite does nothing if Discord isn't running.
 
 ## The game, mods and Windows
 
@@ -56,7 +56,7 @@ Every request Fluorite sends itself carries the header `User-Agent: FluoriteLaun
 
 ## Your choices
 
-- Turn off **Show on Discord**, or pick a different **Download source**, in **Settings**.
+- Turn **Show on Discord** on or off, or pick a different **Download source**, in **Settings**.
 - Removing an account in **Accounts** deletes it and its tokens from `accounts.dat`. Fluorite then asks the skin site to sign a skin-site account out, and asks Windows to forget a Microsoft account you added through Windows' sign-in. Both are best effort: if the skin site can't be reached, its sign-in may stay valid, so sign out on the site yourself if you need to be sure. To also revoke Fluorite's access to your Microsoft account, use https://account.live.com/consent/Manage.
 - Uninstalling Fluorite leaves its data folder in place, so your instances survive a reinstall. To remove everything, first remove your accounts in **Accounts**, so the sign-ins Windows keeps are removed too, then delete the folder.
 

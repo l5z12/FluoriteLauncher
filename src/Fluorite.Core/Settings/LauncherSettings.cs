@@ -90,8 +90,8 @@ public sealed class LauncherSettings
     public bool ShowLogOnCrash { get; set; } = true;
     public bool NotifyOnGameExit { get; set; } = true;
 
-    /// <summary>Show the instance being played on Discord (Rich Presence), in builds that have a Discord application.</summary>
-    public bool ShowDiscordPresence { get; set; } = true;
+    /// <summary>Show the instance being played on Discord (Rich Presence), in builds that have a Discord application. Off until the user turns it on.</summary>
+    public bool ShowDiscordPresence { get; set; }
 
     public LibrarySort LibrarySort { get; set; } = LibrarySort.LastPlayed;
 
