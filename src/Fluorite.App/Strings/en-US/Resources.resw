@@ -624,8 +624,12 @@
   <data name="Modpack_Reading" xml:space="preserve"><value>Getting {0}…</value></data>
   <data name="Modpack_ReadFailedTitle" xml:space="preserve"><value>Couldn't read the modpack</value></data>
   <data name="Modpack_InstallTitle" xml:space="preserve"><value>Install modpack</value></data>
-  <data name="Modpack_InstanceName" xml:space="preserve"><value>Instance name</value></data>
-  <data name="Modpack_Contents" xml:space="preserve"><value>{0} files to download, {1} included in the pack.</value></data>
+  <data name="ModpackConfirm_NameBox.Header" xml:space="preserve"><value>Instance name</value></data>
+  <data name="ModpackConfirm_Minecraft.Text" xml:space="preserve"><value>Minecraft</value></data>
+  <data name="ModpackConfirm_Loader.Text" xml:space="preserve"><value>Loader</value></data>
+  <data name="ModpackConfirm_Files.Text" xml:space="preserve"><value>Files</value></data>
+  <data name="ModpackConfirm_FilesToDownload" xml:space="preserve"><value>{0} to download</value></data>
+  <data name="ModpackConfirm_FilesInPack" xml:space="preserve"><value>{0} in the pack</value></data>
   <data name="Modpack_IncludeOptional" xml:space="preserve"><value>Include {0} optional files</value></data>
   <data name="Modpack_ManualNeeded" xml:space="preserve"><value>{0} files can't be downloaded by launchers; Fluorite will open their download pages for you.</value></data>
   <data name="Modpack_Installing" xml:space="preserve"><value>Installing…</value></data>

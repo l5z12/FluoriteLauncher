@@ -95,31 +95,10 @@ public sealed class ModpackInstallService(
 
     private static async Task<InstallChoice?> ConfirmAsync(PackManifest m)
     {
-        var panel = new StackPanel { Spacing = 10, MinWidth = 460 };
-        var name = new TextBox { Header = Loc.Get("Modpack_InstanceName"), Text = m.Name, PlaceholderText = m.Name }; // Emptied: the pack's name.
-        panel.Children.Add(name);
-        var loader = m.LoaderUid is null ? "" : $" · {ViewModels.InstanceItem.LoaderName(m.LoaderUid)} {m.LoaderVersion}";
-        panel.Children.Add(Dialogs.Text($"{m.Name} {m.Version}".Trim() + $"\nMinecraft {m.MinecraftVersion}{loader}"));
-        panel.Children.Add(Dialogs.Text(Loc.Format("Modpack_Contents", m.Files.Count(f => f.Client != PackSide.Unsupported), m.Overrides.Count), secondary: true));
-        if (!string.IsNullOrWhiteSpace(m.Summary))
-            panel.Children.Add(Dialogs.Text(m.Summary, secondary: true));
-        CheckBox? optional = null;
-        var optionalCount = m.Files.Count(f => f.Client == PackSide.Optional);
-        if (optionalCount > 0)
-        {
-            optional = new CheckBox { Content = Loc.Format("Modpack_IncludeOptional", optionalCount), IsChecked = true };
-            panel.Children.Add(optional);
-        }
-        var blocked = m.Files.Where(f => f.IsBlocked).ToList();
-        if (blocked.Count > 0)
-            panel.Children.Add(Dialogs.Bar(Loc.Format("Modpack_ManualNeeded", blocked.Count), InfoBarSeverity.Informational));
-        if (m.Warnings.Count > 0)
-            panel.Children.Add(Dialogs.Bar(string.Join("\n", m.Warnings.Take(8)), InfoBarSeverity.Warning));
-
-        var result = await Dialogs.ShowAsync(Loc.Get("Modpack_InstallTitle"), Dialogs.Scroll(panel, 520), Loc.Get("Content_Install"));
-        return result == ContentDialogResult.Primary
-            ? new InstallChoice(string.IsNullOrWhiteSpace(name.Text) ? m.Name : name.Text.Trim(), optional?.IsChecked != false)
-            : null;
+        var panel = new Views.ModpackConfirmPanel(m);
+        var dialog = Dialogs.Create(Loc.Get("Modpack_InstallTitle"), Dialogs.Scroll(panel, 560), Loc.Get("Content_Install"));
+        dialog.Opened += (_, _) => panel.FocusName();
+        return await Dialogs.ShowAsync(dialog) == ContentDialogResult.Primary ? new InstallChoice(panel.InstanceName, panel.IncludeOptional) : null;
     }
 
     // ── Updates ───────────────────────────────────────────────────────────
