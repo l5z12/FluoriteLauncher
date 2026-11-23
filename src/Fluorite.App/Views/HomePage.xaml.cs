@@ -1,3 +1,4 @@
+using Fluorite.App.Services;
 using Fluorite.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -47,6 +48,43 @@ public sealed partial class HomePage : Page
     {
         if (Bind.ItemOf<NewsCard>(sender) is { PatchNote: { } note })
             Frame.Navigate(typeof(PatchNotesPage), note, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+    }
+
+    /// <summary>The version a latest-version card (or an item of its menu) stands for: by its tag.</summary>
+    private string? VersionOf(object sender) =>
+        (sender as FrameworkElement)?.Tag as string == "snapshot" ? ViewModel.LatestSnapshot : ViewModel.LatestRelease;
+
+    private Button CardOf(object sender) => (sender as FrameworkElement)?.Tag as string == "snapshot" ? SnapshotCard : ReleaseCard;
+
+    /// <summary>A new instance of the card's version: the Library's new-instance dialog, with it picked.</summary>
+    private void VersionCard_Click(object sender, RoutedEventArgs e)
+    {
+        if (VersionOf(sender) is { } version)
+            App.Window?.StartNewInstance(version);
+    }
+
+    private void VersionMenu_Opening(object sender, object e)
+    {
+        // Patch notes only when they're among those loaded: Mojang posts them a little after the version.
+        ReleasePatchNotesItem.IsEnabled = ViewModel.PatchNoteFor(ViewModel.LatestRelease) is not null;
+        SnapshotPatchNotesItem.IsEnabled = ViewModel.PatchNoteFor(ViewModel.LatestSnapshot) is not null;
+    }
+
+    private void VersionPatchNotes_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.PatchNoteFor(VersionOf(sender)) is { } note)
+            Frame.Navigate(typeof(PatchNotesPage), note, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+    }
+
+    private void VersionCopy_Click(object sender, RoutedEventArgs e)
+    {
+        if (VersionOf(sender) is not { } version)
+            return;
+        var dp = new Windows.ApplicationModel.DataTransfer.DataPackage();
+        dp.SetText(version);
+        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
+        // Under the card: the menu has closed.
+        CopiedFeedback.Show(CardOf(sender));
     }
 
     private void News_Click(object sender, RoutedEventArgs e)

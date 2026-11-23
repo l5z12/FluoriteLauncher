@@ -32,10 +32,27 @@ public sealed partial class HomeViewModel(
     [ObservableProperty] public partial string Greeting { get; set; } = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowVersionCards))]
+    [NotifyPropertyChangedFor(nameof(ShowVersionCards), nameof(HasLatestRelease), nameof(ReleaseCardTip), nameof(ReleaseCardName))]
     public partial string? LatestRelease { get; set; }
 
-    [ObservableProperty] public partial string? LatestSnapshot { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLatestSnapshot), nameof(SnapshotCardTip), nameof(SnapshotCardName))]
+    public partial string? LatestSnapshot { get; set; }
+
+    // A version card does something once its version is in: a click starts a new instance of it.
+    public bool HasLatestRelease => LatestRelease is not null;
+    public bool HasLatestSnapshot => LatestSnapshot is not null;
+    public string? ReleaseCardTip => LatestRelease is null ? null : Loc.Format("Home_VersionCardTip", LatestRelease);
+    public string? SnapshotCardTip => LatestSnapshot is null ? null : Loc.Format("Home_VersionCardTip", LatestSnapshot);
+    public string ReleaseCardName => Loc.Format("Home_VersionCardName", Loc.Get("Home_LatestRelease/Text"), LatestRelease ?? "");
+    public string SnapshotCardName => Loc.Format("Home_VersionCardName", Loc.Get("Home_LatestSnapshot/Text"), LatestSnapshot ?? "");
+
+    /// <summary>The whole patch-notes feed: Home shows the newest few, but the latest release's can be older.</summary>
+    private IReadOnlyList<PatchNoteEntry> _allPatchNotes = [];
+
+    /// <summary>The patch notes of <paramref name="version"/>, once the feed has them.</summary>
+    public PatchNoteEntry? PatchNoteFor(string? version) =>
+        version is null ? null : _allPatchNotes.FirstOrDefault(n => n.Version == version);
     [ObservableProperty] public partial bool HasRecent { get; set; }
     [ObservableProperty] public partial bool NeedsAccount { get; set; }
 
@@ -149,6 +166,7 @@ public sealed partial class HomeViewModel(
         var notes = await notesTask;
         var articles = await newsTask;
 
+        _allPatchNotes = [.. notes];
         PatchNotes.Clear();
         foreach (var n in notes.DistinctBy(n => n.Id).Take(8))
         {

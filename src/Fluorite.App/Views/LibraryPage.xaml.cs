@@ -30,8 +30,11 @@ public sealed partial class LibraryPage : Page
     /// <summary>Ctrl+F.</summary>
     public void FocusSearch() => SearchBox.Focus(FocusState.Keyboard);
 
-    /// <summary>Ctrl+N.</summary>
-    public void StartNewInstance() => NewInstance_Click(this, new RoutedEventArgs());
+    /// <summary>The new-instance dialog (Ctrl+N), with <paramref name="versionId"/> picked if given.</summary>
+    public async void StartNewInstance(string? versionId = null) => await OpenNewInstanceAsync(versionId);
+
+    /// <summary>A navigation parameter: open the new-instance dialog with this version picked (Home's version cards).</summary>
+    public sealed record NewInstanceRequest(string VersionId);
 
     /// <summary>Ctrl+O.</summary>
     public void StartImportFile() => ImportFile_Click(this, new RoutedEventArgs());
@@ -97,8 +100,11 @@ public sealed partial class LibraryPage : Page
         Launchers.RootsChanged += OnLibraryChanged;
         await ViewModel.LoadAsync();
 
-        // From the command palette. Only on a new visit: going back to this entry mustn't open the dialog again.
-        if (e.NavigationMode == NavigationMode.New && e.Parameter is string action)
+        // From the command palette, Ctrl+N or Home's version cards. Only on a new visit: going back to this entry
+        // mustn't open the dialog again.
+        if (e.NavigationMode == NavigationMode.New && e.Parameter is NewInstanceRequest request)
+            await OpenNewInstanceAsync(request.VersionId);
+        else if (e.NavigationMode == NavigationMode.New && e.Parameter is string action)
         {
             switch (action)
             {
@@ -555,7 +561,10 @@ public sealed partial class LibraryPage : Page
             await ViewModel.DeleteAsync(item);
     }
 
-    private async void NewInstance_Click(object sender, RoutedEventArgs e)
+    private async void NewInstance_Click(object sender, RoutedEventArgs e) => await OpenNewInstanceAsync(null);
+
+    /// <param name="versionId">The version to pick; null picks the newest in the list.</param>
+    private async Task OpenNewInstanceAsync(string? versionId)
     {
         NewInstanceName.Text = "";
         NewInstanceGroup.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(ViewModel.GroupNames); // AOT: a concrete list type.
@@ -563,7 +572,7 @@ public sealed partial class LibraryPage : Page
         NewInstanceGroup.Text = "";
         ShowError(null);
         Picker.SelectedOptionIndex = 0;
-        await LoadVersionsAsync();
+        await LoadVersionsAsync(versionId);
         await NewInstanceDialog.ShowAsync();
     }
 
@@ -575,13 +584,20 @@ public sealed partial class LibraryPage : Page
 
     private async void VersionFilter_Click(object sender, RoutedEventArgs e) => await LoadVersionsAsync();
 
-    private async Task LoadVersionsAsync()
+    /// <param name="select">The version to pick; when the filters hide it (a snapshot), snapshots are turned on.</param>
+    private async Task LoadVersionsAsync(string? select = null)
     {
         try
         {
             var list = await ViewModel.GetVersionsAsync(ShowSnapshots.IsChecked == true, ShowOld.IsChecked == true);
+            if (select is not null && !list.Any(v => v.Id == select) && ShowSnapshots.IsChecked != true)
+            {
+                ShowSnapshots.IsChecked = true;
+                list = await ViewModel.GetVersionsAsync(includeSnapshots: true, ShowOld.IsChecked == true);
+            }
             NewInstanceVersion.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<Fluorite.Core.Versions.VersionManifestEntry>(list); // AOT: a concrete list type.
-            NewInstanceVersion.SelectedIndex = list.Count > 0 ? 0 : -1;
+            var picked = select is null ? -1 : list.Select(v => v.Id).ToList().IndexOf(select);
+            NewInstanceVersion.SelectedIndex = picked >= 0 ? picked : list.Count > 0 ? 0 : -1;
         }
         catch (HttpRequestException ex)
         {
