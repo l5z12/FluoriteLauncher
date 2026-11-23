@@ -61,7 +61,7 @@ Scripts:
 | `pwsh tools/smoke-matrix.ps1 -Root .fluorite-dev` | Checks that every Minecraft era launches |
 | `pwsh tools/loader-matrix.ps1 -Root .fluorite-dev` | Checks that every mod loader installs and launches |
 | `powershell -File tools/ui-drive.ps1 -Exe <FluoriteLauncher.exe> -Steps "invoke:Settings;expect:Behavior;capture:C:\tmp\settings.png"` | UI smoke checks through UI Automation |
-| `uv run tools/generate-assets.py` | Renders the logo into every app icon and logo in `src/Fluorite.App/Assets` |
+| `uv run tools/generate-assets.py` | Renders the logo into every app icon and logo in `src/Fluorite.App/Assets` and the website's link previews |
 
 ## Project layout
 

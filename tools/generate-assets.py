@@ -4,7 +4,7 @@
 # ///
 """
 Renders the Fluorite logo into every MSIX visual asset, the in-app logos, a multi-size AppIcon.ico and the
-Logo.svg master.
+Logo.svg master, plus the website's link previews.
 
 The logo is a block of banded green fluorite drawn as Minecraft-style pixel art. The colour bands (emerald,
 deep green, mint, sea green and thin near-clear layers) are tilted planes through the block, so the stripes
@@ -12,18 +12,24 @@ wrap continuously around its edges like the layers of a cut stone. The block is 
 (true isometric, top 100%, left 90%, right 75% brightness). Every size is drawn pixel for pixel at its own
 size, never resampled: 16 texels per face from 96 px up, 8 from 40 px, 4 below that.
 
-    uv run tools/generate-assets.py            # writes to src/Fluorite.App/Assets
+    uv run tools/generate-assets.py            # writes to src/Fluorite.App/Assets and website/src/assets
+    uv run tools/generate-assets.py <dir>      # writes everything to <dir>, to preview a change
+
+The link previews need Windows' Segoe UI Variable and Microsoft YaHei fonts.
 """
 import hashlib
 import io
 import math
+import os
 import struct
 import sys
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
-OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent / "src/Fluorite.App/Assets"
+ROOT = Path(__file__).resolve().parent.parent
+OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "src/Fluorite.App/Assets"
+SITE_OUT = OUT if len(sys.argv) > 1 else ROOT / "website/src/assets"
 
 # ── Bands ─────────────────────────────────────────────────────────────────────────────
 # Band colours: (dark, mid, light) texel tones.
@@ -155,6 +161,41 @@ def save(img, name):
     img.save(OUT / name, optimize=True)
 
 
+# ── Link previews ─────────────────────────────────────────────────────────────────────
+# Text is set in the website's fonts: Segoe UI Variable, and Microsoft YaHei for Chinese.
+FONTS = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"
+INK, INK2, ACCENT = (26, 26, 26), (96, 96, 96), (31, 127, 98)
+CARD_TEXT = {
+    "en": ("A Minecraft: Java Edition launcher for Windows", ["Windows 10 & 11", "x64 & ARM64", "GPL-3.0"]),
+    "zh-hans": ("适用于 Windows 的 Minecraft: Java 版启动器", ["Windows 10 & 11", "x64 和 ARM64", "GPL 3.0 开源"]),
+}
+
+
+def segoe(size, weight):
+    """Segoe UI Variable at a weight, with the Display optical size for headings and Text for the rest."""
+    font = ImageFont.truetype(str(FONTS / "SegUIVar.ttf"), size)
+    font.set_variation_by_axes([weight, 36 if size > 40 else 20 if size >= 20 else 10.5])
+    return font
+
+
+def body_font(lang, size, weight=400):
+    return segoe(size, weight) if lang == "en" else ImageFont.truetype(str(FONTS / "msyh.ttc"), size)
+
+
+def social_card(lang):
+    """Link preview, 1200 x 630: the logo on the left, name, tagline and facts beside it, the site's address."""
+    tagline, facts = CARD_TEXT[lang]
+    img = Image.new("RGBA", (1200, 630), (243, 243, 243, 255))
+    img.alpha_composite(render(320), (96, 155))
+    d = ImageDraw.Draw(img)
+    d.text((480, 196), "Fluorite Launcher", font=segoe(72, 600), fill=INK)
+    d.text((480, 290), tagline, font=body_font(lang, 29 if lang == "en" else 27), fill=INK2)
+    font = body_font(lang, 24 if lang == "en" else 23, 500)
+    d.text((482, 340), "  ·  ".join(facts), font=font, fill=INK2)
+    d.text((482, 540), "fluorite.l5z12.dev", font=segoe(24, 600), fill=ACCENT)
+    return img
+
+
 SCALES = (100, 125, 150, 200, 400)
 
 
@@ -200,7 +241,11 @@ def main():
     (OUT / "AppIcon.ico").write_bytes(bytes(ico))
 
     (OUT / "Logo.svg").write_text(logo_svg(), encoding="utf-8")
-    print(f"Assets written to {OUT}")
+
+    SITE_OUT.mkdir(parents=True, exist_ok=True)
+    for lang in CARD_TEXT:
+        social_card(lang).convert("RGB").save(SITE_OUT / f"social-{lang}.png", optimize=True)
+    print(f"Assets written to {OUT}, link previews to {SITE_OUT}")
 
 
 if __name__ == "__main__":
