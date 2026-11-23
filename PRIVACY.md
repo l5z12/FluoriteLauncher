@@ -19,7 +19,7 @@ Everything is in Fluorite's data folder, `%LOCALAPPDATA%\FluoriteLauncher` unles
 |---|---|
 | `accounts.dat` | Your accounts: player names and UUIDs, your Xbox user ID, whether the account owns Minecraft, which skin site an account belongs to, and sign-in tokens. The whole file is encrypted with Windows' Data Protection API (DPAPI) for your Windows user. |
 | `settings.json` | Your settings. |
-| `logs\` | Fluorite's own logs: one file for each day you use it, and the 14 most recent are kept. They include file paths (which contain your Windows user name), instance names and the web addresses Fluorite downloaded from. Access tokens are masked in the launch command they record. If you start Fluorite with `--trace-exceptions`, it also writes every error to `exceptions.log` there, which stays until you delete it. |
+| `logs\` | Fluorite's own logs, one file per day, kept for 14 days unless you change that in **Settings**. They include file paths (which contain your Windows user name), instance names and the web addresses Fluorite downloaded from. Access tokens are masked in the launch command they record. If you start Fluorite with `--trace-exceptions`, it also writes every error to `exceptions.log` there, which stays until you delete it. |
 | `skins\` | Skins you chose for offline accounts. |
 | Instances, versions, libraries, assets, Java runtimes and caches | The game, the content you install, and cached news and metadata so Fluorite works offline. |
 

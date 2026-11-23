@@ -26,13 +26,15 @@ public static class AppHost
     {
         var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = AppContext.BaseDirectory });
         builder.Logging.ClearProviders();
-        builder.Services.AddSerilog(lc => lc
+        builder.Services.AddSerilog((sp, lc) => lc
             .MinimumLevel.Is(StartupFlags.Current.Verbose ? Serilog.Events.LogEventLevel.Debug : Serilog.Events.LogEventLevel.Information)
             .WriteTo.File(
                 Path.Combine(AppPaths.LogsDir, "launcher-.log"),
                 formatProvider: System.Globalization.CultureInfo.InvariantCulture,
                 rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: 14,
+                // By age, not file count, so days Fluorite isn't used don't stretch how long older logs are kept.
+                retainedFileCountLimit: null,
+                retainedFileTimeLimit: TimeSpan.FromDays(Math.Clamp(sp.GetRequiredService<SettingsService>().Current.LogRetentionDays, 1, 365)),
                 shared: true));
 
         var s = builder.Services;

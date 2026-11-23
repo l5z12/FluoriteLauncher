@@ -47,6 +47,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         ShowLoaderAvailability = s.ShowLoaderAvailability;
         AutoBackupWorlds = s.AutoBackupWorlds;
         AutoBackupsToKeep = s.AutoBackupsToKeep;
+        LogRetentionDays = s.LogRetentionDays == DefaultLogRetention ? double.NaN : s.LogRetentionDays;
         AutoMemory = s.AutoMemory;
         JvmPresetIndex = (int)s.JvmPreset;
         GpuPreferenceIndex = (int)s.GpuPreference;
@@ -230,6 +231,28 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         if (!double.IsNaN(value))
             Persist(s => s.AutoBackupsToKeep = Math.Clamp((int)value, 1, 100));
+    }
+
+    private const int DefaultLogRetention = Core.Settings.LauncherSettings.DefaultLogRetentionDays;
+
+    /// <summary>Placeholder for the log box: an empty box means the default.</summary>
+    public static string DefaultLogRetentionText => DefaultLogRetention.ToString(System.Globalization.CultureInfo.CurrentCulture);
+
+    /// <summary>Days Fluorite keeps its own logs; NaN (an empty box) is the default.</summary>
+    [ObservableProperty] public partial double LogRetentionDays { get; set; }
+
+    partial void OnLogRetentionDaysChanged(double value)
+    {
+        var days = double.IsNaN(value) ? DefaultLogRetention : Math.Clamp((int)value, 1, 365);
+        if (days != _settings.Current.LogRetentionDays)
+            Persist(s => s.LogRetentionDays = days, restart: true); // The log file sink reads it at startup.
+    }
+
+    [RelayCommand]
+    private static void OpenLogsFolder()
+    {
+        Directory.CreateDirectory(AppPaths.LogsDir);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AppPaths.LogsDir) { UseShellExecute = true });
     }
 
     public string DataRoot => AppPaths.DataRoot;

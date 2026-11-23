@@ -131,6 +131,11 @@ public sealed class LauncherSettings
     /// <summary>Automatic backups kept per world; older ones are deleted. Backups made by hand are never deleted.</summary>
     public int AutoBackupsToKeep { get; set; } = 5;
 
+    public const int DefaultLogRetentionDays = 14;
+
+    /// <summary>Days Fluorite's own logs (<c>logs/launcher-*.log</c>) are kept, 1–365. Applied when Fluorite starts.</summary>
+    public int LogRetentionDays { get; set; } = DefaultLogRetentionDays;
+
     /// <summary>Platform the Browse page opens with: <c>Modrinth</c> or <c>CurseForge</c>.</summary>
     public string BrowsePlatform { get; set; } = "Modrinth";
 
