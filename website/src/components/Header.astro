@@ -1,0 +1,45 @@
+---
+import Icon from 'fluentui-astro-icons';
+import logo24 from '../../../src/Fluorite.App/Assets/Square44x44Logo.targetsize-24_altform-unplated.png?url';
+import logo36 from '../../../src/Fluorite.App/Assets/Square44x44Logo.targetsize-36_altform-unplated.png?url';
+import logo48 from '../../../src/Fluorite.App/Assets/Square44x44Logo.targetsize-48_altform-unplated.png?url';
+import { type Lang, locales, otherLang, strings } from '../i18n';
+import { repo } from '../site';
+
+interface Props {
+    lang: Lang;
+    /** The page shown, to mark its navigation item. */
+    page?: 'privacy' | 'terms';
+}
+
+const { lang, page } = Astro.props;
+const s = strings[lang];
+const home = locales[lang].home;
+const other = otherLang(lang);
+// The documents are English only, so the switch goes to the other language's home.
+const otherHref = locales[other].home;
+---
+
+<header class="titlebar">
+    <!-- The logo's small sizes are drawn for their size (4 texels a face), so pick by pixel density, never scale. -->
+    <a class="brand" href={home}>
+        <img src={logo24} srcset={`${logo24} 1x, ${logo36} 1.5x, ${logo48} 2x`} width="24" height="24" alt="" />
+        <span>Fluorite Launcher</span>
+    </a>
+    <nav class="nav" aria-label={s.navLabel}>
+        <a href={`${home}#features`}>{s.nav.features}</a>
+        <a href={`${home}#faq`}>{s.nav.faq}</a>
+        <a href="/privacy/" hreflang={lang === 'en' ? undefined : 'en'} aria-current={page === 'privacy' ? 'page' : undefined}>{s.nav.privacy}</a>
+        <a href="/terms/" hreflang={lang === 'en' ? undefined : 'en'} aria-current={page === 'terms' ? 'page' : undefined}>{s.nav.terms}</a>
+    </nav>
+    <div class="titlebar-tools">
+        <a class="button subtle" href={otherHref} hreflang={locales[other].htmlLang} title={s.switchTo}>
+            <Icon name="local-language" size={16} />
+            <span lang={locales[other].htmlLang}>{other === 'en' ? 'English' : '中文'}</span>
+        </a>
+        <a class="button subtle" href={repo}>
+            <Icon name="code" size={16} />
+            <span class="label-wide">GitHub</span>
+        </a>
+    </div>
+</header>

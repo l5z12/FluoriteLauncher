@@ -1,0 +1,92 @@
+{
+  "skip": "Skip to content",
+  "navLabel": "Site",
+  "nav": { "features": "Features", "faq": "FAQ", "privacy": "Privacy", "terms": "Terms" },
+  "switchTo": "Read this site in Simplified Chinese",
+
+  "title": "Fluorite Launcher: a native Minecraft: Java Edition launcher for Windows",
+  "description": "Fluorite Launcher is a native Minecraft launcher for Windows: every version, every major mod loader, modpacks from everywhere, and the instances already in your other launchers.",
+  "logoAlt": "The Fluorite Launcher logo, a block of banded green fluorite",
+
+  "tagline": "A Minecraft: Java Edition launcher for Windows.",
+  "unreleasedTitle": "Not released yet",
+  "unreleased": "If you’re a regular user, wait for the Microsoft Store release.",
+  "getFromStore": "Get it from the Microsoft Store",
+  "viewSource": "View source code",
+  "buildIt": "Build it yourself",
+  "facts": {
+    "windows": "Windows 10 (2004+) & Windows 11",
+    "arch": "x64 and ARM64",
+    "license": "GPL-3.0 open source"
+  },
+
+  "featuresTitle": "Everything",
+  "features": {
+    "versions": { "title": "Any version", "text": "<code>rd-132211</code> to the latest snapshot" },
+    "loaders": { "title": "Installs mod loaders", "text": "Fabric, Quilt, Forge, NeoForge, OptiFine and more" },
+    "content": { "title": "Mods and shaders", "text": "From Modrinth & CurseForge, dependencies included" },
+    "modpacks": { "title": "Modpacks", "text": "Incremental updates that keep your changes" },
+    "launchers": { "title": "Quick import", "text": "Launch instances in place, or copy them" },
+    "accounts": { "title": "Accounts", "text": "Official, offline and third-party" },
+    "skins": { "title": "Skins and capes", "text": "Change your skin and preview it in 3D" },
+    "worlds": { "title": "Worlds and servers", "text": "Back up, or launch straight into a world / server" },
+    "java": { "title": "Installs Java", "text": "Picks and downloads the right Java for each version" },
+    "mirrors": { "title": "Mirrors", "text": "BMCLAPI and MCIM" },
+    "languages": { "title": "Languages", "text": "English or <span lang=\"zh-Hans\">简体中文</span>" },
+    "windows": { "title": "Made for Windows", "text": "Native WinUI 3, <kbd>Ctrl</kbd>+<kbd>K</kbd> command palette" }
+  },
+
+  "privacyTitle": "Your data stays on your PC",
+  "privacyText": "No telemetry, ads or tracking",
+  "privacyLink": "Read the privacy policy",
+
+  "faqTitle": "Questions",
+  "faq": {
+    "free": {
+      "q": "Is Fluorite free?",
+      "a": "Yes. It’s free software under the <a href=\"{license}\">GPL-3.0</a>, with no ads and nothing to buy."
+    },
+    "download": {
+      "q": "When can I download it?",
+      "a": "It isn’t released yet and will come to the Microsoft Store first. Until then, you can <a href=\"{contributing}\">build it yourself</a>.",
+      "released": "Get it from the <a href=\"{store}\">Microsoft Store</a>."
+    },
+    "own": {
+      "q": "Do I need to own Minecraft?",
+      "a": "Yes. Once you’ve verified you own Minecraft, offline accounts open up to you."
+    },
+    "others": {
+      "q": "Will it touch my other launchers’ instances?",
+      "a": "No. Fluorite plays them where they are, but changes you make in Fluorite don’t sync back to the other launcher. In other words, Fluorite is independent."
+    },
+    "report": {
+      "q": "How do I report a bug?",
+      "a": "<a href=\"{issues}\">Open an issue on GitHub</a>. For a security problem, follow the <a href=\"{security}\">security policy</a>."
+    }
+  },
+
+  "doc": {
+    "home": "Home",
+    "onThisPage": "On this page",
+    "source": "View on GitHub",
+    "history": "Change history"
+  },
+
+  "notFound": {
+    "title": "Page not found",
+    "text": "There’s nothing at this address. It may have moved, or the link may be wrong.",
+    "home": "Go to the home page"
+  },
+
+  "footer": {
+    "links": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Use",
+      "source": "Source code",
+      "license": "License",
+      "notices": "Third-party notices",
+      "issues": "Report an issue"
+    },
+    "disclaimer": "NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. Minecraft is a trademark of Mojang Synergies AB."
+  }
+}

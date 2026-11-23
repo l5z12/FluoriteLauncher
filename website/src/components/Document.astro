@@ -1,0 +1,53 @@
+---
+import type { MarkdownInstance } from 'astro';
+import Icon from 'fluentui-astro-icons';
+import { type Lang, locales, strings } from '../i18n';
+import { blob, history } from '../site';
+
+// One of the repository's Markdown documents (PRIVACY.md, TERMS.md) as a page, with a table of contents.
+
+interface Props {
+    doc: MarkdownInstance<Record<string, unknown>>;
+    /** The document's path in the repository. */
+    path: string;
+}
+
+const { doc, path } = Astro.props;
+const lang: Lang = 'en';
+const s = strings[lang].doc;
+const { Content } = doc;
+const sections = doc.getHeadings().filter((h) => h.depth === 2);
+const title = doc.getHeadings().find((h) => h.depth === 1)?.text ?? path;
+---
+
+<div class="doc">
+    <div>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ol>
+                <li><a href={locales[lang].home}>{s.home}</a><Icon name="chevron-right" size={12} /></li>
+                <li aria-current="page">{title}</li>
+            </ol>
+        </nav>
+        <article class="prose">
+            <Content />
+        </article>
+    </div>
+    <aside class="toc">
+        <nav class="toc-nav" aria-labelledby="toc-title">
+            <h2 id="toc-title">{s.onThisPage}</h2>
+            <ul>
+                {sections.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}
+            </ul>
+        </nav>
+        <div class="doc-tools">
+            <a class="button link" href={blob(path)}>
+                <Icon name="open" size={16} />
+                {s.source}
+            </a>
+            <a class="button link" href={history(path)}>
+                <Icon name="history" size={16} />
+                {s.history}
+            </a>
+        </div>
+    </aside>
+</div>

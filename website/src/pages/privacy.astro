@@ -1,0 +1,16 @@
+---
+import * as doc from '../../../PRIVACY.md';
+import Document from '../components/Document.astro';
+import Base from '../layouts/Base.astro';
+import { lastUpdated } from '../structured-data';
+---
+
+<Base
+    lang="en"
+    page="privacy"
+    title="Privacy Policy · Fluorite Launcher"
+    description="Fluorite Launcher has no telemetry, analytics, ads or tracking. What it keeps on your PC, who it connects to, and what you can choose to share."
+    modified={lastUpdated(doc.rawContent())}
+>
+    <Document doc={doc} path="PRIVACY.md" />
+</Base>

@@ -1,0 +1,148 @@
+---
+import Icon from 'fluentui-astro-icons';
+import type { IconName } from 'fluentui-astro-icons/render';
+import logo from '../../../src/Fluorite.App/Assets/Logo.svg?url';
+import { fill, type Lang, type Strings, strings } from '../i18n';
+import { blob, repo, storeUrl } from '../site';
+
+interface Props {
+    lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = strings[lang];
+
+// What each item looks like and the order it appears in; the text is in the language files.
+const facts: [keyof Strings['facts'], IconName][] = [
+    ['windows', 'desktop'],
+    ['arch', 'developer-board'],
+    ['license', 'code'],
+];
+const features: [keyof Strings['features'], IconName][] = [
+    ['versions', 'history'],
+    ['loaders', 'puzzle-piece'],
+    ['content', 'apps-add-in'],
+    ['modpacks', 'box-multiple'],
+    ['launchers', 'folder-link'],
+    ['accounts', 'people'],
+    ['skins', 'person-circle'],
+    ['worlds', 'globe'],
+    ['java', 'drink-coffee'],
+    ['mirrors', 'flash'],
+    ['languages', 'local-language'],
+    ['windows', 'window'],
+];
+const faq: (keyof Strings['faq'])[] = ['free', 'download', 'own', 'others', 'report'];
+const answer = (key: keyof Strings['faq']) => {
+    const item = s.faq[key];
+    return fill(storeUrl && 'released' in item ? item.released : item.a);
+};
+---
+
+<section class="hero" aria-labelledby="hero-title">
+    <div class="hero-text">
+        <h1 id="hero-title" class="display">Fluorite Launcher</h1>
+        <p class="tagline">{s.tagline}</p>
+        {
+            !storeUrl && (
+                <div class="infobar" role="note">
+                    <Icon name="info" variant="filled" size={16} />
+                    <p>
+                        <strong>{s.unreleasedTitle}</strong>
+                        <span>{s.unreleased}</span>
+                    </p>
+                </div>
+            )
+        }
+        <div class="actions">
+            {
+                storeUrl ? (
+                    <>
+                        <a class="button accent" href={storeUrl}>
+                            <Icon name="store-microsoft" size={16} />
+                            {s.getFromStore}
+                        </a>
+                        <a class="button" href={repo}>
+                            <Icon name="code" size={16} />
+                            {s.viewSource}
+                        </a>
+                    </>
+                ) : (
+                    <>
+                        <a class="button accent" href={repo}>
+                            <Icon name="code" size={16} />
+                            {s.viewSource}
+                        </a>
+                        <a class="button" href={blob('CONTRIBUTING.md')}>
+                            <Icon name="document-text" size={16} />
+                            {s.buildIt}
+                        </a>
+                    </>
+                )
+            }
+        </div>
+        <ul class="facts">
+            {
+                facts.map(([key, icon]) => (
+                    <li>
+                        <Icon name={icon} size={16} />
+                        {s.facts[key]}
+                    </li>
+                ))
+            }
+        </ul>
+    </div>
+    <div class="hero-art">
+        <img src={logo} width="256" height="256" alt={s.logoAlt} />
+    </div>
+</section>
+
+<section id="features" class="section" aria-labelledby="features-title">
+    <div class="section-head">
+        <h2 id="features-title" class="title">{s.featuresTitle}</h2>
+    </div>
+    <ul class="features">
+        {
+            features.map(([key, icon]) => (
+                <li class="card feature">
+                    <Icon name={icon} size={24} />
+                    <h3 set:html={s.features[key].title} />
+                    <p set:html={s.features[key].text} />
+                </li>
+            ))
+        }
+    </ul>
+</section>
+
+<section id="privacy" class="section" aria-labelledby="privacy-title">
+    <div class="card privacy">
+        <Icon name="shield-checkmark" size={48} />
+        <h2 id="privacy-title" class="subtitle">{s.privacyTitle}</h2>
+        <p>{s.privacyText}</p>
+        <a class="button link" href="/privacy/" hreflang={lang === 'en' ? undefined : 'en'}>
+            {s.privacyLink}
+            <Icon name="arrow-right" size={16} />
+        </a>
+    </div>
+</section>
+
+<section id="faq" class="section" aria-labelledby="faq-title">
+    <div class="section-head">
+        <h2 id="faq-title" class="title">{s.faqTitle}</h2>
+    </div>
+    {
+        faq.map((key) => (
+            <details class="expander">
+                <summary>
+                    <span>{s.faq[key].q}</span>
+                    <span class="chevron" aria-hidden="true">
+                        <Icon name="chevron-down" size={12} />
+                    </span>
+                </summary>
+                <div class="expander-content">
+                    <p set:html={answer(key)} />
+                </div>
+            </details>
+        ))
+    }
+</section>

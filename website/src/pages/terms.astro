@@ -1,0 +1,16 @@
+---
+import * as doc from '../../../TERMS.md';
+import Document from '../components/Document.astro';
+import Base from '../layouts/Base.astro';
+import { lastUpdated } from '../structured-data';
+---
+
+<Base
+    lang="en"
+    page="terms"
+    title="Terms of Use · Fluorite Launcher"
+    description="The terms for using Fluorite Launcher, free software under the GNU General Public License v3.0."
+    modified={lastUpdated(doc.rawContent())}
+>
+    <Document doc={doc} path="TERMS.md" />
+</Base>

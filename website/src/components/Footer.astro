@@ -1,0 +1,47 @@
+---
+import logo16 from '../../../src/Fluorite.App/Assets/Square44x44Logo.targetsize-16_altform-unplated.png?url';
+import logo24 from '../../../src/Fluorite.App/Assets/Square44x44Logo.targetsize-24_altform-unplated.png?url';
+import logo32 from '../../../src/Fluorite.App/Assets/Square44x44Logo.targetsize-32_altform-unplated.png?url';
+import { type Lang, locales, type Strings, strings } from '../i18n';
+import { blob, repo } from '../site';
+
+interface Props {
+    lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = strings[lang].footer;
+const links: [keyof Strings['footer']['links'], string][] = [
+    ['privacy', '/privacy/'],
+    ['terms', '/terms/'],
+    ['source', repo],
+    ['license', blob('LICENSE')],
+    ['notices', blob('THIRD-PARTY-NOTICES.md')],
+    ['issues', `${repo}/issues`],
+];
+---
+
+<footer class="footer">
+    <div class="footer-top">
+        <span class="footer-brand">
+            <img src={logo16} srcset={`${logo16} 1x, ${logo24} 1.5x, ${logo32} 2x`} width="16" height="16" alt="" />
+            Fluorite Launcher
+        </span>
+        <ul class="footer-links">
+            {links.map(([key, href]) => <li><a href={href}>{s.links[key]}</a></li>)}
+        </ul>
+        <p class="languages">
+            {
+                (Object.keys(locales) as Lang[]).map((l, i) => (
+                    <>
+                        {i > 0 && ' · '}
+                        <a href={locales[l].home} lang={locales[l].htmlLang} hreflang={locales[l].htmlLang} aria-current={l === lang ? 'true' : undefined}>
+                            {locales[l].name}
+                        </a>
+                    </>
+                ))
+            }
+        </p>
+    </div>
+    <p>{s.disclaimer}</p>
+</footer>

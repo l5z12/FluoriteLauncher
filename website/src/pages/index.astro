@@ -1,0 +1,18 @@
+---
+import Home from '../components/Home.astro';
+import { strings } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { homeStructuredData } from '../structured-data';
+
+const s = strings.en;
+---
+
+<Base
+    lang="en"
+    title={s.title}
+    description={s.description}
+    alternates={{ en: '/', 'zh-hans': '/zh-hans/' }}
+    structuredData={homeStructuredData('en', Astro.site!)}
+>
+    <Home lang="en" />
+</Base>

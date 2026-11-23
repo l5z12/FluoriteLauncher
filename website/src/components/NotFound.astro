@@ -1,0 +1,29 @@
+---
+import Icon from 'fluentui-astro-icons';
+import { type Lang, locales, strings } from '../i18n';
+import Base from '../layouts/Base.astro';
+
+// The 404 page for one language. Cloudflare serves the nearest 404.html to a missing path, so /zh-hans/… gets the
+// Chinese one; on the English one, public/404-lang.js sends browsers that prefer Chinese over to it.
+
+interface Props {
+    lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = strings[lang].notFound;
+---
+
+<Base lang={lang} title={`${s.title} · Fluorite Launcher`} description={s.text} noindex>
+    {lang === 'en' && <script is:inline slot="head" src="/404-lang.js"></script>}
+    <div class="not-found">
+        <div>
+            <h1 class="title">{s.title}</h1>
+            <p>{s.text}</p>
+            <a class="button accent" href={locales[lang].home}>
+                <Icon name="home" size={16} />
+                {s.home}
+            </a>
+        </div>
+    </div>
+</Base>
