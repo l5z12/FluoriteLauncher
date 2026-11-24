@@ -359,6 +359,92 @@ public sealed class ContentManager : IDisposable
         }
     }
 
+    /// <summary>Mod issues dismissed in an instance (<see cref="ModIssue.Key"/>s): not shown, nor asked about before launch.</summary>
+    public async Task<IReadOnlySet<string>> GetDismissedIssuesAsync(string instanceId, CancellationToken ct = default)
+    {
+        await _lock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var index = await LoadIndexAsync(ct).ConfigureAwait(false);
+            return index.DismissedIssues?.GetValueOrDefault(instanceId) is { } keys ? new HashSet<string>(keys, StringComparer.Ordinal) : new HashSet<string>();
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Dismisses an instance's issues with these keys, or brings them back. Only once that's saved: what's read
+    /// afterwards is what's on disk, so a failed save is still asked about at launch.
+    /// </summary>
+    public async Task SetIssuesDismissedAsync(string instanceId, IEnumerable<string> keys, bool dismissed, CancellationToken ct = default)
+    {
+        await _lock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var index = await LoadIndexAsync(ct).ConfigureAwait(false);
+            var before = index.DismissedIssues;
+            var set = before?.GetValueOrDefault(instanceId) is { } existing ? new HashSet<string>(existing, StringComparer.Ordinal) : new HashSet<string>(StringComparer.Ordinal);
+            var changed = false;
+            foreach (var key in keys)
+                changed |= dismissed ? set.Add(key) : set.Remove(key);
+            if (!changed)
+                return;
+            var after = before is null ? new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase) : new Dictionary<string, HashSet<string>>(before, StringComparer.OrdinalIgnoreCase);
+            if (set.Count > 0)
+                after[instanceId] = set;
+            else
+                after.Remove(instanceId);
+            index.DismissedIssues = after.Count > 0 ? after : null;
+            try
+            {
+                await index.SaveAsync(IndexPath, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                index.DismissedIssues = before;
+                throw;
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Gives one instance id's dismissed issues to another: a copy of an instance (its index copied with it) keeps
+    /// what the original dismissed, under its own id. Nothing to move: nothing happens.
+    /// </summary>
+    public async Task MoveDismissedIssuesAsync(string fromId, string toId, CancellationToken ct = default)
+    {
+        await _lock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var index = await LoadIndexAsync(ct).ConfigureAwait(false);
+            if (index.DismissedIssues is not { } before || !before.TryGetValue(fromId, out var set) || string.Equals(fromId, toId, StringComparison.OrdinalIgnoreCase))
+                return;
+            var after = new Dictionary<string, HashSet<string>>(before, StringComparer.OrdinalIgnoreCase);
+            after.Remove(fromId);
+            after[toId] = after.TryGetValue(toId, out var existing) ? [.. existing, .. set] : set;
+            index.DismissedIssues = after;
+            try
+            {
+                await index.SaveAsync(IndexPath, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                index.DismissedIssues = before;
+                throw;
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     /// <summary>Mutates the index under the lock and saves it when <paramref name="update"/> returns true.</summary>
     public async Task UpdateAsync(Func<ContentIndex, bool> update, CancellationToken ct = default)
     {

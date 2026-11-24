@@ -393,6 +393,101 @@ public class ModCheckerTests
     }
 
     [Fact]
+    public void DismissalKeyFollowsTheProblemNotTheFile()
+    {
+        static string KeyOf(ContentFile mod) => Assert.Single(CheckFabric(mod)).Key;
+        var before = KeyOf(Fabric("modmenu", """{ "fabric-api": ">=0.90" }"""));
+        // Updated (new file name and version), same problem: still dismissed.
+        var updated = Fabric("modmenu", """{ "fabric-api": ">=0.90" }""", version: "2.0.0");
+        Assert.Equal(before, KeyOf(Mod("modmenu-2.0.0.jar", updated.Metadata)));
+        // Needs something else now: a new problem.
+        Assert.NotEqual(before, KeyOf(Fabric("modmenu", """{ "fabric-api": ">=0.100" }""")));
+    }
+
+    [Fact]
+    public void DismissalKeyFollowsTheInstance()
+    {
+        var mod = Fabric("sodium", """{ "minecraft": "1.20.1" }""");
+        string KeyOn(string minecraft) => Assert.Single(ModChecker.Check([mod], ComponentUids.FabricLoader, "0.16.10", minecraft)).Key;
+        // Dismissed on 1.20.4, asked again once the instance moves to 1.21.4.
+        Assert.NotEqual(KeyOn("1.20.4"), KeyOn("1.21.4"));
+    }
+
+    [Fact]
+    public void FixedDismissalsAreForgottenButNotThoseOfDisabledMods()
+    {
+        var needsApi = Fabric("modmenu", """{ "fabric-api": "*" }""");
+        var key = Assert.Single(CheckFabric(needsApi)).Key;
+        var dismissed = new HashSet<string> { key };
+        var fixedMods = new[] { needsApi, Fabric("fabric-api") };
+        Assert.Equal(key, Assert.Single(ModChecker.ResolvedDismissals(dismissed, CheckFabric(fixedMods), fixedMods)));
+        var disabled = new[] { Mod("modmenu.jar", needsApi.Metadata, enabled: false) };
+        Assert.Empty(ModChecker.ResolvedDismissals(dismissed, CheckFabric(disabled), disabled));
+
+        // No loader: forgotten once there's one, not while there's no mod to raise it.
+        var noLoader = new HashSet<string> { Assert.Single(ModChecker.Check(fixedMods, null, null, "1.20.1")).Key };
+        Assert.Single(ModChecker.ResolvedDismissals(noLoader, CheckFabric(fixedMods), fixedMods));
+        Assert.Empty(ModChecker.ResolvedDismissals(noLoader, CheckFabric(disabled), disabled));
+    }
+
+    [Fact]
+    public void DismissalsBetweenTwoModsWaitForBoth()
+    {
+        // A conflict: the other mod turned off for now isn't a fix; a version out of the conflicting range is.
+        var breaks = Fabric("a", extra: ""","breaks":{"b":"<2.0.0"}""");
+        var both = new[] { breaks, Fabric("b") };
+        var dismissed = new HashSet<string> { Assert.Single(CheckFabric(both)).Key };
+        var otherOff = new[] { breaks, Mod("b.jar", Fabric("b").Metadata, enabled: false) };
+        Assert.Empty(ModChecker.ResolvedDismissals(dismissed, CheckFabric(otherOff), otherOff));
+        var updated = new[] { breaks, Fabric("b", version: "2.0.0") };
+        Assert.Single(ModChecker.ResolvedDismissals(dismissed, CheckFabric(updated), updated));
+
+        // A duplicate: one copy turned off isn't a fix either (the id is still here, by the other copy).
+        var copies = new[] { Mod("a-1.jar", Fabric("a").Metadata), Mod("a-2.jar", Fabric("a").Metadata) };
+        var duplicate = new HashSet<string> { Assert.Single(CheckFabric(copies)).Key };
+        var oneOff = new[] { copies[0], Mod("a-2.jar", Fabric("a").Metadata, enabled: false) };
+        Assert.Equal("a-2.jar", new EnabledMods(oneOff).AwayParty(duplicate.Single()));
+        Assert.Empty(ModChecker.ResolvedDismissals(duplicate, CheckFabric(oneOff), oneOff));
+    }
+
+    [Fact]
+    public void DuplicateKeysDontFollowScanOrder()
+    {
+        var copies = new[] { "a-3.jar", "a-1.jar", "a-2.jar" }.Select(f => Mod(f, Fabric("a").Metadata)).ToArray();
+        var keys = CheckFabric(copies).Select(i => i.Key).Order().ToList();
+        Assert.Equal(2, keys.Count);
+        Assert.Equal(keys, CheckFabric([.. copies.Reverse()]).Select(i => i.Key).Order());
+    }
+
+    [Fact]
+    public async Task DismissedIssuesAreKeptPerInstance()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            using (var manager = new ContentManager(dir, Path.Combine(dir, ".fluorite")))
+            {
+                await manager.SetIssuesDismissedAsync("forge", ["a", "b"], dismissed: true, ct);
+                await manager.SetIssuesDismissedAsync("forge", ["a"], dismissed: false, ct);
+            }
+            using var reopened = new ContentManager(dir, Path.Combine(dir, ".fluorite"));
+            Assert.Equal("b", Assert.Single(await reopened.GetDismissedIssuesAsync("forge", ct)));
+            // Another profile sharing the game directory (and so the index) has its own.
+            Assert.Empty(await reopened.GetDismissedIssuesAsync("neoforge", ct));
+            // A copy of the instance (index and all) takes the original's under its own id.
+            await reopened.MoveDismissedIssuesAsync("forge", "forge (2)", ct);
+            Assert.Empty(await reopened.GetDismissedIssuesAsync("forge", ct));
+            Assert.Equal("b", Assert.Single(await reopened.GetDismissedIssuesAsync("forge (2)", ct)));
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public void DependencyInsideJarInJarCounts()
     {
         var host = Mod("host.jar", Jar.Read(
