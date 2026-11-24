@@ -44,6 +44,9 @@ public static class Bind
         error ? Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error : Microsoft.UI.Xaml.Controls.InfoBarSeverity.Warning;
     public static Brush JobBrush(bool failed) => Resource(failed ? "SystemFillColorCriticalBrush" : "TextFillColorSecondaryBrush");
     public static Brush IssueBrush(bool error) => Resource(error ? "SystemFillColorCriticalBrush" : "SystemFillColorCautionBrush");
+    /// <summary>The dismissed issues list: an issue found now keeps its colour; what's kept for a mod that's away is dimmed.</summary>
+    public static Brush DismissedIssueBrush(bool away, bool error) => away ? Resource("TextFillColorTertiaryBrush") : IssueBrush(error);
+    public static Brush DismissedTextBrush(bool away) => Resource(away ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
     /// <summary>A crash finding's icon: a warning for a likely cause, a question mark for a possible one.</summary>
     public static string FindingGlyph(bool possible) => possible ? "" : "";
     public static Brush FindingBrush(bool possible) => Resource(possible ? "SystemFillColorCautionBrush" : "SystemFillColorCriticalBrush");

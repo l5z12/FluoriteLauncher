@@ -2,7 +2,9 @@ using Fluorite.App.Services;
 using Fluorite.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 
@@ -200,6 +202,44 @@ public sealed partial class ContentPanel : UserControl
     {
         if (ViewModel is { } vm)
             await vm.RestoreIssuesAsync(Selected);
+    }
+
+    private void DismissedLink_Click(object sender, RoutedEventArgs e) => FlyoutBase.ShowAttachedFlyout(DismissedLink);
+
+    private async void RestoreDismissed_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is not { } vm || Bind.ItemOf<DismissedIssueViewModel>(sender) is not { } entry)
+            return;
+        var index = vm.DismissedIssues.IndexOf(entry);
+        await vm.RestoreDismissedAsync(entry);
+        FocusDismissedAfterRestore(vm, index);
+    }
+
+    private async void RestoreAllDismissed_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is not { } vm)
+            return;
+        await vm.RestoreAllDismissedAsync();
+        FocusDismissedAfterRestore(vm, 0);
+    }
+
+    /// <summary>
+    /// The line's gone with its button: keyboard focus goes to the next line's (or the last one), so it can go on;
+    /// with nothing left the list closes, as the link that opened it has gone too.
+    /// </summary>
+    private void FocusDismissedAfterRestore(ContentListViewModel vm, int index)
+    {
+        if (vm.DismissedIssues.Count == 0)
+        {
+            DismissedFlyout.Hide();
+            return;
+        }
+        DismissedItems.UpdateLayout();
+        // A row is the template's grid in its container; its button is the last thing in it.
+        var row = DismissedItems.ContainerFromIndex(Math.Clamp(index, 0, vm.DismissedIssues.Count - 1));
+        Control target = row is not null && VisualTreeHelper.GetChildrenCount(row) > 0 && VisualTreeHelper.GetChild(row, 0) is Grid grid
+            && grid.Children.OfType<Button>().LastOrDefault() is { } button ? button : RestoreAllButton;
+        target.Focus(FocusState.Programmatic);
     }
 
     private async void DismissIssues_Click(object sender, RoutedEventArgs e)

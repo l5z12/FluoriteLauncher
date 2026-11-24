@@ -551,8 +551,15 @@
   <data name="Content_DismissAllIssues.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Stop showing these issues in this instance, and don't ask about them before launch. An issue that changes shows again.</value></data>
   <data name="Content_DismissedOne" xml:space="preserve"><value>1 dismissed issue</value></data>
   <data name="Content_DismissedMany" xml:space="preserve"><value>{0} dismissed issues</value></data>
-  <data name="Content_ShowDismissed" xml:space="preserve"><value>Show {0}</value></data>
-  <data name="Content_HideDismissed" xml:space="preserve"><value>Hide {0}</value></data>
+  <data name="Content_DismissedTitle.Text" xml:space="preserve"><value>Dismissed issues</value></data>
+  <data name="Content_ShowDismissedUnderMods.Content" xml:space="preserve"><value>Show under their mods</value></data>
+  <data name="Content_RestoreAllDismissed.Content" xml:space="preserve"><value>Show all again</value></data>
+  <data name="Content_RestoreIssueTip" xml:space="preserve"><value>Show again</value></data>
+  <data name="Content_RestoreAwayTip" xml:space="preserve"><value>Show again once it's back</value></data>
+  <data name="Content_DismissedOff" xml:space="preserve"><value>{0} is turned off: {1}, kept for when it's back on.</value></data>
+  <data name="Content_DismissedGone" xml:space="preserve"><value>{0} isn't installed: {1}, kept in case it comes back.</value></data>
+  <data name="Content_DismissedUnchecked" xml:space="preserve"><value>{0}: {1}, not checked without a mod loader.</value></data>
+  <data name="Content_DismissedNoLoader" xml:space="preserve"><value>The no-mod-loader warning, kept for when mods are turned on.</value></data>
   <data name="Content_UpToDate" xml:space="preserve"><value>Everything is up to date.</value></data>
   <data name="Content_UpdatesFound" xml:space="preserve"><value>{0} update(s) available.</value></data>
   <data name="Content_UnknownFiles" xml:space="preserve"><value>{0} file(s) aren't on Modrinth or CurseForge and can't be checked.</value></data>
@@ -1131,6 +1138,8 @@
   <data name="Undo_RemovedMany" xml:space="preserve"><value>Removed {0} items.</value></data>
   <data name="Undo_DismissedOne" xml:space="preserve"><value>Dismissed 1 issue.</value></data>
   <data name="Undo_DismissedMany" xml:space="preserve"><value>Dismissed {0} issues.</value></data>
+  <data name="Undo_RestoredOne" xml:space="preserve"><value>Showing 1 issue again.</value></data>
+  <data name="Undo_RestoredMany" xml:space="preserve"><value>Showing {0} issues again.</value></data>
   <data name="Menu_Refresh.Text" xml:space="preserve"><value>Refresh</value></data>
   <data name="WorldsMenu_Import.Text" xml:space="preserve"><value>Import a world…</value></data>
   <data name="WorldsMenu_OpenFolder.Text" xml:space="preserve"><value>Open saves folder</value></data>

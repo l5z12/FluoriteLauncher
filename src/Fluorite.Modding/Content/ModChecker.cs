@@ -335,8 +335,13 @@ public static class ModChecker
             if (file.Metadata.IsOptiFine)
                 present.Add("optifine");
         }
-        return dismissed.Where(k => !current.Contains(k) && k.Split('|') is [_, var id, ..] && present.Contains(id)).ToList();
+        // No loader: gone while mods that would have raised it are here, so the instance has one now.
+        var noLoader = nameof(ModIssueKind.NoLoader).ToLowerInvariant();
+        return dismissed.Where(k => !current.Contains(k) && (KeyModId(k) is { } id ? present.Contains(id) : k == noLoader && present.Count > 0)).ToList();
     }
+
+    /// <summary>The subject's mod id in a <see cref="ModIssue.Key"/>; none for <see cref="ModIssueKind.NoLoader"/>.</summary>
+    public static string? KeyModId(string key) => key.Split('|') is [_, var id, ..] ? id : null;
 
     /// <summary>Forge's own version in mods.toml ranges is the short one ("47.2.0"), never "1.20.1-47.2.0".</summary>
     private static string? ForgeShortVersion(string? version) =>

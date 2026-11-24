@@ -151,6 +151,30 @@ public sealed partial class ContentItemViewModel : ObservableObject
 }
 
 /// <summary>
+/// A line of the Mods tab's dismissed issues list: an issue found now, or what's kept for a mod that's away
+/// (turned off, not installed) until it's back.
+/// </summary>
+public sealed class DismissedIssueViewModel(string text, IReadOnlyList<string> keys, ModIssueSeverity? severity)
+{
+    public string Text { get; } = text;
+
+    /// <summary>What showing it again forgets (<see cref="ModIssue.Key"/>s).</summary>
+    public IReadOnlyList<string> Keys { get; } = keys;
+
+    /// <summary>Kept for a mod that's away: nothing shows until it's back.</summary>
+    public bool IsAway { get; } = severity is null;
+
+    public bool IsError { get; } = severity == ModIssueSeverity.Error;
+
+    public string Glyph => IsAway ? "" : IsError ? "" : "";
+
+    public string RestoreTip => Loc.Get(IsAway ? "Content_RestoreAwayTip" : "Content_RestoreIssueTip");
+
+    /// <summary>Same line: the list is only rebuilt when one changes (not to lose a click or the scroll).</summary>
+    public bool SameAs(DismissedIssueViewModel other) => Text == other.Text && Keys.SequenceEqual(other.Keys);
+}
+
+/// <summary>
 /// An instance's mods / resource packs / shader packs / data packs: scan, identify, toggle, delete, update,
 /// add files, and (for mods) pre-launch issues per file.
 /// </summary>
@@ -192,18 +216,21 @@ public sealed partial class ContentListViewModel(ContentService content, Content
     private int _shownIssues;
 
     /// <summary>Dismissed issues are shown (dimmed) under their mods, to bring back.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(DismissedText))]
-    public partial bool ShowDismissed { get; set; }
+    [ObservableProperty] public partial bool ShowDismissed { get; set; }
 
-    /// <summary>How many of the issues found now are dismissed.</summary>
+    /// <summary>Some issue found now is dismissed: there's something to show under the mods.</summary>
+    [ObservableProperty] public partial bool HasDismissedHere { get; set; }
+
+    /// <summary>The footer's list (opened from "2 dismissed issues"): those found now, errors first, then those kept for mods that are away.</summary>
+    public ObservableCollection<DismissedIssueViewModel> DismissedIssues { get; } = [];
+
+    /// <summary>How many dismissals the list holds.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DismissedText))]
     public partial int DismissedCount { get; set; }
 
-    /// <summary>The footer's link: "2 dismissed issues · Show" / "Hide".</summary>
-    public string DismissedText => Loc.Format(ShowDismissed ? "Content_HideDismissed" : "Content_ShowDismissed",
-        DismissedCount == 1 ? Loc.Get("Content_DismissedOne") : Loc.Format("Content_DismissedMany", DismissedCount));
+    /// <summary>The footer's link to the list: "2 dismissed issues".</summary>
+    public string DismissedText => DismissedCount == 1 ? Loc.Get("Content_DismissedOne") : Loc.Format("Content_DismissedMany", DismissedCount);
 
     partial void OnShowDismissedChanged(bool value) => UpdateIssues();
     [ObservableProperty] public partial string Summary { get; set; } = "";
@@ -439,9 +466,50 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         var warnings = active.Count - errors;
         IssueSummary = active.Count == 0 ? null : Loc.Format("Content_IssueSummary", errors, warnings);
         IssueSummaryIsError = errors > 0;
-        DismissedCount = issues.Count - active.Count;
-        if (DismissedCount == 0)
+        UpdateDismissedList(issues);
+        HasDismissedHere = issues.Count > active.Count;
+        if (!HasDismissedHere)
             ShowDismissed = false; // Nothing left to show: the next dismissal hides its issue again.
+    }
+
+    private void UpdateDismissedList(IReadOnlyList<ModIssue> issues)
+    {
+        // Copies of a mod can share one (duplicates): one line, as showing it again brings back both.
+        var list = issues.Where(i => _dismissed.Contains(i.Key)).DistinctBy(i => i.Key)
+            .OrderByDescending(i => i.Severity)
+            .Select(i => new DismissedIssueViewModel(ContentInstallService.Describe(i), [i.Key], i.Severity))
+            .ToList();
+        // The rest are kept for mods that are away, but not those just fixed (forgotten at the next refresh).
+        var files = _all.Select(i => i.File).ToList();
+        var current = issues.Select(i => i.Key).ToHashSet(StringComparer.Ordinal);
+        var resolved = ModChecker.ResolvedDismissals(_dismissed, issues, files);
+        list.AddRange(_dismissed.Where(k => !current.Contains(k)).Except(resolved)
+            .GroupBy(ModChecker.KeyModId)
+            .Select(g => Away(g.Key, g.Order(StringComparer.Ordinal).ToList(), files))
+            .OrderBy(e => e.Text, StringComparer.CurrentCultureIgnoreCase));
+        if (!list.SequenceEqual(DismissedIssues, s_sameLine))
+        {
+            DismissedIssues.Clear();
+            foreach (var entry in list)
+                DismissedIssues.Add(entry);
+        }
+        DismissedCount = list.Sum(e => e.Keys.Count);
+    }
+
+    private static readonly IEqualityComparer<DismissedIssueViewModel> s_sameLine =
+        EqualityComparer<DismissedIssueViewModel>.Create((a, b) => a is not null && b is not null && a.SameAs(b));
+
+    /// <summary>The list's line for a mod that's away, with how many of its issues are kept for when it's back.</summary>
+    private static DismissedIssueViewModel Away(string? modId, List<string> keys, List<ContentFile> files)
+    {
+        if (modId is null)
+            return new(Loc.Get("Content_DismissedNoLoader"), keys, null);
+        var count = keys.Count == 1 ? Loc.Get("Content_DismissedOne") : Loc.Format("Content_DismissedMany", keys.Count);
+        var copies = files.Where(f => !f.IsDirectory && (f.Metadata.Mods.Any(m => string.Equals(m.Id, modId, StringComparison.OrdinalIgnoreCase))
+            || modId == "optifine" && f.Metadata.IsOptiFine)).ToList();
+        // Turned off, gone, or here but not checked (no loader: nothing else is).
+        var text = copies.Count == 0 ? "Content_DismissedGone" : copies.Any(f => f.Enabled) ? "Content_DismissedUnchecked" : "Content_DismissedOff";
+        return new(Loc.Format(text, copies.FirstOrDefault()?.DisplayName ?? modId, count), keys, null);
     }
 
     /// <summary>
@@ -459,11 +527,13 @@ public sealed partial class ContentListViewModel(ContentService content, Content
     [RelayCommand]
     private Task DismissAllIssuesAsync() => DismissIssuesAsync(_all);
 
-    /// <summary>The footer's Show / Hide dismissed.</summary>
-    [RelayCommand]
-    private void ToggleShowDismissed() => ShowDismissed = !ShowDismissed;
+    /// <summary>The dismissed list's Show again, on one line.</summary>
+    public Task RestoreDismissedAsync(DismissedIssueViewModel entry) => SetDismissedAsync(entry.Keys, dismissed: false);
 
-    /// <summary>The undo offered by the last dismissal, while it's the pending one.</summary>
+    /// <summary>The dismissed list's Show all again: also what's kept for mods that are away.</summary>
+    public Task RestoreAllDismissedAsync() => SetDismissedAsync(DismissedIssues.SelectMany(e => e.Keys).Distinct().ToList(), dismissed: false);
+
+    /// <summary>The undo offered by the last dismissal (or showing again), while it's the pending one.</summary>
     private UndoOffer? _dismissUndo;
 
     private async Task SetDismissedAsync(IReadOnlyList<string> keys, bool dismissed, bool offerUndo = true)
@@ -483,13 +553,16 @@ public sealed partial class ContentListViewModel(ContentService content, Content
             return;
         }
         UpdateIssues();
-        // Not in place of a removal's Undo: that one can't be had back any other way (these can, Show dismissed).
-        if (dismissed && offerUndo && (PendingUndo is null || PendingUndo == _dismissUndo))
+        // Not in place of a removal's Undo: that one can't be had back any other way (these can, from the row or the list).
+        if (offerUndo && (PendingUndo is null || PendingUndo == _dismissUndo))
         {
-            // The lines that went, which a key shared by several rows (copies of one mod) can be more than.
-            var count = Math.Max(1, shownBefore - _shownIssues);
-            var message = count == 1 ? Loc.Get("Undo_DismissedOne") : Loc.Format("Undo_DismissedMany", count);
-            OfferUndo(_dismissUndo = new UndoOffer(message, () => SetDismissedAsync(keys, dismissed: false, offerUndo: false)));
+            // Dismissed: the lines that went, which a key shared by several rows (copies of one mod) can be more than.
+            // Shown again: the dismissals forgotten, some of which (mods away) show nothing yet.
+            var count = dismissed ? Math.Max(1, shownBefore - _shownIssues) : keys.Count;
+            var message = dismissed
+                ? count == 1 ? Loc.Get("Undo_DismissedOne") : Loc.Format("Undo_DismissedMany", count)
+                : count == 1 ? Loc.Get("Undo_RestoredOne") : Loc.Format("Undo_RestoredMany", count);
+            OfferUndo(_dismissUndo = new UndoOffer(message, () => SetDismissedAsync(keys, !dismissed, offerUndo: false)));
         }
     }
 

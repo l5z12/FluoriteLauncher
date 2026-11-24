@@ -423,6 +423,11 @@ public class ModCheckerTests
         Assert.Equal(key, Assert.Single(ModChecker.ResolvedDismissals(dismissed, CheckFabric(fixedMods), fixedMods)));
         var disabled = new[] { Mod("modmenu.jar", needsApi.Metadata, enabled: false) };
         Assert.Empty(ModChecker.ResolvedDismissals(dismissed, CheckFabric(disabled), disabled));
+
+        // No loader: forgotten once there's one, not while there's no mod to raise it.
+        var noLoader = new HashSet<string> { Assert.Single(ModChecker.Check(fixedMods, null, null, "1.20.1")).Key };
+        Assert.Single(ModChecker.ResolvedDismissals(noLoader, CheckFabric(fixedMods), fixedMods));
+        Assert.Empty(ModChecker.ResolvedDismissals(noLoader, CheckFabric(disabled), disabled));
     }
 
     [Fact]

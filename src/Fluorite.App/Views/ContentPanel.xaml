@@ -210,11 +210,64 @@
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="4" Margin="0,0,0,8">
             <TextBlock Text="{x:Bind ViewModel.Summary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
-            <!-- "· 2 dismissed issues · Show": only while some issue found now is dismissed. -->
+            <!-- "· 2 dismissed issues": opens the list of them, while there's any. -->
             <StackPanel Orientation="Horizontal" Spacing="4" Visibility="{x:Bind local:Bind.VisibleIfPositive(ViewModel.DismissedCount), Mode=OneWay, FallbackValue=Collapsed}">
                 <TextBlock Text="·" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
-                <HyperlinkButton Command="{x:Bind ViewModel.ToggleShowDismissedCommand, Mode=OneWay}" Padding="2,0" MinHeight="0" VerticalAlignment="Center">
+                <HyperlinkButton x:Name="DismissedLink" Click="DismissedLink_Click" Padding="2,0" MinHeight="0" VerticalAlignment="Center">
                     <TextBlock Text="{x:Bind ViewModel.DismissedText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <FlyoutBase.AttachedFlyout>
+                        <Flyout x:Name="DismissedFlyout" Placement="TopEdgeAlignedLeft">
+                            <Grid Width="420" RowSpacing="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock x:Uid="Content_DismissedTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <ScrollViewer Grid.Row="1" MaxHeight="320" Margin="0,0,-12,0" Padding="0,0,12,0">
+                                    <ItemsControl x:Name="DismissedItems" ItemsSource="{x:Bind ViewModel.DismissedIssues, Mode=OneWay}" IsTabStop="False">
+                                        <ItemsControl.ItemContainerTransitions>
+                                            <TransitionCollection />
+                                        </ItemsControl.ItemContainerTransitions>
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Spacing="4" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:DismissedIssueViewModel">
+                                                <Grid ColumnSpacing="10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <FontIcon Glyph="{x:Bind Glyph}" FontSize="14" VerticalAlignment="Top" Margin="0,2,0,0"
+                                                              Foreground="{x:Bind local:Bind.DismissedIssueBrush(IsAway, IsError)}" />
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind Text}" TextWrapping="Wrap" VerticalAlignment="Center"
+                                                               Foreground="{x:Bind local:Bind.DismissedTextBrush(IsAway)}" />
+                                                    <Button Grid.Column="2" Style="{StaticResource SubtleButtonStyle}" Tag="{x:Bind}" Click="RestoreDismissed_Click" VerticalAlignment="Top"
+                                                            ToolTipService.ToolTip="{x:Bind RestoreTip}" AutomationProperties.Name="{x:Bind RestoreTip}">
+                                                        <FontIcon Glyph="&#xE890;" FontSize="14" />
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                                <Grid Grid.Row="2" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <!-- Only while some are found now: those of mods away show nowhere. -->
+                                    <CheckBox x:Uid="Content_ShowDismissedUnderMods" IsChecked="{x:Bind ViewModel.ShowDismissed, Mode=TwoWay}"
+                                              Visibility="{x:Bind local:Bind.Visible(ViewModel.HasDismissedHere), Mode=OneWay, FallbackValue=Collapsed}" />
+                                    <Button x:Name="RestoreAllButton" Grid.Column="1" x:Uid="Content_RestoreAllDismissed" Click="RestoreAllDismissed_Click" VerticalAlignment="Center" />
+                                </Grid>
+                            </Grid>
+                        </Flyout>
+                    </FlyoutBase.AttachedFlyout>
                 </HyperlinkButton>
             </StackPanel>
         </StackPanel>

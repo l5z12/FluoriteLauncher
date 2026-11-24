@@ -551,8 +551,15 @@
   <data name="Content_DismissAllIssues.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>在此实例中不再显示这些问题，启动前也不再询问。问题有变化时会重新显示。</value></data>
   <data name="Content_DismissedOne" xml:space="preserve"><value>1 个已忽略的问题</value></data>
   <data name="Content_DismissedMany" xml:space="preserve"><value>{0} 个已忽略的问题</value></data>
-  <data name="Content_ShowDismissed" xml:space="preserve"><value>显示 {0}</value></data>
-  <data name="Content_HideDismissed" xml:space="preserve"><value>隐藏 {0}</value></data>
+  <data name="Content_DismissedTitle.Text" xml:space="preserve"><value>已忽略的问题</value></data>
+  <data name="Content_ShowDismissedUnderMods.Content" xml:space="preserve"><value>在模组下方显示</value></data>
+  <data name="Content_RestoreAllDismissed.Content" xml:space="preserve"><value>全部重新显示</value></data>
+  <data name="Content_RestoreIssueTip" xml:space="preserve"><value>重新显示</value></data>
+  <data name="Content_RestoreAwayTip" xml:space="preserve"><value>模组回来后重新显示</value></data>
+  <data name="Content_DismissedOff" xml:space="preserve"><value>{0} 已禁用：{1}，重新启用后仍保持忽略。</value></data>
+  <data name="Content_DismissedGone" xml:space="preserve"><value>{0} 未安装：{1}，重新安装后仍保持忽略。</value></data>
+  <data name="Content_DismissedUnchecked" xml:space="preserve"><value>{0}：{1}，没有模组加载器时不检查。</value></data>
+  <data name="Content_DismissedNoLoader" xml:space="preserve"><value>“没有模组加载器”警告，启用模组后仍保持忽略。</value></data>
   <data name="Content_UpToDate" xml:space="preserve"><value>全部为最新版本。</value></data>
   <data name="Content_UpdatesFound" xml:space="preserve"><value>有 {0} 个可用更新。</value></data>
   <data name="Content_UnknownFiles" xml:space="preserve"><value>{0} 个文件不在 Modrinth 或 CurseForge 上，无法检查更新。</value></data>
@@ -1131,6 +1138,8 @@
   <data name="Undo_RemovedMany" xml:space="preserve"><value>已移除 {0} 项。</value></data>
   <data name="Undo_DismissedOne" xml:space="preserve"><value>已忽略 1 个问题。</value></data>
   <data name="Undo_DismissedMany" xml:space="preserve"><value>已忽略 {0} 个问题。</value></data>
+  <data name="Undo_RestoredOne" xml:space="preserve"><value>已重新显示 1 个问题。</value></data>
+  <data name="Undo_RestoredMany" xml:space="preserve"><value>已重新显示 {0} 个问题。</value></data>
   <data name="Menu_Refresh.Text" xml:space="preserve"><value>刷新</value></data>
   <data name="WorldsMenu_Import.Text" xml:space="preserve"><value>导入世界…</value></data>
   <data name="WorldsMenu_OpenFolder.Text" xml:space="preserve"><value>打开存档文件夹</value></data>
