@@ -68,8 +68,26 @@ public sealed partial class ContentItemViewModel : ObservableObject
     public string UpdateText => Update is null ? "" : Loc.Format("Content_UpdateTo", Update.VersionNumber);
 
     [ObservableProperty] public partial ImageSource? Icon { get; set; }
-    [ObservableProperty] public partial string? Issue { get; set; }
+    /// <summary>Its issues (pre-launch checks), one per line; dismissed ones aren't here.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasIssue))]
+    public partial string? Issue { get; set; }
+
+    public bool HasIssue => Issue is not null;
     [ObservableProperty] public partial bool IssueIsError { get; set; }
+
+    /// <summary>Its dismissed issues while they're shown (Show dismissed), else null.</summary>
+    [ObservableProperty] public partial string? DismissedIssue { get; set; }
+
+    /// <summary>It has dismissed issues, shown or not: they can be brought back.</summary>
+    [ObservableProperty] public partial bool HasDismissedIssues { get; set; }
+
+    /// <summary><see cref="ModIssue.Key"/>s of what <see cref="Issue"/> shows.</summary>
+    public IReadOnlyList<string> IssueKeys { get; set; } = [];
+
+    /// <summary><see cref="ModIssue.Key"/>s of its dismissed issues.</summary>
+    public IReadOnlyList<string> DismissedKeys { get; set; } = [];
+
     [ObservableProperty] public partial bool IsBusy { get; set; }
 
     partial void OnEnabledChanged(bool value)
@@ -165,6 +183,29 @@ public sealed partial class ContentListViewModel(ContentService content, Content
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? IssueSummary { get; set; }
     [ObservableProperty] public partial bool IssueSummaryIsError { get; set; }
+
+    /// <summary>Issues dismissed in this instance (<see cref="ModIssue.Key"/>), as last read.</summary>
+    private IReadOnlySet<string> _dismissed = new HashSet<string>();
+
+    /// <summary>What the last check found, and how many of those weren't dismissed.</summary>
+    private IReadOnlyList<ModIssue> _issues = [];
+    private int _shownIssues;
+
+    /// <summary>Dismissed issues are shown (dimmed) under their mods, to bring back.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DismissedText))]
+    public partial bool ShowDismissed { get; set; }
+
+    /// <summary>How many of the issues found now are dismissed.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DismissedText))]
+    public partial int DismissedCount { get; set; }
+
+    /// <summary>The footer's link: "2 dismissed issues · Show" / "Hide".</summary>
+    public string DismissedText => Loc.Format(ShowDismissed ? "Content_HideDismissed" : "Content_ShowDismissed",
+        DismissedCount == 1 ? Loc.Get("Content_DismissedOne") : Loc.Format("Content_DismissedMany", DismissedCount));
+
+    partial void OnShowDismissedChanged(bool value) => UpdateIssues();
     [ObservableProperty] public partial string Summary { get; set; } = "";
     [ObservableProperty] public partial int UpdateCount { get; set; }
     [ObservableProperty] public partial bool IsEmpty { get; set; }
@@ -195,6 +236,8 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         Instance = instance;
         Kind = kind;
         installer.ContentChanged += OnContentChanged;
+        if (kind == ContentKind.Mod)
+            installer.IssuesDismissed += OnIssuesDismissed;
         if (kind == ContentKind.DataPack)
         {
             foreach (var w in Manager.GetWorlds())
@@ -208,7 +251,27 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         OnPropertyChanged(nameof(EmptyText));
     }
 
-    public void Detach() => installer.ContentChanged -= OnContentChanged;
+    public void Detach()
+    {
+        installer.ContentChanged -= OnContentChanged;
+        installer.IssuesDismissed -= OnIssuesDismissed;
+    }
+
+    /// <summary>Dismissed at launch ("Don't ask again"): only the issues change, no need to scan again.</summary>
+    private async void OnIssuesDismissed(object? sender, string instanceId)
+    {
+        if (Instance is not { } instance || !string.Equals(instanceId, instance.Id, StringComparison.OrdinalIgnoreCase))
+            return;
+        try
+        {
+            _dismissed = await Manager.GetDismissedIssuesAsync(instance.Id);
+            UpdateIssues();
+        }
+        catch (IOException)
+        {
+            // Shown at the next refresh.
+        }
+    }
 
     /// <summary>
     /// The instance page is closing: stop listening, cancel a scan in progress and drop the list and its icons, so
@@ -291,9 +354,12 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         {
             var manager = Manager;
             var files = await Task.Run(() => manager.ScanAsync(location, cts.Token));
+            if (IsMods)
+                _dismissed = await manager.GetDismissedIssuesAsync(Instance.Id, cts.Token);
             if (cts.IsCancellationRequested)
                 return;
             Rebuild(files, replay);
+            await ForgetResolvedAsync(manager, files);
 
             // Identify unknown files in the background, then refresh titles/icons/links.
             var identified = await Task.Run(() => content.IdentifyAsync(manager, files, cts.Token));
@@ -347,22 +413,102 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         UpdateCount = _all.Count(i => i.HasUpdate);
     }
 
-    /// <summary>Mods tab: run the pre-launch checks and show them per file.</summary>
+    /// <summary>Mods tab: run the pre-launch checks and show them per file, leaving out the dismissed ones.</summary>
     private void UpdateIssues()
     {
         if (!IsMods || Instance is null)
             return;
-        var issues = ModChecker.Check(_all.Select(i => i.File).ToList(), Instance.Manifest);
+        var issues = _issues = ModChecker.Check(_all.Select(i => i.File).ToList(), Instance.Manifest);
+        static string Lines(List<ModIssue> list) => string.Join("\n", list.Select(ContentInstallService.Describe));
         foreach (var item in _all)
         {
-            var mine = issues.Where(i => i.File == item.FileName).ToList();
-            item.Issue = mine.Count == 0 ? null : string.Join("\n", mine.Select(ContentInstallService.Describe));
-            item.IssueIsError = mine.Any(i => i.Severity == ModIssueSeverity.Error);
+            // Only the enabled copy: a disabled twin ("x.jar.disabled" by "x.jar") has the same file name but isn't checked.
+            var mine = item.File.Enabled ? issues.Where(i => i.File == item.FileName).ToList() : [];
+            var shown = mine.Where(i => !_dismissed.Contains(i.Key)).ToList();
+            var dismissed = mine.Where(i => _dismissed.Contains(i.Key)).ToList();
+            item.IssueKeys = shown.Select(i => i.Key).ToList();
+            item.DismissedKeys = dismissed.Select(i => i.Key).ToList();
+            item.Issue = shown.Count == 0 ? null : Lines(shown);
+            item.IssueIsError = shown.Any(i => i.Severity == ModIssueSeverity.Error);
+            item.HasDismissedIssues = dismissed.Count > 0;
+            item.DismissedIssue = ShowDismissed && dismissed.Count > 0 ? Lines(dismissed) : null;
         }
-        var errors = issues.Count(i => i.Severity == ModIssueSeverity.Error);
-        var warnings = issues.Count - errors;
-        IssueSummary = issues.Count == 0 ? null : Loc.Format("Content_IssueSummary", errors, warnings);
+        var active = issues.Where(i => !_dismissed.Contains(i.Key)).ToList();
+        _shownIssues = active.Count;
+        var errors = active.Count(i => i.Severity == ModIssueSeverity.Error);
+        var warnings = active.Count - errors;
+        IssueSummary = active.Count == 0 ? null : Loc.Format("Content_IssueSummary", errors, warnings);
         IssueSummaryIsError = errors > 0;
+        DismissedCount = issues.Count - active.Count;
+        if (DismissedCount == 0)
+            ShowDismissed = false; // Nothing left to show: the next dismissal hides its issue again.
+    }
+
+    /// <summary>
+    /// Dismisses the issues showing under these mods, for this instance: they're no longer shown, nor asked about
+    /// before launch, until they change.
+    /// </summary>
+    public Task DismissIssuesAsync(IEnumerable<ContentItemViewModel> items) =>
+        SetDismissedAsync(items.SelectMany(i => i.IssueKeys).Distinct().ToList(), dismissed: true);
+
+    /// <summary>Shows these mods' dismissed issues again.</summary>
+    public Task RestoreIssuesAsync(IEnumerable<ContentItemViewModel> items) =>
+        SetDismissedAsync(items.SelectMany(i => i.DismissedKeys).Distinct().ToList(), dismissed: false);
+
+    /// <summary>The issue bar's Dismiss all.</summary>
+    [RelayCommand]
+    private Task DismissAllIssuesAsync() => DismissIssuesAsync(_all);
+
+    /// <summary>The footer's Show / Hide dismissed.</summary>
+    [RelayCommand]
+    private void ToggleShowDismissed() => ShowDismissed = !ShowDismissed;
+
+    /// <summary>The undo offered by the last dismissal, while it's the pending one.</summary>
+    private UndoOffer? _dismissUndo;
+
+    private async Task SetDismissedAsync(IReadOnlyList<string> keys, bool dismissed, bool offerUndo = true)
+    {
+        if (keys.Count == 0 || Instance is not { } instance)
+            return;
+        var manager = Manager;
+        var shownBefore = _shownIssues;
+        try
+        {
+            await manager.SetIssuesDismissedAsync(instance.Id, keys, dismissed);
+            _dismissed = await manager.GetDismissedIssuesAsync(instance.Id);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Error = ex.Message;
+            return;
+        }
+        UpdateIssues();
+        // Not in place of a removal's Undo: that one can't be had back any other way (these can, Show dismissed).
+        if (dismissed && offerUndo && (PendingUndo is null || PendingUndo == _dismissUndo))
+        {
+            // The lines that went, which a key shared by several rows (copies of one mod) can be more than.
+            var count = Math.Max(1, shownBefore - _shownIssues);
+            var message = count == 1 ? Loc.Get("Undo_DismissedOne") : Loc.Format("Undo_DismissedMany", count);
+            OfferUndo(_dismissUndo = new UndoOffer(message, () => SetDismissedAsync(keys, dismissed: false, offerUndo: false)));
+        }
+    }
+
+    /// <summary>Dismissals whose problem was fixed are forgotten, so if it comes back it's shown (and asked about) again.</summary>
+    private async Task ForgetResolvedAsync(ContentManager manager, IReadOnlyList<ContentFile> files)
+    {
+        if (!IsMods || Instance is not { } instance)
+            return;
+        if (ModChecker.ResolvedDismissals(_dismissed, _issues, files) is not { Count: > 0 } resolved)
+            return;
+        try
+        {
+            await manager.SetIssuesDismissedAsync(instance.Id, resolved, dismissed: false);
+            _dismissed = await manager.GetDismissedIssuesAsync(instance.Id);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Forgotten next time; meanwhile they're not shown anyway (nothing to show).
+        }
     }
 
     public async Task SetEnabledAsync(ContentItemViewModel item, bool enabled)

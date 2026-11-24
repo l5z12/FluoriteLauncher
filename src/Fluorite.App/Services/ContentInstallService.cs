@@ -61,6 +61,11 @@ public sealed partial class ContentInstallService(ContentService content)
     /// <summary>Raised on the UI thread with the instance's game directory after its content changed.</summary>
     public event EventHandler<string>? ContentChanged;
 
+    /// <summary>Raised on the UI thread with the instance's id after its mod issues were dismissed elsewhere (at launch).</summary>
+    public event EventHandler<string>? IssuesDismissed;
+
+    public void NotifyIssuesDismissed(GameInstance instance) => IssuesDismissed?.Invoke(this, instance.Id);
+
     public static string Key(ContentPlatform platform, string projectId) => $"{platform}:{projectId}";
 
     public ContentJob? ActiveJob(string projectKey, GameInstance instance) =>
@@ -621,8 +626,8 @@ public sealed partial class ContentInstallService(ContentService content)
         _ => id ?? "",
     };
 
-    /// <summary>Asks whether to launch despite errors; true = launch.</summary>
-    public static async Task<bool> ConfirmLaunchAsync(string instanceName, IReadOnlyList<ModIssue> issues)
+    /// <summary>Asks whether to launch despite errors, and whether to stop asking about these (dismiss them).</summary>
+    public static async Task<(bool Launch, bool DontAskAgain)> ConfirmLaunchAsync(string instanceName, IReadOnlyList<ModIssue> issues)
     {
         var panel = new StackPanel { Spacing = 8, MinWidth = 480 };
         panel.Children.Add(Dialogs.Text(Loc.Format("ModIssues_Body", instanceName), secondary: true));
@@ -638,7 +643,13 @@ public sealed partial class ContentInstallService(ContentService content)
             panel.Children.Add(Dialogs.Header(Loc.Get("ModIssues_Warnings")));
             panel.Children.Add(Dialogs.Bullets(warnings.Select(Describe)));
         }
-        var result = await Dialogs.ShowAsync(Loc.Get("ModIssues_Title"), Dialogs.Scroll(panel, 460), Loc.Get("ModIssues_LaunchAnyway"));
-        return result == ContentDialogResult.Primary;
+        // Outside the scrolling list, so it's seen however long the list is.
+        var dontAsk = new CheckBox { Content = Loc.Get("ModIssues_DontAskAgain") };
+        ToolTipService.SetToolTip(dontAsk, Loc.Get("ModIssues_DontAskAgainTip"));
+        var body = new StackPanel { Spacing = 12 };
+        body.Children.Add(Dialogs.Scroll(panel, 420));
+        body.Children.Add(dontAsk);
+        var result = await Dialogs.ShowAsync(Loc.Get("ModIssues_Title"), body, Loc.Get("ModIssues_LaunchAnyway"));
+        return (result == ContentDialogResult.Primary, dontAsk.IsChecked == true);
     }
 }

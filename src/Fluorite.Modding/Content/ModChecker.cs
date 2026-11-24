@@ -62,6 +62,33 @@ public sealed record ModIssue(ModIssueKind Kind, ModIssueSeverity Severity, stri
 
     /// <summary>The loader whose metadata <see cref="Range"/> comes from.</summary>
     public ModLoaderKind? Loader { get; init; }
+
+    /// <summary>Mod id of the subject (its file name and display name change with versions and lookups; this doesn't).</summary>
+    public string? ModId { get; init; }
+
+    /// <summary>Mod id of the other party (dependency, conflicting mod), where there's one.</summary>
+    public string? OtherId { get; init; }
+
+    /// <summary>
+    /// The instance's side of the problem, where the mod's side alone doesn't say it: its Minecraft version, its
+    /// loader (and that loader's version), the version of the dependency found.
+    /// </summary>
+    public string? Found { get; init; }
+
+    /// <summary>
+    /// What a dismissal remembers: the same problem between the same mods, whatever their files are called. Any
+    /// change to either side (what the mod asks for, what the instance has) makes it a new one, which shows again.
+    /// Starts with the kind and the subject's mod id (see <see cref="ModChecker.ResolvedDismissals"/>).
+    /// </summary>
+    public string Key => Kind switch
+    {
+        ModIssueKind.NoLoader => Join(Kind.ToString()), // Its detail is how many mods there are.
+        // These two files: another copy later is another problem.
+        ModIssueKind.Duplicate => Join(Kind.ToString(), ModId, string.Join(",", new[] { File, OtherFile }.Order(StringComparer.OrdinalIgnoreCase))),
+        _ => Join(Kind.ToString(), ModId ?? File, OtherId ?? Other, Detail, Range, Found),
+    };
+
+    private static string Join(params string?[] parts) => string.Join("|", parts.Select(p => p?.ToLowerInvariant()));
 }
 
 /// <summary>
@@ -113,6 +140,8 @@ public static class ModChecker
                 issues.Add(new ModIssue(ModIssueKind.WrongLoader, ModIssueSeverity.Error, file.FileName, file.DisplayName)
                 {
                     Detail = string.Join(", ", file.Metadata.Loaders.Distinct()),
+                    ModId = file.Metadata.Mods[0].Id,
+                    Found = loaderUid,
                 });
                 continue;
             }
@@ -156,6 +185,7 @@ public static class ModChecker
                     Other = files[0].FileName,
                     OtherFile = files[0].FileName,
                     Detail = group.Key,
+                    ModId = group.Key,
                 });
             }
         }
@@ -180,6 +210,8 @@ public static class ModChecker
                                 OtherFile = other.File.FileName,
                                 Range = dep.VersionRange,
                                 Loader = mod.Loader,
+                                ModId = mod.Id,
+                                OtherId = dep.Id,
                             });
                         }
                         break;
@@ -191,11 +223,19 @@ public static class ModChecker
         foreach (var optifine in enabled.Where(f => f.Metadata.IsOptiFine))
         {
             if (loaderUid is ComponentUids.FabricLoader or ComponentUids.QuiltLoader && !provided.ContainsKey("optifabric"))
-                issues.Add(new ModIssue(ModIssueKind.OptiFineNeedsOptiFabric, ModIssueSeverity.Error, optifine.FileName, optifine.DisplayName));
+                issues.Add(new ModIssue(ModIssueKind.OptiFineNeedsOptiFabric, ModIssueSeverity.Error, optifine.FileName, optifine.DisplayName) { ModId = "optifine" });
             foreach (var id in s_optiFineConflicts)
             {
                 if (provided.TryGetValue(id, out var conflict))
-                    issues.Add(new ModIssue(ModIssueKind.KnownConflict, ModIssueSeverity.Error, optifine.FileName, optifine.DisplayName) { Other = conflict.File.DisplayName, OtherFile = conflict.File.FileName });
+                {
+                    issues.Add(new ModIssue(ModIssueKind.KnownConflict, ModIssueSeverity.Error, optifine.FileName, optifine.DisplayName)
+                    {
+                        Other = conflict.File.DisplayName,
+                        OtherFile = conflict.File.FileName,
+                        ModId = "optifine",
+                        OtherId = id,
+                    });
+                }
             }
         }
 
@@ -213,7 +253,7 @@ public static class ModChecker
         if (id.Equals("minecraft", StringComparison.OrdinalIgnoreCase))
         {
             if (VersionPredicate.Matches(dep.VersionRange, minecraftVersion, mod.Loader) == false)
-                issues.Add(new ModIssue(ModIssueKind.WrongMinecraftVersion, ModIssueSeverity.Error, file.FileName, file.DisplayName) { Detail = dep.VersionRange });
+                issues.Add(new ModIssue(ModIssueKind.WrongMinecraftVersion, ModIssueSeverity.Error, file.FileName, file.DisplayName) { Detail = dep.VersionRange, ModId = mod.Id, Found = minecraftVersion });
             return;
         }
 
@@ -229,7 +269,18 @@ public static class ModChecker
         if (ownLoader)
         {
             if (VersionPredicate.Matches(dep.VersionRange, ForgeShortVersion(loaderVersion), mod.Loader) == false)
-                issues.Add(new ModIssue(ModIssueKind.WrongLoaderVersion, ModIssueSeverity.Error, file.FileName, file.DisplayName) { Other = id, Detail = dep.VersionRange, Range = dep.VersionRange, Loader = mod.Loader });
+            {
+                issues.Add(new ModIssue(ModIssueKind.WrongLoaderVersion, ModIssueSeverity.Error, file.FileName, file.DisplayName)
+                {
+                    Other = id,
+                    Detail = dep.VersionRange,
+                    Range = dep.VersionRange,
+                    Loader = mod.Loader,
+                    ModId = mod.Id,
+                    OtherId = id,
+                    Found = $"{loaderUid} {loaderVersion}",
+                });
+            }
             return;
         }
         if (s_builtIns.Contains(id))
@@ -237,7 +288,15 @@ public static class ModChecker
 
         if (!provided.TryGetValue(id, out var provider))
         {
-            issues.Add(new ModIssue(ModIssueKind.MissingDependency, ModIssueSeverity.Error, file.FileName, file.DisplayName) { Other = id, Detail = dep.VersionRange, Range = dep.VersionRange, Loader = mod.Loader });
+            issues.Add(new ModIssue(ModIssueKind.MissingDependency, ModIssueSeverity.Error, file.FileName, file.DisplayName)
+            {
+                Other = id,
+                Detail = dep.VersionRange,
+                Range = dep.VersionRange,
+                Loader = mod.Loader,
+                ModId = mod.Id,
+                OtherId = id,
+            });
             return;
         }
         if (provider.File != file && VersionPredicate.Matches(dep.VersionRange, provider.Version, mod.Loader) == false)
@@ -249,8 +308,34 @@ public static class ModChecker
                 Detail = $"{dep.VersionRange} ≠ {provider.Version}",
                 Range = dep.VersionRange,
                 Loader = mod.Loader,
+                ModId = mod.Id,
+                OtherId = id,
+                Found = provider.Version,
             });
         }
+    }
+
+    /// <summary>
+    /// Dismissed issues (<see cref="ModIssue.Key"/>s) whose problem is gone while their mod is here and enabled: it
+    /// was fixed, so if it comes back it's asked about again. Those of mods that are away (disabled, removed for now)
+    /// stay dismissed.
+    /// </summary>
+    /// <param name="issues">What <see cref="Check(IReadOnlyList{ContentFile}, InstanceManifest)"/> found in <paramref name="mods"/>.</param>
+    public static IReadOnlyList<string> ResolvedDismissals(IReadOnlySet<string> dismissed, IReadOnlyList<ModIssue> issues, IReadOnlyList<ContentFile> mods)
+    {
+        // Without a loader nothing else is checked, so nothing else is known to be fixed.
+        if (dismissed.Count == 0 || issues.Any(i => i.Kind == ModIssueKind.NoLoader))
+            return [];
+        var current = issues.Select(i => i.Key).ToHashSet(StringComparer.Ordinal);
+        var present = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in mods.Where(m => m.Enabled && !m.IsDirectory))
+        {
+            foreach (var mod in file.Metadata.Mods)
+                present.Add(mod.Id);
+            if (file.Metadata.IsOptiFine)
+                present.Add("optifine");
+        }
+        return dismissed.Where(k => !current.Contains(k) && k.Split('|') is [_, var id, ..] && present.Contains(id)).ToList();
     }
 
     /// <summary>Forge's own version in mods.toml ranges is the short one ("47.2.0"), never "1.20.1-47.2.0".</summary>

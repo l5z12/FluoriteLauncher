@@ -393,6 +393,63 @@ public class ModCheckerTests
     }
 
     [Fact]
+    public void DismissalKeyFollowsTheProblemNotTheFile()
+    {
+        static string KeyOf(ContentFile mod) => Assert.Single(CheckFabric(mod)).Key;
+        var before = KeyOf(Fabric("modmenu", """{ "fabric-api": ">=0.90" }"""));
+        // Updated (new file name and version), same problem: still dismissed.
+        var updated = Fabric("modmenu", """{ "fabric-api": ">=0.90" }""", version: "2.0.0");
+        Assert.Equal(before, KeyOf(Mod("modmenu-2.0.0.jar", updated.Metadata)));
+        // Needs something else now: a new problem.
+        Assert.NotEqual(before, KeyOf(Fabric("modmenu", """{ "fabric-api": ">=0.100" }""")));
+    }
+
+    [Fact]
+    public void DismissalKeyFollowsTheInstance()
+    {
+        var mod = Fabric("sodium", """{ "minecraft": "1.20.1" }""");
+        string KeyOn(string minecraft) => Assert.Single(ModChecker.Check([mod], ComponentUids.FabricLoader, "0.16.10", minecraft)).Key;
+        // Dismissed on 1.20.4, asked again once the instance moves to 1.21.4.
+        Assert.NotEqual(KeyOn("1.20.4"), KeyOn("1.21.4"));
+    }
+
+    [Fact]
+    public void FixedDismissalsAreForgottenButNotThoseOfDisabledMods()
+    {
+        var needsApi = Fabric("modmenu", """{ "fabric-api": "*" }""");
+        var key = Assert.Single(CheckFabric(needsApi)).Key;
+        var dismissed = new HashSet<string> { key };
+        var fixedMods = new[] { needsApi, Fabric("fabric-api") };
+        Assert.Equal(key, Assert.Single(ModChecker.ResolvedDismissals(dismissed, CheckFabric(fixedMods), fixedMods)));
+        var disabled = new[] { Mod("modmenu.jar", needsApi.Metadata, enabled: false) };
+        Assert.Empty(ModChecker.ResolvedDismissals(dismissed, CheckFabric(disabled), disabled));
+    }
+
+    [Fact]
+    public async Task DismissedIssuesAreKeptPerInstance()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            using (var manager = new ContentManager(dir, Path.Combine(dir, ".fluorite")))
+            {
+                await manager.SetIssuesDismissedAsync("forge", ["a", "b"], dismissed: true, ct);
+                await manager.SetIssuesDismissedAsync("forge", ["a"], dismissed: false, ct);
+            }
+            using var reopened = new ContentManager(dir, Path.Combine(dir, ".fluorite"));
+            Assert.Equal("b", Assert.Single(await reopened.GetDismissedIssuesAsync("forge", ct)));
+            // Another profile sharing the game directory (and so the index) has its own.
+            Assert.Empty(await reopened.GetDismissedIssuesAsync("neoforge", ct));
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public void DependencyInsideJarInJarCounts()
     {
         var host = Mod("host.jar", Jar.Read(

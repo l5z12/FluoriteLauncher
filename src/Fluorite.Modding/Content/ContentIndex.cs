@@ -56,6 +56,13 @@ public sealed class ContentIndex
 
 #pragma warning disable CA2227 // Serialised.
     public Dictionary<string, ContentRecord> Files { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Mod issues the user dismissed (<see cref="ModIssue.Key"/>s), by instance id: instances sharing a game directory
+    /// (official launcher profiles) share this index, but not their dismissals. Kept while their mods are away
+    /// (disabled, say), so they stay dismissed when they come back.
+    /// </summary>
+    public Dictionary<string, HashSet<string>>? DismissedIssues { get; set; }
 #pragma warning restore CA2227
 
     public static async Task<ContentIndex> LoadAsync(string path, CancellationToken ct = default)
@@ -67,6 +74,8 @@ public sealed class ContentIndex
             await using var fs = File.OpenRead(path);
             var index = await JsonSerializer.DeserializeAsync(fs, ContentIndexJsonContext.Default.ContentIndex, ct).ConfigureAwait(false) ?? new ContentIndex();
             index.Files = new Dictionary<string, ContentRecord>(index.Files, StringComparer.OrdinalIgnoreCase);
+            if (index.DismissedIssues is { } dismissed)
+                index.DismissedIssues = new Dictionary<string, HashSet<string>>(dismissed, StringComparer.OrdinalIgnoreCase);
             return index;
         }
         catch (JsonException)

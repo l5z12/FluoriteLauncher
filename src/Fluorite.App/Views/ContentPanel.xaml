@@ -55,8 +55,13 @@
 
         <StackPanel Grid.Row="1" Spacing="6">
             <InfoBar x:Uid="Content_NoLoaderBar" Severity="Warning" IsClosable="False" IsOpen="{x:Bind ViewModel.NoLoader, Mode=OneWay}" />
+            <!-- Not closable: closing would only hide it until the next scan. Dismiss all is remembered (and undoable). -->
             <InfoBar Severity="{x:Bind local:Bind.Severity(ViewModel.IssueSummaryIsError), Mode=OneWay}" IsClosable="False"
-                     IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.IssueSummary), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.IssueSummary, Mode=OneWay}" />
+                     IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.IssueSummary), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.IssueSummary, Mode=OneWay}">
+                <InfoBar.ActionButton>
+                    <Button x:Uid="Content_DismissAllIssues" Command="{x:Bind ViewModel.DismissAllIssuesCommand, Mode=OneWay}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
             <InfoBar Severity="Success" IsClosable="True" IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.Status), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.Status, Mode=OneWay}" />
             <InfoBar Severity="Error" IsClosable="True" IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.Error), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.Error, Mode=OneWay}" />
             <local:UndoBar Offer="{x:Bind ViewModel.PendingUndo, Mode=OneWay}" />
@@ -80,6 +85,13 @@
                     </MenuFlyoutItem>
                     <MenuFlyoutItem x:Name="MenuDisable" x:Uid="Content_DisableSelected" Click="DisableSelected_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+E">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE711;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <!-- Only when some of the selection has issues showing / dismissed. -->
+                    <MenuFlyoutItem x:Name="MenuDismissIssues" x:Uid="Content_DismissIssues" Click="DismissSelectedIssues_Click">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xED1A;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Name="MenuRestoreIssues" x:Uid="Content_RestoreIssues" Click="RestoreSelectedIssues_Click">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE890;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
                     <MenuFlyoutItem x:Name="MenuDelete" x:Uid="Content_DeleteSelected" Click="DeleteSelected_Click" KeyboardAcceleratorTextOverride="Del">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
@@ -129,6 +141,12 @@
                             <TextBlock Text="{x:Bind Description, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1" />
                             <TextBlock Text="{x:Bind Issue, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                                        Foreground="{x:Bind local:Bind.IssueBrush(IssueIsError), Mode=OneWay}" Visibility="{x:Bind local:Bind.VisibleIfText(Issue), Mode=OneWay, FallbackValue=Collapsed}" />
+                            <!-- Dismissed, while Show dismissed is on: dimmed, with what they were. -->
+                            <StackPanel Orientation="Horizontal" Spacing="6" Visibility="{x:Bind local:Bind.VisibleIfText(DismissedIssue), Mode=OneWay, FallbackValue=Collapsed}">
+                                <FontIcon Glyph="&#xED1A;" FontSize="12" VerticalAlignment="Top" Margin="0,2,0,0" Foreground="{ThemeResource TextFillColorTertiaryBrush}" x:Uid="Content_DismissedIcon" />
+                                <TextBlock Text="{x:Bind DismissedIssue, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            </StackPanel>
                         </StackPanel>
                         <Grid Grid.Column="2" VerticalAlignment="Center">
                             <Button Tag="{x:Bind}" Click="Update_Click" Visibility="{x:Bind local:Bind.Visible(HasUpdate), Mode=OneWay}" IsEnabled="{x:Bind local:Bind.Not(IsBusy), Mode=OneWay}" AutomationProperties.Name="{x:Bind UpdateText, Mode=OneWay}">
@@ -151,6 +169,12 @@
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem x:Uid="Content_EditManifest" Tag="{x:Bind}" Click="EditManifest_Click" Visibility="{x:Bind local:Bind.Visible(IsMod)}">
                                             <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE70F;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Uid="Content_DismissIssues" Tag="{x:Bind}" Click="DismissIssues_Click" Visibility="{x:Bind local:Bind.Visible(HasIssue), Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xED1A;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Uid="Content_RestoreIssues" Tag="{x:Bind}" Click="RestoreIssues_Click" Visibility="{x:Bind local:Bind.Visible(HasDismissedIssues), Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE890;" /></MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutSeparator Visibility="{x:Bind local:Bind.Visible(IsMod)}" />
                                         <MenuFlyoutItem x:Uid="Content_OpenProject" Tag="{x:Bind}" Click="OpenProject_Click" KeyboardAcceleratorTextOverride="Enter" IsEnabled="{x:Bind HasSource, Mode=OneWay}">
@@ -184,6 +208,15 @@
             <TextBlock Text="{x:Bind ViewModel.EmptyText, Mode=OneWay}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420" />
         </StackPanel>
 
-        <TextBlock Grid.Row="3" Text="{x:Bind ViewModel.Summary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="0,0,0,8" />
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="4" Margin="0,0,0,8">
+            <TextBlock Text="{x:Bind ViewModel.Summary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+            <!-- "· 2 dismissed issues · Show": only while some issue found now is dismissed. -->
+            <StackPanel Orientation="Horizontal" Spacing="4" Visibility="{x:Bind local:Bind.VisibleIfPositive(ViewModel.DismissedCount), Mode=OneWay, FallbackValue=Collapsed}">
+                <TextBlock Text="·" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                <HyperlinkButton Command="{x:Bind ViewModel.ToggleShowDismissedCommand, Mode=OneWay}" Padding="2,0" MinHeight="0" VerticalAlignment="Center">
+                    <TextBlock Text="{x:Bind ViewModel.DismissedText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                </HyperlinkButton>
+            </StackPanel>
+        </StackPanel>
     </Grid>
 </UserControl>

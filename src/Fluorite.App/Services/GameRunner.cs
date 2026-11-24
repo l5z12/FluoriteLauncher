@@ -289,31 +289,63 @@ public sealed class GameRunner(
     }
 
     /// <summary>
-    /// Pre-launch mod checks: everything goes to the log; errors (missing dependencies, wrong loader…) ask the user
-    /// whether to launch anyway. Returns false to cancel.
+    /// Pre-launch mod checks: everything goes to the log; errors (missing dependencies, wrong loader…) that weren't
+    /// dismissed ask the user whether to launch anyway. Returns false to cancel.
     /// </summary>
     private async Task<bool> CheckModsAsync(RunningGame game, CancellationToken ct)
     {
         game.Status = Loc.Get("Launch_CheckingMods");
         var instance = game.Instance;
+        var manager = content.For(instance);
+        IReadOnlyList<Fluorite.Modding.Content.ContentFile> mods;
         IReadOnlyList<Fluorite.Modding.Content.ModIssue> issues;
+        IReadOnlySet<string> dismissed;
         try
         {
-            var mods = await Task.Run(() => content.For(instance).ScanAsync(new Fluorite.Modding.Content.ContentLocation(Fluorite.Modding.Content.ContentKind.Mod), ct), ct);
+            mods = await Task.Run(() => manager.ScanAsync(new Fluorite.Modding.Content.ContentLocation(Fluorite.Modding.Content.ContentKind.Mod), ct), ct);
             issues = Fluorite.Modding.Content.ModChecker.Check(mods, instance.Manifest);
+            dismissed = await manager.GetDismissedIssuesAsync(instance.Id, ct);
         }
         catch (IOException)
         {
             return true; // A check that can't run never blocks playing.
         }
+        try
+        {
+            // Fixed since: forgotten, so if they come back they're asked about.
+            if (Fluorite.Modding.Content.ModChecker.ResolvedDismissals(dismissed, issues, mods) is { Count: > 0 } resolved)
+                await manager.SetIssuesDismissedAsync(instance.Id, resolved, dismissed: false, ct);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Forgotten next time.
+        }
         foreach (var issue in issues)
         {
+            // Dismissed ones too: if the game then crashes, the log still says what was off.
+            var text = ContentInstallService.Describe(issue);
             AppendLocal(game, issue.Severity == Fluorite.Modding.Content.ModIssueSeverity.Error ? GameLogLevel.Error : GameLogLevel.Warn,
-                ContentInstallService.Describe(issue));
+                dismissed.Contains(issue.Key) ? Loc.Format("ModIssue_Dismissed", text) : text);
         }
-        if (!issues.Any(i => i.Severity == Fluorite.Modding.Content.ModIssueSeverity.Error))
+        var active = issues.Where(i => !dismissed.Contains(i.Key)).ToList();
+        if (!active.Any(i => i.Severity == Fluorite.Modding.Content.ModIssueSeverity.Error))
             return true;
-        return await ContentInstallService.ConfirmLaunchAsync(instance.Name, issues);
+        var (launch, dontAskAgain) = await ContentInstallService.ConfirmLaunchAsync(instance.Name, active);
+        if (launch && dontAskAgain)
+        {
+            try
+            {
+                // The errors, which are what asks; warnings never do, and stay shown in the Mods tab.
+                var errors = active.Where(i => i.Severity == Fluorite.Modding.Content.ModIssueSeverity.Error).Select(i => i.Key);
+                await manager.SetIssuesDismissedAsync(instance.Id, errors, dismissed: true, ct);
+                App.Get<ContentInstallService>().NotifyIssuesDismissed(instance); // An open Mods tab shows them dismissed.
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Asked again next time; nothing worse.
+            }
+        }
+        return launch;
     }
 
     private async Task<string> EnsureLoaderAsync(RunningGame game, CancellationToken ct)

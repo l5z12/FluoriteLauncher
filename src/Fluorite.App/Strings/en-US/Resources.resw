@@ -481,6 +481,9 @@
   <data name="Content_MoreButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>More</value></data>
   <data name="Content_OpenProject.Text" xml:space="preserve"><value>Open project page</value></data>
   <data name="Content_Changelog.Text" xml:space="preserve"><value>Show update changelog</value></data>
+  <data name="Content_DismissIssues.Text" xml:space="preserve"><value>Dismiss issues</value></data>
+  <data name="Content_RestoreIssues.Text" xml:space="preserve"><value>Show issues again</value></data>
+  <data name="Content_DismissedIcon.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Dismissed</value></data>
   <data name="Content_ShowInFolder.Text" xml:space="preserve"><value>Show in folder</value></data>
   <data name="Content_ModInfo.Text" xml:space="preserve"><value>Mod info</value></data>
   <data name="Content_EditManifest.Text" xml:space="preserve"><value>Edit manifest…</value></data>
@@ -544,6 +547,12 @@
   <data name="Content_EmptyDataPacks" xml:space="preserve"><value>This world has no data packs yet. Browse, or drop .zip files here.</value></data>
   <data name="Content_Summary" xml:space="preserve"><value>{0} items · {1} enabled</value></data>
   <data name="Content_IssueSummary" xml:space="preserve"><value>Found {0} error(s) and {1} warning(s). Details are shown under each mod.</value></data>
+  <data name="Content_DismissAllIssues.Content" xml:space="preserve"><value>Dismiss all</value></data>
+  <data name="Content_DismissAllIssues.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Stop showing these issues in this instance, and don't ask about them before launch. An issue that changes shows again.</value></data>
+  <data name="Content_DismissedOne" xml:space="preserve"><value>1 dismissed issue</value></data>
+  <data name="Content_DismissedMany" xml:space="preserve"><value>{0} dismissed issues</value></data>
+  <data name="Content_ShowDismissed" xml:space="preserve"><value>Show {0}</value></data>
+  <data name="Content_HideDismissed" xml:space="preserve"><value>Hide {0}</value></data>
   <data name="Content_UpToDate" xml:space="preserve"><value>Everything is up to date.</value></data>
   <data name="Content_UpdatesFound" xml:space="preserve"><value>{0} update(s) available.</value></data>
   <data name="Content_UnknownFiles" xml:space="preserve"><value>{0} file(s) aren't on Modrinth or CurseForge and can't be checked.</value></data>
@@ -586,6 +595,9 @@
   <data name="ModIssues_Errors" xml:space="preserve"><value>Errors</value></data>
   <data name="ModIssues_Warnings" xml:space="preserve"><value>Warnings</value></data>
   <data name="ModIssues_LaunchAnyway" xml:space="preserve"><value>Launch anyway</value></data>
+  <data name="ModIssues_DontAskAgain" xml:space="preserve"><value>Don't ask about these again</value></data>
+  <data name="ModIssues_DontAskAgainTip" xml:space="preserve"><value>Dismisses these errors in this instance. An error that changes, or comes back after it was fixed, is asked about again. Dismissed issues can be shown again from the Mods tab.</value></data>
+  <data name="ModIssue_Dismissed" xml:space="preserve"><value>{0} (dismissed)</value></data>
   <data name="ModIssue_NoLoader" xml:space="preserve"><value>{0} and other mods are installed, but this instance has no mod loader.</value></data>
   <data name="ModIssue_WrongLoader" xml:space="preserve"><value>{0} is for {2} and won't load with this instance's loader.</value></data>
   <data name="ModIssue_WrongMinecraftVersion" xml:space="preserve"><value>{0} needs Minecraft {2}.</value></data>
@@ -1117,6 +1129,8 @@
   <data name="Common_UndoTip" xml:space="preserve"><value>Undo (Ctrl+Z)</value></data>
   <data name="Undo_RemovedOne" xml:space="preserve"><value>Removed “{0}”.</value></data>
   <data name="Undo_RemovedMany" xml:space="preserve"><value>Removed {0} items.</value></data>
+  <data name="Undo_DismissedOne" xml:space="preserve"><value>Dismissed 1 issue.</value></data>
+  <data name="Undo_DismissedMany" xml:space="preserve"><value>Dismissed {0} issues.</value></data>
   <data name="Menu_Refresh.Text" xml:space="preserve"><value>Refresh</value></data>
   <data name="WorldsMenu_Import.Text" xml:space="preserve"><value>Import a world…</value></data>
   <data name="WorldsMenu_OpenFolder.Text" xml:space="preserve"><value>Open saves folder</value></data>

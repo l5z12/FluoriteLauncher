@@ -78,6 +78,9 @@ public sealed partial class ContentPanel : UserControl
         _menuFromPointer = false;
         var visibility = List.SelectedItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         MenuEnable.Visibility = MenuDisable.Visibility = MenuDelete.Visibility = MenuSelectionSeparator.Visibility = visibility;
+        var selected = Selected;
+        MenuDismissIssues.Visibility = Bind.Visible(selected.Any(i => i.HasIssue));
+        MenuRestoreIssues.Visibility = Bind.Visible(selected.Any(i => i.HasDismissedIssues));
         var row = target is { IsMod: true } ? Visibility.Visible : Visibility.Collapsed;
         MenuModInfo.Visibility = MenuEditManifest.Visibility = MenuRowSeparator.Visibility = row;
         MenuModInfo.Tag = MenuEditManifest.Tag = target;
@@ -185,6 +188,30 @@ public sealed partial class ContentPanel : UserControl
     {
         if (ViewModel is { } vm)
             await vm.DeleteAsync(Selected);
+    }
+
+    private async void DismissSelectedIssues_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is { } vm)
+            await vm.DismissIssuesAsync(Selected);
+    }
+
+    private async void RestoreSelectedIssues_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is { } vm)
+            await vm.RestoreIssuesAsync(Selected);
+    }
+
+    private async void DismissIssues_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is { } vm && Bind.ItemOf<ContentItemViewModel>(sender) is { } item)
+            await vm.DismissIssuesAsync([item]);
+    }
+
+    private async void RestoreIssues_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is { } vm && Bind.ItemOf<ContentItemViewModel>(sender) is { } item)
+            await vm.RestoreIssuesAsync([item]);
     }
 
     private async void Delete_Click(object sender, RoutedEventArgs e)
