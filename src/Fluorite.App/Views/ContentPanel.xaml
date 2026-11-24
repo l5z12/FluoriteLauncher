@@ -212,7 +212,9 @@
             <TextBlock Text="{x:Bind ViewModel.Summary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
             <!-- "· 2 dismissed issues": opens the list of them, while there's any. -->
             <StackPanel Orientation="Horizontal" Spacing="4" Visibility="{x:Bind local:Bind.VisibleIfPositive(ViewModel.DismissedCount), Mode=OneWay, FallbackValue=Collapsed}">
-                <TextBlock Text="·" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                <!-- Not after nothing: dismissals of removed mods are kept with none left. -->
+                <TextBlock Text="·" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center"
+                           Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.Summary), Mode=OneWay, FallbackValue=Collapsed}" />
                 <HyperlinkButton x:Name="DismissedLink" Click="DismissedLink_Click" Padding="2,0" MinHeight="0" VerticalAlignment="Center">
                     <TextBlock Text="{x:Bind ViewModel.DismissedText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
                     <FlyoutBase.AttachedFlyout>

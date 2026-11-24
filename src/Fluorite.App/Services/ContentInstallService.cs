@@ -61,10 +61,13 @@ public sealed partial class ContentInstallService(ContentService content)
     /// <summary>Raised on the UI thread with the instance's game directory after its content changed.</summary>
     public event EventHandler<string>? ContentChanged;
 
-    /// <summary>Raised on the UI thread with the instance's id after its mod issues were dismissed elsewhere (at launch).</summary>
-    public event EventHandler<string>? IssuesDismissed;
+    /// <summary>
+    /// Raised on the UI thread with the instance's id after its dismissed mod issues changed elsewhere: dismissed at
+    /// launch, or forgotten there as fixed.
+    /// </summary>
+    public event EventHandler<string>? DismissalsChanged;
 
-    public void NotifyIssuesDismissed(GameInstance instance) => IssuesDismissed?.Invoke(this, instance.Id);
+    public void NotifyDismissalsChanged(GameInstance instance) => DismissalsChanged?.Invoke(this, instance.Id);
 
     public static string Key(ContentPlatform platform, string projectId) => $"{platform}:{projectId}";
 

@@ -17,7 +17,7 @@ public sealed record SourceChoice(string? RootId, string Label)
 
 public sealed partial class LibraryViewModel(
     FluoriteLayout layout, InstanceRegistry registry, VersionRepository versions, GameRunner runner, SettingsService settings,
-    ShortcutService shortcuts, JumpListService jumpList, UpdateBadgeService badges) : ObservableObject
+    ShortcutService shortcuts, JumpListService jumpList, UpdateBadgeService badges, Fluorite.Modding.Content.ContentService content) : ObservableObject
 {
     private List<InstanceItem> _all = [];
     private bool _badgesHooked;
@@ -645,10 +645,18 @@ public sealed partial class LibraryViewModel(
         IsLoading = true;
         try
         {
-            if (item.Instance.IsExternal)
-                await Fluorite.Modding.Modpacks.InstanceImporter.CopyAsync(layout, item.Instance);
-            else
-                await layout.DuplicateAsync(item.Instance, Loc.Format("Duplicate_Suffix", item.Name));
+            var copy = item.Instance.IsExternal
+                ? await Fluorite.Modding.Modpacks.InstanceImporter.CopyAsync(layout, item.Instance)
+                : await layout.DuplicateAsync(item.Instance, Loc.Format("Duplicate_Suffix", item.Name));
+            // Its content index came along, with what the original dismissed under the original's id.
+            try
+            {
+                await content.For(copy).MoveDismissedIssuesAsync(item.Instance.Id, copy.Id);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // The copy's made; it only asks again about what the original dismissed.
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

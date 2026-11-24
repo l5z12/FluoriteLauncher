@@ -177,7 +177,9 @@ public static class ModChecker
         // Duplicates: the same top-level id from two files.
         foreach (var group in active.GroupBy(a => a.Mod.Id, StringComparer.OrdinalIgnoreCase))
         {
-            var files = group.Select(g => g.File).Distinct().ToList();
+            // By file name: each copy is paired with the first, which mustn't change when a title is looked up (scan
+            // order is by display name), or the pairs (and their dismissals' keys) would.
+            var files = group.Select(g => g.File).Distinct().OrderBy(f => f.FileName, StringComparer.OrdinalIgnoreCase).ToList();
             for (var i = 1; i < files.Count; i++)
             {
                 issues.Add(new ModIssue(ModIssueKind.Duplicate, ModIssueSeverity.Error, files[i].FileName, files[i].DisplayName)
@@ -316,9 +318,9 @@ public static class ModChecker
     }
 
     /// <summary>
-    /// Dismissed issues (<see cref="ModIssue.Key"/>s) whose problem is gone while their mod is here and enabled: it
-    /// was fixed, so if it comes back it's asked about again. Those of mods that are away (disabled, removed for now)
-    /// stay dismissed.
+    /// Dismissed issues (<see cref="ModIssue.Key"/>s) whose problem is gone while both its sides are here and enabled:
+    /// it was fixed, so if it comes back it's asked about again. Those waiting for a side that's away (either mod
+    /// disabled or removed for now, a copy of a duplicate) stay dismissed.
     /// </summary>
     /// <param name="issues">What <see cref="Check(IReadOnlyList{ContentFile}, InstanceManifest)"/> found in <paramref name="mods"/>.</param>
     public static IReadOnlyList<string> ResolvedDismissals(IReadOnlySet<string> dismissed, IReadOnlyList<ModIssue> issues, IReadOnlyList<ContentFile> mods)
@@ -327,21 +329,16 @@ public static class ModChecker
         if (dismissed.Count == 0 || issues.Any(i => i.Kind == ModIssueKind.NoLoader))
             return [];
         var current = issues.Select(i => i.Key).ToHashSet(StringComparer.Ordinal);
-        var present = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var file in mods.Where(m => m.Enabled && !m.IsDirectory))
-        {
-            foreach (var mod in file.Metadata.Mods)
-                present.Add(mod.Id);
-            if (file.Metadata.IsOptiFine)
-                present.Add("optifine");
-        }
-        // No loader: gone while mods that would have raised it are here, so the instance has one now.
-        var noLoader = nameof(ModIssueKind.NoLoader).ToLowerInvariant();
-        return dismissed.Where(k => !current.Contains(k) && (KeyModId(k) is { } id ? present.Contains(id) : k == noLoader && present.Count > 0)).ToList();
+        var here = new EnabledMods(mods);
+        return dismissed.Where(k => !current.Contains(k) && here.AwayParty(k) is null).ToList();
     }
 
     /// <summary>The subject's mod id in a <see cref="ModIssue.Key"/>; none for <see cref="ModIssueKind.NoLoader"/>.</summary>
     public static string? KeyModId(string key) => key.Split('|') is [_, var id, ..] ? id : null;
+
+    /// <summary>The mod ids a file makes available (with aliases and nested mods), and "optifine" for OptiFine.</summary>
+    public static IEnumerable<string> IdsOf(ContentFile file) =>
+        file.Metadata.IsOptiFine ? file.Metadata.ProvidedIds.Append("optifine") : file.Metadata.ProvidedIds;
 
     /// <summary>Forge's own version in mods.toml ranges is the short one ("47.2.0"), never "1.20.1-47.2.0".</summary>
     private static string? ForgeShortVersion(string? version) =>
@@ -360,4 +357,52 @@ public static class ModChecker
         (ComponentUids.LiteLoader, ModLoaderKind.LiteLoader) => true,
         _ => false,
     };
+}
+
+/// <summary>
+/// What an instance has enabled, by mod id (aliases and nested mods too) and by file: where the sides of a dismissed
+/// issue's problem are looked for.
+/// </summary>
+public sealed class EnabledMods
+{
+    private readonly HashSet<string> _ids = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _files = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Some file has mod metadata: without a loader, it would raise the no-loader warning.</summary>
+    private readonly bool _anyMod;
+
+    public EnabledMods(IEnumerable<ContentFile> mods)
+    {
+        foreach (var file in mods.Where(m => m.Enabled && !m.IsDirectory))
+        {
+            _files.Add(file.FileName);
+            _ids.UnionWith(ModChecker.IdsOf(file));
+            _anyMod |= file.Metadata.Mods.Count > 0;
+        }
+    }
+
+    /// <summary>
+    /// The side of a dismissed issue's problem (<see cref="ModIssue.Key"/>) that's away: the mod id of the mod with
+    /// the issue, or of the other one where the problem is between two (a conflict, the dependency version found),
+    /// or for a duplicate the file name of a copy. Null when they're all here: a problem not found now was fixed.
+    /// A no-loader warning waits for "", any mod, while there's none.
+    /// </summary>
+    public string? AwayParty(string key)
+    {
+        var parts = key.Split('|');
+        if (parts.Length < 2)
+            return _anyMod ? null : "";
+        if (!_ids.Contains(parts[1]))
+            return parts[1];
+        if (parts.Length < 3 || !Enum.TryParse<ModIssueKind>(parts[0], ignoreCase: true, out var kind))
+            return null;
+        return kind switch
+        {
+            ModIssueKind.Duplicate => parts[2].Split(',').FirstOrDefault(f => !_files.Contains(f)),
+            // Not a missing dependency's: its being away is the problem, and its coming is the fix.
+            ModIssueKind.Incompatible or ModIssueKind.Discouraged or ModIssueKind.KnownConflict or ModIssueKind.DependencyVersion
+                when !_ids.Contains(parts[2]) => parts[2],
+            _ => null,
+        };
+    }
 }

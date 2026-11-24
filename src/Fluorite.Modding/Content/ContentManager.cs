@@ -413,6 +413,38 @@ public sealed class ContentManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gives one instance id's dismissed issues to another: a copy of an instance (its index copied with it) keeps
+    /// what the original dismissed, under its own id. Nothing to move: nothing happens.
+    /// </summary>
+    public async Task MoveDismissedIssuesAsync(string fromId, string toId, CancellationToken ct = default)
+    {
+        await _lock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var index = await LoadIndexAsync(ct).ConfigureAwait(false);
+            if (index.DismissedIssues is not { } before || !before.TryGetValue(fromId, out var set) || string.Equals(fromId, toId, StringComparison.OrdinalIgnoreCase))
+                return;
+            var after = new Dictionary<string, HashSet<string>>(before, StringComparer.OrdinalIgnoreCase);
+            after.Remove(fromId);
+            after[toId] = after.TryGetValue(toId, out var existing) ? [.. existing, .. set] : set;
+            index.DismissedIssues = after;
+            try
+            {
+                await index.SaveAsync(IndexPath, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                index.DismissedIssues = before;
+                throw;
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     /// <summary>Mutates the index under the lock and saves it when <paramref name="update"/> returns true.</summary>
     public async Task UpdateAsync(Func<ContentIndex, bool> update, CancellationToken ct = default)
     {

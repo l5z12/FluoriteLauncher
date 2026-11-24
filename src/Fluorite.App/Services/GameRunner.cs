@@ -306,7 +306,7 @@ public sealed class GameRunner(
             issues = Fluorite.Modding.Content.ModChecker.Check(mods, instance.Manifest);
             dismissed = await manager.GetDismissedIssuesAsync(instance.Id, ct);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return true; // A check that can't run never blocks playing.
         }
@@ -314,7 +314,10 @@ public sealed class GameRunner(
         {
             // Fixed since: forgotten, so if they come back they're asked about.
             if (Fluorite.Modding.Content.ModChecker.ResolvedDismissals(dismissed, issues, mods) is { Count: > 0 } resolved)
+            {
                 await manager.SetIssuesDismissedAsync(instance.Id, resolved, dismissed: false, ct);
+                App.Get<ContentInstallService>().NotifyDismissalsChanged(instance); // Or an open Mods tab would still hide them.
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -338,7 +341,7 @@ public sealed class GameRunner(
                 // The errors, which are what asks; warnings never do, and stay shown in the Mods tab.
                 var errors = active.Where(i => i.Severity == Fluorite.Modding.Content.ModIssueSeverity.Error).Select(i => i.Key);
                 await manager.SetIssuesDismissedAsync(instance.Id, errors, dismissed: true, ct);
-                App.Get<ContentInstallService>().NotifyIssuesDismissed(instance); // An open Mods tab shows them dismissed.
+                App.Get<ContentInstallService>().NotifyDismissalsChanged(instance); // An open Mods tab shows them dismissed.
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {

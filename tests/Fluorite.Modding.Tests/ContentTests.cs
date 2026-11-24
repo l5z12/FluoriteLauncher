@@ -431,6 +431,35 @@ public class ModCheckerTests
     }
 
     [Fact]
+    public void DismissalsBetweenTwoModsWaitForBoth()
+    {
+        // A conflict: the other mod turned off for now isn't a fix; a version out of the conflicting range is.
+        var breaks = Fabric("a", extra: ""","breaks":{"b":"<2.0.0"}""");
+        var both = new[] { breaks, Fabric("b") };
+        var dismissed = new HashSet<string> { Assert.Single(CheckFabric(both)).Key };
+        var otherOff = new[] { breaks, Mod("b.jar", Fabric("b").Metadata, enabled: false) };
+        Assert.Empty(ModChecker.ResolvedDismissals(dismissed, CheckFabric(otherOff), otherOff));
+        var updated = new[] { breaks, Fabric("b", version: "2.0.0") };
+        Assert.Single(ModChecker.ResolvedDismissals(dismissed, CheckFabric(updated), updated));
+
+        // A duplicate: one copy turned off isn't a fix either (the id is still here, by the other copy).
+        var copies = new[] { Mod("a-1.jar", Fabric("a").Metadata), Mod("a-2.jar", Fabric("a").Metadata) };
+        var duplicate = new HashSet<string> { Assert.Single(CheckFabric(copies)).Key };
+        var oneOff = new[] { copies[0], Mod("a-2.jar", Fabric("a").Metadata, enabled: false) };
+        Assert.Equal("a-2.jar", new EnabledMods(oneOff).AwayParty(duplicate.Single()));
+        Assert.Empty(ModChecker.ResolvedDismissals(duplicate, CheckFabric(oneOff), oneOff));
+    }
+
+    [Fact]
+    public void DuplicateKeysDontFollowScanOrder()
+    {
+        var copies = new[] { "a-3.jar", "a-1.jar", "a-2.jar" }.Select(f => Mod(f, Fabric("a").Metadata)).ToArray();
+        var keys = CheckFabric(copies).Select(i => i.Key).Order().ToList();
+        Assert.Equal(2, keys.Count);
+        Assert.Equal(keys, CheckFabric([.. copies.Reverse()]).Select(i => i.Key).Order());
+    }
+
+    [Fact]
     public async Task DismissedIssuesAreKeptPerInstance()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -446,6 +475,10 @@ public class ModCheckerTests
             Assert.Equal("b", Assert.Single(await reopened.GetDismissedIssuesAsync("forge", ct)));
             // Another profile sharing the game directory (and so the index) has its own.
             Assert.Empty(await reopened.GetDismissedIssuesAsync("neoforge", ct));
+            // A copy of the instance (index and all) takes the original's under its own id.
+            await reopened.MoveDismissedIssuesAsync("forge", "forge (2)", ct);
+            Assert.Empty(await reopened.GetDismissedIssuesAsync("forge", ct));
+            Assert.Equal("b", Assert.Single(await reopened.GetDismissedIssuesAsync("forge (2)", ct)));
         }
         finally
         {

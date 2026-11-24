@@ -264,7 +264,7 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         Kind = kind;
         installer.ContentChanged += OnContentChanged;
         if (kind == ContentKind.Mod)
-            installer.IssuesDismissed += OnIssuesDismissed;
+            installer.DismissalsChanged += OnDismissalsChanged;
         if (kind == ContentKind.DataPack)
         {
             foreach (var w in Manager.GetWorlds())
@@ -281,11 +281,11 @@ public sealed partial class ContentListViewModel(ContentService content, Content
     public void Detach()
     {
         installer.ContentChanged -= OnContentChanged;
-        installer.IssuesDismissed -= OnIssuesDismissed;
+        installer.DismissalsChanged -= OnDismissalsChanged;
     }
 
-    /// <summary>Dismissed at launch ("Don't ask again"): only the issues change, no need to scan again.</summary>
-    private async void OnIssuesDismissed(object? sender, string instanceId)
+    /// <summary>Dismissed at launch ("Don't ask again") or forgotten there: only the issues change, no need to scan again.</summary>
+    private async void OnDismissalsChanged(object? sender, string instanceId)
     {
         if (Instance is not { } instance || !string.Equals(instanceId, instance.Id, StringComparison.OrdinalIgnoreCase))
             return;
@@ -294,9 +294,9 @@ public sealed partial class ContentListViewModel(ContentService content, Content
             _dismissed = await Manager.GetDismissedIssuesAsync(instance.Id);
             UpdateIssues();
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ObjectDisposedException)
         {
-            // Shown at the next refresh.
+            // Shown at the next refresh (or the app's closing).
         }
     }
 
@@ -479,13 +479,17 @@ public sealed partial class ContentListViewModel(ContentService content, Content
             .OrderByDescending(i => i.Severity)
             .Select(i => new DismissedIssueViewModel(ContentInstallService.Describe(i), [i.Key], i.Severity))
             .ToList();
-        // The rest are kept for mods that are away, but not those just fixed (forgotten at the next refresh).
+        // The rest wait for a mod that's away (by that mod), or without a loader aren't checked (by their own mod).
+        // Not those just fixed: they're being forgotten.
         var files = _all.Select(i => i.File).ToList();
         var current = issues.Select(i => i.Key).ToHashSet(StringComparer.Ordinal);
-        var resolved = ModChecker.ResolvedDismissals(_dismissed, issues, files);
-        list.AddRange(_dismissed.Where(k => !current.Contains(k)).Except(resolved)
-            .GroupBy(ModChecker.KeyModId)
-            .Select(g => Away(g.Key, g.Order(StringComparer.Ordinal).ToList(), files))
+        var here = new EnabledMods(files);
+        var noLoader = issues.Any(i => i.Kind == ModIssueKind.NoLoader);
+        list.AddRange(_dismissed.Where(k => !current.Contains(k))
+            .Select(k => (Key: k, Party: here.AwayParty(k) ?? (noLoader ? ModChecker.KeyModId(k) : null)))
+            .Where(k => k.Party is not null)
+            .GroupBy(k => k.Party!, StringComparer.OrdinalIgnoreCase)
+            .Select(g => Away(g.Key, g.Select(k => k.Key).Order(StringComparer.Ordinal).ToList(), files))
             .OrderBy(e => e.Text, StringComparer.CurrentCultureIgnoreCase));
         if (!list.SequenceEqual(DismissedIssues, s_sameLine))
         {
@@ -499,17 +503,23 @@ public sealed partial class ContentListViewModel(ContentService content, Content
     private static readonly IEqualityComparer<DismissedIssueViewModel> s_sameLine =
         EqualityComparer<DismissedIssueViewModel>.Create((a, b) => a is not null && b is not null && a.SameAs(b));
 
-    /// <summary>The list's line for a mod that's away, with how many of its issues are kept for when it's back.</summary>
-    private static DismissedIssueViewModel Away(string? modId, List<string> keys, List<ContentFile> files)
+    /// <summary>
+    /// The list's line for what's kept waiting for <paramref name="party"/> (<see cref="EnabledMods.AwayParty"/>: a
+    /// mod id, a duplicate's copy, or "" for any mod), with how many dismissals that is.
+    /// </summary>
+    private static DismissedIssueViewModel Away(string party, List<string> keys, List<ContentFile> files)
     {
-        if (modId is null)
+        if (party.Length == 0)
             return new(Loc.Get("Content_DismissedNoLoader"), keys, null);
         var count = keys.Count == 1 ? Loc.Get("Content_DismissedOne") : Loc.Format("Content_DismissedMany", keys.Count);
-        var copies = files.Where(f => !f.IsDirectory && (f.Metadata.Mods.Any(m => string.Equals(m.Id, modId, StringComparison.OrdinalIgnoreCase))
-            || modId == "optifine" && f.Metadata.IsOptiFine)).ToList();
+        var byFile = files.Where(f => !f.IsDirectory && string.Equals(f.FileName, party, StringComparison.OrdinalIgnoreCase)).ToList();
+        var copies = byFile.Count > 0 ? byFile
+            : files.Where(f => !f.IsDirectory && ModChecker.IdsOf(f).Contains(party, StringComparer.OrdinalIgnoreCase)).ToList();
         // Turned off, gone, or here but not checked (no loader: nothing else is).
         var text = copies.Count == 0 ? "Content_DismissedGone" : copies.Any(f => f.Enabled) ? "Content_DismissedUnchecked" : "Content_DismissedOff";
-        return new(Loc.Format(text, copies.FirstOrDefault()?.DisplayName ?? modId, count), keys, null);
+        // A duplicate's copy goes by its file: the other copy, by the same name, is on.
+        var name = byFile.Count > 0 ? party : copies.FirstOrDefault()?.DisplayName ?? party;
+        return new(Loc.Format(text, name, count), keys, null);
     }
 
     /// <summary>
@@ -597,6 +607,9 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         }
         ApplySummaryOnly();
         UpdateIssues();
+        // Turning on what fixes a dismissed problem forgets its dismissal, as a refresh or launch would: if turning it
+        // off again brings the problem back, it's shown (and asked about) again.
+        await ForgetResolvedAsync(Manager, _all.Select(i => i.File).ToList());
     }
 
     private void ApplySummaryOnly() =>
