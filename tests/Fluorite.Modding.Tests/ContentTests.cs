@@ -267,6 +267,57 @@ public class MetadataTests
     }
 
     [Fact]
+    public void PackMcmeta_DropsThePacksOwnFontIcons()
+    {
+        // Private-use characters are drawn by the pack's font in game; other fonts show boxes.
+        var meta = Jar.Read(("pack.mcmeta", """{ "pack": { "pack_format": 15, "description": [ { "text": "适当加长侧面的草" }, { "text": "\n\uE5BC\uE5BD" } ] } }"""));
+        Assert.Equal("适当加长侧面的草", meta.Description);
+        Assert.Equal("a b", ContentMetadataReader.PlainText("§la\U000F0001 b§r"));
+        // § takes the whole character after it, even one beyond the BMP or a line break, as the game does.
+        Assert.Equal("ab", ContentMetadataReader.PlainText("a§🌟b§\n"));
+    }
+
+    [Fact]
+    public void DisplayName_RepairsGarbledFileNamesAndDropsFormattingCodes()
+    {
+        static ContentFile Pack(string name) => new()
+        {
+            Path = Path.Combine("resourcepacks", name),
+            Key = "resourcepacks/" + name,
+            Location = new ContentLocation(ContentKind.ResourcePack),
+            Metadata = ContentMetadata.Empty,
+            Record = new ContentRecord(),
+        };
+
+        // "!§r§f§l 草方块侧面 §7- 2025-10-02 §0.zip" as another launcher extracted it (UTF-8 read as Windows-1252).
+        Assert.Equal("! 草方块侧面 - 2025-10-02", Pack("!Â§rÂ§fÂ§l è\u008D‰æ–¹å\u009D—ä¾§é\u009D¢ Â§7- 2025-10-02 Â§0.zip").DisplayName);
+        Assert.Equal("! 草方块侧面 - 2025-10-02", Pack("!§r§f§l 草方块侧面 §7- 2025-10-02 §0.zip").DisplayName);
+        Assert.Equal("Pokémon Café", Pack("Pokémon Café.zip").DisplayName);
+        Assert.Equal("§0.zip", Pack("§0.zip").DisplayName); // Nothing but codes: the file name, as it is.
+
+        // A shader pack folder (no pack.mcmeta) named "光影包", garbled the same way.
+        var dir = Path.Combine(Path.GetTempPath(), $"fluorite-test-{Guid.NewGuid():N}", "å…‰å½±åŒ…");
+        Directory.CreateDirectory(Path.Combine(dir, "shaders"));
+        try
+        {
+            var folder = new ContentFile
+            {
+                Path = dir,
+                Key = "shaderpacks/å…‰å½±åŒ…",
+                Location = new ContentLocation(ContentKind.ShaderPack),
+                Metadata = ContentMetadataReader.Read(dir),
+                Record = new ContentRecord(),
+                IsDirectory = true,
+            };
+            Assert.Equal("光影包", folder.DisplayName);
+        }
+        finally
+        {
+            Directory.Delete(Path.GetDirectoryName(dir)!, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ShaderPackAndOptiFineDetection()
     {
         Assert.True(Jar.Read(("shaders/composite.fsh", "void main(){}")).IsShaderPack);

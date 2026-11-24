@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Fluorite.Core.Instances;
 using Fluorite.Core.Net;
+using Fluorite.Core.Text;
 using Fluorite.Modding.Content;
 using Fluorite.Modding.Platforms;
 using Fluorite.Modding.Util;
@@ -142,7 +143,7 @@ public sealed class ModpackInstaller(DownloadEngine downloader, MirrorTable mirr
         {
             if (manifest.IconEntry is { } entry && manifest.ArchivePath is { } archive)
             {
-                using var zip = ZipFile.OpenRead(archive);
+                using var zip = ZipNames.OpenRead(archive);
                 zip.GetEntry(entry)?.ExtractToFile(icon, overwrite: true);
             }
         }
@@ -170,7 +171,7 @@ public sealed class ModpackInstaller(DownloadEngine downloader, MirrorTable mirr
         }
         if (manifest.Overrides.Count > 0 && manifest.ArchivePath is { } archive)
         {
-            using var zip = ZipFile.OpenRead(archive);
+            using var zip = ZipNames.OpenRead(archive);
             foreach (var o in manifest.Overrides)
             {
                 if (zip.GetEntry(o.Entry) is not { } e)
@@ -373,7 +374,7 @@ public sealed class ModpackInstaller(DownloadEngine downloader, MirrorTable mirr
         var overrides = writes.Where(w => w.Override is not null).ToList();
         if (overrides.Count > 0 && manifest.ArchivePath is { } archive)
         {
-            using var zip = ZipFile.OpenRead(archive);
+            using var zip = ZipNames.OpenRead(archive);
             foreach (var w in overrides)
             {
                 ct.ThrowIfCancellationRequested();
@@ -468,7 +469,7 @@ public sealed class ModpackInstaller(DownloadEngine downloader, MirrorTable mirr
     private static void ExtractWorld(string zipPath, string gameDir)
     {
         var saves = Path.Combine(gameDir, "saves");
-        using var zip = ZipFile.OpenRead(zipPath);
+        using var zip = ZipNames.OpenRead(zipPath);
         foreach (var e in zip.Entries)
         {
             if (e.FullName.EndsWith('/') || PackPaths.Sanitize(e.FullName) is not { } rel)

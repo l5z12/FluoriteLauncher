@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Fluorite.Core.Instances;
 using Fluorite.Core.Net;
+using Fluorite.Core.Text;
 using Fluorite.Modding.Platforms;
 using Fluorite.Modding.Platforms.CurseForge;
 using Fluorite.Modding.Util;
@@ -437,7 +438,7 @@ public sealed class TechnicClient(HttpClient http)
         }
 
         MergeZips(zips, merged);
-        using var archive = ZipFile.OpenRead(merged);
+        using var archive = ZipNames.OpenRead(merged);
         var manifest = ModpackReader.ReadTechnic(archive, mc, pack.Name);
         manifest.ArchivePath = merged;
         manifest.IconUrl = pack.IconUrl;
@@ -454,14 +455,14 @@ public sealed class TechnicClient(HttpClient http)
         var winner = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < zips.Count; i++)
         {
-            using var input = ZipFile.OpenRead(zips[i]);
+            using var input = ZipNames.OpenRead(zips[i]);
             foreach (var e in input.Entries.Where(e => !e.FullName.EndsWith('/')))
                 winner[e.FullName] = i;
         }
         using var output = ZipFile.Open(target, ZipArchiveMode.Create);
         for (var i = 0; i < zips.Count; i++)
         {
-            using var input = ZipFile.OpenRead(zips[i]);
+            using var input = ZipNames.OpenRead(zips[i]);
             foreach (var e in input.Entries)
             {
                 if (e.FullName.EndsWith('/') || winner[e.FullName] != i)

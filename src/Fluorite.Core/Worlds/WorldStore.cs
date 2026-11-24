@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
 using Fluorite.Core.Nbt;
+using Fluorite.Core.Text;
 
 namespace Fluorite.Core.Worlds;
 
@@ -78,7 +79,7 @@ public sealed partial class WorldStore(string gameDirectory)
         bool automatic;
         try
         {
-            using var zip = ZipFile.OpenRead(file.FullName);
+            using var zip = ZipNames.OpenRead(file.FullName);
             root = FindWorldRoot(zip.Entries.Select(e => e.FullName));
             automatic = zip.Comment == AutomaticBackupComment;
         }
@@ -161,7 +162,7 @@ public sealed partial class WorldStore(string gameDirectory)
     /// <summary>Extracts a backup into <c>saves/&lt;targetFolder&gt;</c>, which must not exist yet.</summary>
     public string Restore(WorldBackup backup, string targetFolder, CancellationToken ct = default)
     {
-        using var zip = ZipFile.OpenRead(backup.Path);
+        using var zip = ZipNames.OpenRead(backup.Path);
         var target = Path.Combine(SavesDirectory, targetFolder);
         ExtractWorld(zip, target, ct);
         return target;
@@ -183,7 +184,7 @@ public sealed partial class WorldStore(string gameDirectory)
             return folder;
         }
 
-        using var zip = ZipFile.OpenRead(path);
+        using var zip = ZipNames.OpenRead(path);
         var root = FindWorldRoot(zip.Entries.Select(e => e.FullName))
             ?? throw new InvalidDataException("The archive doesn't contain a Minecraft world (no level.dat).");
         var baseName = root.Length > 0 ? root.TrimEnd('/').Split('/')[^1] : Path.GetFileNameWithoutExtension(path);

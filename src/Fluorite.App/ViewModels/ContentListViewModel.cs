@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Fluorite.App.Services;
 using Fluorite.Core.Instances;
+using Fluorite.Core.Text;
 using Fluorite.Modding.Content;
 using Fluorite.Modding.Metadata;
 using Fluorite.Modding.Platforms;
@@ -47,7 +48,13 @@ public sealed partial class ContentItemViewModel : ObservableObject
     public bool HasSource => File.Record.Source is not null;
 
     public string Description =>
-        ContentMetadataReader.StripFormatting(File.Metadata.Description ?? "").ReplaceLineEndings(" ").Trim() is { Length: > 0 } d ? d : File.FileName;
+        ContentMetadataReader.PlainText(File.Metadata.Description ?? "").ReplaceLineEndings(" ").Trim() is { Length: > 0 } d ? d : FileNameText;
+
+    /// <summary>The file name as the title reads it (repaired, without <c>§</c> codes), unless that leaves only its extension.</summary>
+    private string FileNameText =>
+        ContentMetadataReader.PlainText(Mojibake.Repair(File.FileName)).Trim() is var name && name.Length > System.IO.Path.GetExtension(name).Length
+            ? name
+            : File.FileName;
 
     public string Subtitle => string.Join("  ·  ", new[] { Version, File.Metadata.Authors.Count > 0 ? string.Join(", ", File.Metadata.Authors.Take(3)) : null }.Where(s => !string.IsNullOrEmpty(s)));
 

@@ -1,3 +1,4 @@
+using Fluorite.Core.Text;
 using Fluorite.Modding.Metadata;
 using Fluorite.Modding.Util;
 
@@ -24,8 +25,14 @@ public sealed class ContentFile
     /// <summary>File name without <c>.disabled</c>.</summary>
     public string FileName => System.IO.Path.GetFileName(ContentLocation.StripDisabled(Path));
 
+    /// <summary>
+    /// Its title, else its file name: as it read before another tool garbled it (UTF-8 read as Windows-1252), and
+    /// without the <c>§</c> formatting codes packs put in their names for the game's pack list.
+    /// </summary>
     public string DisplayName =>
-        Record.Title ?? Metadata.Name ?? (IsDirectory ? FileName : System.IO.Path.GetFileNameWithoutExtension(FileName));
+        ContentMetadataReader.PlainText(Record.Title ?? Metadata.Name ?? Mojibake.Repair(IsDirectory ? FileName : System.IO.Path.GetFileNameWithoutExtension(FileName))).Trim() is { Length: > 0 } name
+            ? name
+            : FileName;
 
     public string? Version => Record.Source?.VersionNumber is { } remote && Metadata.Version is null ? remote : Metadata.Version ?? Record.Source?.VersionNumber;
 
