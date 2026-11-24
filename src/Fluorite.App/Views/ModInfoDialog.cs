@@ -68,7 +68,7 @@ public static class ModInfoDialog
             };
             panel.Children.Add(Facts(facts));
             if (mod.Description is { Length: > 0 } description)
-                panel.Children.Add(new TextBlock { Text = ContentMetadataReader.StripFormatting(description).Trim(), TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true });
+                panel.Children.Add(new TextBlock { Text = ContentMetadataReader.PlainText(description).Trim(), TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true });
 
             if (mod.Links.Count > 0)
             {

@@ -267,6 +267,34 @@ public class MetadataTests
     }
 
     [Fact]
+    public void PackMcmeta_DropsThePacksOwnFontIcons()
+    {
+        // Private-use characters are drawn by the pack's font in game; other fonts show boxes.
+        var meta = Jar.Read(("pack.mcmeta", """{ "pack": { "pack_format": 15, "description": [ { "text": "适当加长侧面的草" }, { "text": "\n" } ] } }"""));
+        Assert.Equal("适当加长侧面的草", meta.Description);
+        Assert.Equal("a b", ContentMetadataReader.PlainText("§la\U000F0001 b§r"));
+    }
+
+    [Fact]
+    public void DisplayName_RepairsGarbledFileNamesAndDropsFormattingCodes()
+    {
+        static ContentFile Pack(string name) => new()
+        {
+            Path = Path.Combine("resourcepacks", name),
+            Key = "resourcepacks/" + name,
+            Location = new ContentLocation(ContentKind.ResourcePack),
+            Metadata = ContentMetadata.Empty,
+            Record = new ContentRecord(),
+        };
+
+        // "!§r§f§l 草方块侧面 §7- 2025-10-02 §0.zip" as another launcher extracted it (UTF-8 read as Windows-1252).
+        Assert.Equal("! 草方块侧面 - 2025-10-02", Pack("!Â§rÂ§fÂ§l è\u008D‰æ–¹å\u009D—ä¾§é\u009D¢ Â§7- 2025-10-02 Â§0.zip").DisplayName);
+        Assert.Equal("! 草方块侧面 - 2025-10-02", Pack("!§r§f§l 草方块侧面 §7- 2025-10-02 §0.zip").DisplayName);
+        Assert.Equal("Pokémon Café", Pack("Pokémon Café.zip").DisplayName);
+        Assert.Equal("§0.zip", Pack("§0.zip").DisplayName); // Nothing but codes: the file name, as it is.
+    }
+
+    [Fact]
     public void ShaderPackAndOptiFineDetection()
     {
         Assert.True(Jar.Read(("shaders/composite.fsh", "void main(){}")).IsShaderPack);

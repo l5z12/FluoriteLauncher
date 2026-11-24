@@ -545,7 +545,7 @@ public static partial class ContentMetadataReader
         if (doc is null || !doc.RootElement.TryGetProperty("pack", out var pack) || pack.ValueKind != JsonValueKind.Object)
             return (null, null);
         int? format = pack.TryGetProperty("pack_format", out var f) && f.ValueKind == JsonValueKind.Number && f.TryGetInt32(out var n) ? n : null;
-        var description = pack.TryGetProperty("description", out var d) ? StripFormatting(FlattenTextComponent(d)) : null;
+        var description = pack.TryGetProperty("description", out var d) ? PlainText(FlattenTextComponent(d)) : null;
         return (format, string.IsNullOrWhiteSpace(description) ? null : description.Trim());
     }
 
@@ -574,11 +574,15 @@ public static partial class ContentMetadataReader
         }
     }
 
-    /// <summary>Removes legacy <c>§x</c> formatting codes.</summary>
-    public static string StripFormatting(string text) => FormattingCode().Replace(text, "");
+    /// <summary>
+    /// Text as Fluorite shows it: without legacy <c>§x</c> formatting codes, and without private-use characters
+    /// (icons a pack's own font draws in game, which any other font shows as boxes).
+    /// </summary>
+    public static string PlainText(string text) => NotPlainText().Replace(text, "");
 
-    [GeneratedRegex("§.", RegexOptions.CultureInvariant)]
-    private static partial Regex FormattingCode();
+    // UTF-16: the BMP private-use area, and planes 15–16 (high surrogates DB80–DBFF).
+    [GeneratedRegex(@"§.|[-]|[\uDB80-\uDBFF][\uDC00-\uDFFF]", RegexOptions.CultureInvariant)]
+    private static partial Regex NotPlainText();
 
     // ── helpers ───────────────────────────────────────────────────────────
 
