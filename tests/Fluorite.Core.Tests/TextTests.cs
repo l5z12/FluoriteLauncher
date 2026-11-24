@@ -23,34 +23,85 @@ public class MojibakeTests
 
 public class ZipNamesTests
 {
-    [Fact]
-    public void UnflaggedGbkNames_ReadAsChinese()
-    {
-        var gbk = CodePagesEncodingProvider.Instance.GetEncoding(936)!;
-        var path = Path.Combine(Path.GetTempPath(), $"fluorite-test-{Guid.NewGuid():N}.zip");
-        try
-        {
-            // A non-UTF-8 name encoding writes the names without the UTF-8 flag, as Chinese zip tools do.
-            using (var zip = new ZipArchive(File.Create(path), ZipArchiveMode.Create, leaveOpen: false, gbk))
-            {
-                zip.CreateEntry("overrides/resourcepacks/零雾构想.zip");
-                zip.CreateEntry("overrides/resourcepacks/完美玻璃.zip");
-            }
+    private static readonly Encoding s_gbk = CodePagesEncodingProvider.Instance.GetEncoding(936)!;
 
-            using var read = ZipNames.OpenRead(path);
-            Assert.Equal(["overrides/resourcepacks/零雾构想.zip", "overrides/resourcepacks/完美玻璃.zip"], read.Entries.Select(e => e.FullName));
-            Assert.NotNull(read.GetEntry("overrides/resourcepacks/零雾构想.zip"));
-        }
-        finally
-        {
-            File.Delete(path);
-        }
+    [Theory]
+    [InlineData(null)]
+    [InlineData(936)]
+    public void UnflaggedGbkNames_ReadAsChinese(int? systemPage)
+    {
+        string[] names = ["overrides/resourcepacks/零雾构想.zip", "overrides/resourcepacks/完美玻璃.zip"];
+        using var temp = new TempZip(s_gbk, names);
+        using var read = ZipNames.OpenRead(temp.Path, systemPage);
+        Assert.Equal(names, read.Entries.Select(e => e.FullName));
+        Assert.NotNull(read.GetEntry(names[0]));
     }
 
     [Fact]
-    public void ValidUtf8_StaysUtf8()
+    public void UnflaggedNames_ReadInTheSystemsOwnCodePageFirst()
     {
-        Assert.Equal("零雾构想", ZipNames.Encoding.GetString(Encoding.UTF8.GetBytes("零雾构想")));
-        Assert.Equal("零雾构想", ZipNames.Encoding.GetString(CodePagesEncodingProvider.Instance.GetEncoding(936)!.GetBytes("零雾构想")));
+        using var temp = new TempZip(CodePagesEncodingProvider.Instance.GetEncoding(932)!, "ワールド/level.dat");
+        using var read = ZipNames.OpenRead(temp.Path, 932);
+        Assert.Equal("ワールド/level.dat", Assert.Single(read.Entries).FullName);
+    }
+
+    [Fact]
+    public void OneArchive_ReadsInOneEncoding()
+    {
+        // "英" alone is valid UTF-8 (D3 A2, "Ӣ"): it must still read as GBK, like the folder under it.
+        string[] names = ["英/level.dat", "英/datapacks/中文包/pack.mcmeta"];
+        using var temp = new TempZip(s_gbk, names);
+        using var read = ZipNames.OpenRead(temp.Path, null);
+        Assert.Equal(names, read.Entries.Select(e => e.FullName));
+    }
+
+    [Theory]
+    [InlineData(null)] // The system has no CJK code page (Western Windows).
+    [InlineData(936)] // Chinese.
+    [InlineData(932)] // Japanese.
+    public void NamesNoCodePageReads_KeepTheirSeparators(int? systemPage)
+    {
+        // A French Explorer zip (CP850): not UTF-8, and "é/" isn't GBK, GB18030 or Shift-JIS either. No "?", no lost "/".
+        using var temp = new TempZip(CodePagesEncodingProvider.Instance.GetEncoding(850)!, "Café/level.dat");
+        using var read = ZipNames.OpenRead(temp.Path, systemPage);
+        Assert.Equal("Caf�/level.dat", Assert.Single(read.Entries).FullName);
+    }
+
+    [Theory]
+    [InlineData(null)] // The system has no CJK code page (Western Windows).
+    [InlineData(936)] // Chinese.
+    [InlineData(932)] // Japanese.
+    public void UnflaggedUtf8Names_StayUtf8(int? systemPage)
+    {
+        using var temp = new TempZip(new UnflaggedUtf8(), "零雾构想/pack.mcmeta");
+        using var read = ZipNames.OpenRead(temp.Path, systemPage);
+        Assert.Equal("零雾构想/pack.mcmeta", Assert.Single(read.Entries).FullName);
+    }
+
+    /// <summary>A zip whose names are written in <paramref name="names"/>: without the UTF-8 flag unless that's UTF-8.</summary>
+    private sealed class TempZip : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"fluorite-test-{Guid.NewGuid():N}.zip");
+
+        public TempZip(Encoding names, params string[] entries)
+        {
+            using var zip = new ZipArchive(File.Create(Path), ZipArchiveMode.Create, leaveOpen: false, names);
+            foreach (var entry in entries)
+                zip.CreateEntry(entry);
+        }
+
+        public void Dispose() => File.Delete(Path);
+    }
+
+    /// <summary>UTF-8 that ZipArchive doesn't know as UTF-8, so it leaves the flag off, as some tools do.</summary>
+    private sealed class UnflaggedUtf8 : Encoding
+    {
+        private static readonly UTF8Encoding s_utf8 = new(encoderShouldEmitUTF8Identifier: false);
+        public override int GetByteCount(char[] chars, int index, int count) => s_utf8.GetByteCount(chars, index, count);
+        public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) => s_utf8.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
+        public override int GetCharCount(byte[] bytes, int index, int count) => s_utf8.GetCharCount(bytes, index, count);
+        public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) => s_utf8.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
+        public override int GetMaxByteCount(int charCount) => s_utf8.GetMaxByteCount(charCount);
+        public override int GetMaxCharCount(int byteCount) => s_utf8.GetMaxCharCount(byteCount);
     }
 }

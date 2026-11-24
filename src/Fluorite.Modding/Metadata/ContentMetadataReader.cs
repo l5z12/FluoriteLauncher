@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Fluorite.Core.Text;
 using Tomlyn;
 using Tomlyn.Model;
 
@@ -30,7 +31,7 @@ public static partial class ContentMetadataReader
         {
             if (Directory.Exists(path))
                 return ReadDirectory(path);
-            using var zip = ZipFile.OpenRead(path);
+            using var zip = ZipNames.OpenRead(path);
             return Read(zip, 0);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException)
@@ -62,7 +63,8 @@ public static partial class ContentMetadataReader
                 var file = Path.Combine(archivePath, entryName.Replace('/', Path.DirectorySeparatorChar));
                 return File.Exists(file) && new FileInfo(file).Length <= maxBytes ? File.ReadAllBytes(file) : null;
             }
-            using var zip = ZipFile.OpenRead(archivePath);
+            // As the entry's name was read (ModpackReader's IconEntry comes from a ZipNames archive).
+            using var zip = ZipNames.OpenRead(archivePath);
             var entry = FindEntry(zip, entryName);
             if (entry is null || entry.Length > maxBytes)
                 return null;
@@ -82,7 +84,7 @@ public static partial class ContentMetadataReader
         var mcmeta = Path.Combine(dir, "pack.mcmeta");
         var hasShaders = Directory.Exists(Path.Combine(dir, "shaders"));
         if (!File.Exists(mcmeta))
-            return new ContentMetadata { IsShaderPack = hasShaders, Name = Path.GetFileName(dir) };
+            return new ContentMetadata { IsShaderPack = hasShaders }; // Named by its folder name (ContentFile.DisplayName).
         var (format, description) = ParsePackMcmeta(File.ReadAllText(mcmeta));
         return new ContentMetadata
         {
@@ -580,8 +582,9 @@ public static partial class ContentMetadataReader
     /// </summary>
     public static string PlainText(string text) => NotPlainText().Replace(text, "");
 
-    // UTF-16: the BMP private-use area, and planes 15–16 (high surrogates DB80–DBFF).
-    [GeneratedRegex(@"§.|[-]|[\uDB80-\uDBFF][\uDC00-\uDFFF]", RegexOptions.CultureInvariant)]
+    // § with the character after it, whatever it is (both UTF-16 halves of one beyond the BMP); the BMP private-use
+    // area; planes 15–16 (high surrogates DB80–DBFF).
+    [GeneratedRegex(@"§(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S])|[\uE000-\uF8FF]|[\uDB80-\uDBFF][\uDC00-\uDFFF]", RegexOptions.CultureInvariant)]
     private static partial Regex NotPlainText();
 
     // ── helpers ───────────────────────────────────────────────────────────
