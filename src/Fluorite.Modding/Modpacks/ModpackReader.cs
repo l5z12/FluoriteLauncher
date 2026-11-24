@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Fluorite.Core.Instances;
+using Fluorite.Core.Text;
 using Fluorite.Modding.Content;
 using Fluorite.Modding.Platforms;
 
@@ -18,7 +19,7 @@ public static class ModpackReader
 
     public static PackManifest Read(string archivePath)
     {
-        using var zip = ZipFile.OpenRead(archivePath);
+        using var zip = ZipNames.OpenRead(archivePath);
         var manifest = Read(zip);
         manifest.ArchivePath = archivePath;
         return manifest;
@@ -32,7 +33,7 @@ public static class ModpackReader
     {
         try
         {
-            using var zip = ZipFile.OpenRead(archivePath);
+            using var zip = ZipNames.OpenRead(archivePath);
             return zip.GetEntry("modrinth.index.json") is not null
                 || (zip.GetEntry("manifest.json") is { } cf && Str(Parse(cf), "manifestType") is null or "minecraftModpack")
                 || FindInstanceCfg(zip) is not null

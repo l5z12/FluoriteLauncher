@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using System.Text;
 using Fluorite.Core.Text;
 
 namespace Fluorite.Core.Tests;
@@ -17,4 +19,38 @@ public class MojibakeTests
     [InlineData("Pokémon Café.zip")] // Accents that aren't UTF-8 bytes.
     [InlineData("§6Gold.zip")]
     public void OtherText_IsLeftAlone(string text) => Assert.Same(text, Mojibake.Repair(text));
+}
+
+public class ZipNamesTests
+{
+    [Fact]
+    public void UnflaggedGbkNames_ReadAsChinese()
+    {
+        var gbk = CodePagesEncodingProvider.Instance.GetEncoding(936)!;
+        var path = Path.Combine(Path.GetTempPath(), $"fluorite-test-{Guid.NewGuid():N}.zip");
+        try
+        {
+            // A non-UTF-8 name encoding writes the names without the UTF-8 flag, as Chinese zip tools do.
+            using (var zip = new ZipArchive(File.Create(path), ZipArchiveMode.Create, leaveOpen: false, gbk))
+            {
+                zip.CreateEntry("overrides/resourcepacks/零雾构想.zip");
+                zip.CreateEntry("overrides/resourcepacks/完美玻璃.zip");
+            }
+
+            using var read = ZipNames.OpenRead(path);
+            Assert.Equal(["overrides/resourcepacks/零雾构想.zip", "overrides/resourcepacks/完美玻璃.zip"], read.Entries.Select(e => e.FullName));
+            Assert.NotNull(read.GetEntry("overrides/resourcepacks/零雾构想.zip"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ValidUtf8_StaysUtf8()
+    {
+        Assert.Equal("零雾构想", ZipNames.Encoding.GetString(Encoding.UTF8.GetBytes("零雾构想")));
+        Assert.Equal("零雾构想", ZipNames.Encoding.GetString(CodePagesEncodingProvider.Instance.GetEncoding(936)!.GetBytes("零雾构想")));
+    }
 }
