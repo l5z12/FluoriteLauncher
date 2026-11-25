@@ -43,7 +43,8 @@ public sealed partial class InstanceViewModel(
         if (Instance is null)
             return;
         FixModsStatus = null;
-        if (await App.Get<ModFixService>().FixAsync(Instance) is { Changed: true } outcome)
+        // The problems were likely dismissed ("Launch anyway, don't ask again"), and they're what crashed it.
+        if (await App.Get<ModFixService>().FixAsync(Instance, includeDismissed: true) is { Changed: true } outcome)
             FixModsStatus = $"{outcome.Summary} {Loc.Get("ModFix_PlayAgain")}";
     }
 

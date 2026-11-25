@@ -894,16 +894,6 @@ public class ContentServiceTests
 
             var plan = await service.PlanFixesAsync(manager, manifest, loaders: uid => uid == loader.Uid ? loader : null, ct: ct);
 
-            string Describe(ModFix f) => f.Kind switch
-            {
-                ModFixKind.Enable => $"Enable {f.File!.FileName}",
-                ModFixKind.Install => $"Install {f.Download!.Version.Id}",
-                ModFixKind.Replace => $"Replace {f.File!.FileName} {f.Download!.Version.Id}",
-                ModFixKind.Disable => $"Disable {f.Choices[f.Choice].FileName}",
-                ModFixKind.KeepOne => $"Keep {f.Choices[f.Choice].FileName}",
-                ModFixKind.LoaderVersion => $"Loader {f.Loader!.To}",
-                _ => f.Kind.ToString(),
-            };
             Assert.Equal(
                 ["Disable forgeonly.jar", "Disable liar-1.jar", "Enable fabric-api-0.92.0.jar", "Install cloth-config-1", "Keep sodium-0.6.0.jar", "Loader 0.16.9", "Replace oldmod-1.jar oldmod-2"],
                 plan.Fixes.Select(Describe).Order(StringComparer.Ordinal));
@@ -931,6 +921,80 @@ public class ContentServiceTests
                 Directory.Delete(dir, true);
         }
     }
+
+    [Fact]
+    public async Task Fix_KeepsWhatDownloaded_MovesTheLoaderForWhoItCan_AndCountsWhatDidntGoThrough()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        // lib-b's file isn't there: its download fails, lib-a's doesn't.
+        var jars = new Dictionary<string, byte[]>
+        {
+            ["https://cdn.test/lib-a-1.jar"] = Jar.Build(("fabric.mod.json", Jar.FabricMod("lib-a", "1.0.0"))),
+        };
+        RemoteVersion Remote(string project, string id) => new(ContentPlatform.Modrinth, project, id, id, id)
+        {
+            Published = new DateTimeOffset(2026, 1, 5, 0, 0, 0, TimeSpan.Zero),
+            GameVersions = ["1.20.1"],
+            Loaders = ["fabric"],
+            Files = [new RemoteFile($"{id}.jar", 0) { Url = $"https://cdn.test/{id}.jar", Primary = true }],
+        };
+        var platform = new FakePlatform();
+        platform.Add(Remote("lib-a", "lib-a-1"));
+        platform.Add(Remote("lib-b", "lib-b-1"));
+
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var mods = Path.Combine(dir, "mods");
+            Jar.Write(mods, "a.jar", ("fabric.mod.json", Jar.FabricMod("a", "1.0.0", """{ "lib-a": "*" }""")));
+            Jar.Write(mods, "b.jar", ("fabric.mod.json", Jar.FabricMod("b", "1.0.0", """{ "lib-b": "*" }""")));
+            // An old copy, turned off: it's in the way of turning b off.
+            Jar.Write(mods, "b.jar.disabled", ("fabric.mod.json", Jar.FabricMod("b", "0.9.0")));
+            // One mod needs a newer loader, one an older loader than the instance's: the newer one is still worth it.
+            Jar.Write(mods, "newmod.jar", ("fabric.mod.json", Jar.FabricMod("newmod", "1.0.0", """{ "fabricloader": ">=0.16.0" }""")));
+            Jar.Write(mods, "capped.jar", ("fabric.mod.json", Jar.FabricMod("capped", "1.0.0", """{ "fabricloader": "<0.15.0" }""")));
+
+            using var http = new HttpClient(new Serve(jars));
+            var downloader = new Core.Net.DownloadEngine(http, new Core.Net.DownloadEngineOptions { AttemptsPerSource = 1 });
+            using var service = new ContentService([platform], downloader, Core.Net.MirrorTable.Official);
+            using var manager = new ContentManager(dir, Path.Combine(dir, ".fluorite"));
+            var manifest = new InstanceManifest { Components = [new() { Uid = ComponentUids.Minecraft, Version = "1.20.1" }, new() { Uid = ComponentUids.FabricLoader, Version = "0.15.0" }] };
+            var loader = new FakeLoader("0.16.9", "0.16.5", "0.15.11", "0.15.0");
+
+            var plan = await service.PlanFixesAsync(manager, manifest, loaders: uid => uid == loader.Uid ? loader : null, ct: ct);
+
+            Assert.Equal(
+                ["Disable b.jar", "Disable capped.jar", "Install lib-a-1", "Loader 0.16.9"],
+                plan.Fixes.Select(Describe).Order(StringComparer.Ordinal));
+            Assert.Empty(plan.Remaining());
+
+            var stillOn = await ContentService.ApplyFixesAsync(manager, plan);
+            Assert.Equal("b.jar", Assert.Single(stillOn).File.FileName);
+            Assert.Equal(
+                ["a.jar", "b.jar", "b.jar.disabled", "capped.jar.disabled", "lib-a-1.jar", "newmod.jar"],
+                Directory.GetFiles(mods).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+            manifest.Components[1].Version = plan.Loader!.To;
+            var left = await plan.RecheckAsync(manifest, ct);
+            Assert.Equal((ModIssueKind.MissingDependency, "b.jar"), (Assert.Single(left).Kind, left[0].File));
+            Assert.Equal(plan.Targets.Count - 1, plan.FixedCount(left));
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, true);
+        }
+    }
+
+    private static string Describe(ModFix f) => f.Kind switch
+    {
+        ModFixKind.Enable => $"Enable {f.File!.FileName}",
+        ModFixKind.Install => $"Install {f.Download!.Version.Id}",
+        ModFixKind.Replace => $"Replace {f.File!.FileName} {f.Download!.Version.Id}",
+        ModFixKind.Disable => $"Disable {f.Choices[f.Choice].FileName}",
+        ModFixKind.KeepOne => $"Keep {f.Choices[f.Choice].FileName}",
+        ModFixKind.LoaderVersion => $"Loader {f.Loader!.To}",
+        _ => f.Kind.ToString(),
+    };
 
     private sealed class Serve(Dictionary<string, byte[]> files) : HttpMessageHandler
     {

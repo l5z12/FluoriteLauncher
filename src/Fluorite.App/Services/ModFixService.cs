@@ -40,8 +40,9 @@ public sealed class ModFixService(ContentService content, ContentInstallService 
 {
     /// <param name="keys">The problems to fix (<see cref="ModIssue.Key"/>s); null for every one that isn't dismissed.</param>
     /// <param name="forLaunch">Asked before playing: the game isn't running yet, and confirming plays.</param>
+    /// <param name="includeDismissed">With no <paramref name="keys"/>, dismissed problems too (after a crash they caused).</param>
     /// <returns>Null when the user cancelled, or it failed (and said so).</returns>
-    public async Task<ModFixOutcome?> FixAsync(GameInstance instance, IReadOnlyCollection<string>? keys = null, bool forLaunch = false)
+    public async Task<ModFixOutcome?> FixAsync(GameInstance instance, IReadOnlyCollection<string>? keys = null, bool forLaunch = false, bool includeDismissed = false)
     {
         var title = Loc.Get("ModFix_Title");
         if (!forLaunch && App.Get<GameRunner>().Find(instance) is not null)
@@ -54,8 +55,8 @@ public sealed class ModFixService(ContentService content, ContentInstallService 
         try
         {
             var only = keys?.ToHashSet(StringComparer.Ordinal);
-            var dismissed = only is null ? await manager.GetDismissedIssuesAsync(instance.Id) : null;
-            bool Include(ModIssue issue) => only?.Contains(issue.Key) ?? !dismissed!.Contains(issue.Key);
+            var dismissed = only is null && !includeDismissed ? await manager.GetDismissedIssuesAsync(instance.Id) : null;
+            bool Include(ModIssue issue) => only?.Contains(issue.Key) ?? dismissed?.Contains(issue.Key) != true;
             var loaders = LoadersFor(instance);
             plan = await Dialogs.BusyAsync(title, Loc.Get("ModFix_Looking"), (progress, ct) =>
                 Task.Run(() => content.PlanFixesAsync(manager, instance.Manifest, Include, loaders, progress, ct), ct));
@@ -81,13 +82,12 @@ public sealed class ModFixService(ContentService content, ContentInstallService 
             return null;
         }
 
-        var fixedCount = plan.FixedCount();
-        var left = plan.Remaining().Count;
         // Something to go back to, as before updates.
         await snapshots.TakeBeforeUpdateAsync(instance, Loc.Get("Snapshot_BeforeFix"));
+        IReadOnlyList<(ContentFile File, Exception Error)> stillOn;
         try
         {
-            await Task.Run(() => ContentService.ApplyFixesAsync(manager, plan));
+            stillOn = await Task.Run(() => ContentService.ApplyFixesAsync(manager, plan));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -96,9 +96,29 @@ public sealed class ModFixService(ContentService content, ContentInstallService 
             await Dialogs.ShowMessageAsync(title, Loc.Format("ModFix_ApplyFailed", ex.Message));
             return null;
         }
-        var loaderNote = plan.Loader is { } change ? await installer.ApplyLoaderAsync(instance, change) : null;
+        var failures = stillOn.Select(f => Loc.Format("ModFix_NotTurnedOff", f.File.DisplayName, f.Error.Message)).ToList();
+        string? loaderNote = null;
+        if (plan.Loader is { } change)
+        {
+            loaderNote = await installer.ApplyLoaderAsync(instance, change);
+            if (loaderNote is null)
+                failures.Add(Loc.Format("ModFix_LoaderNotSaved", ContentInstallService.LoaderName(change.Uid)));
+        }
         installer.NotifyChanged(instance);
-        return new ModFixOutcome(fixedCount, left, Changed: true, loaderNote);
+
+        // Counted from the instance as it is now, so a change that didn't go through isn't counted as done.
+        IReadOnlyList<ModIssue> left;
+        try
+        {
+            left = await Task.Run(() => plan.RecheckAsync(instance.Manifest));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            left = plan.Remaining();
+        }
+        if (failures.Count > 0)
+            await Dialogs.ShowMessageAsync(title, Loc.Format("ModFix_ApplyFailed", "\n" + string.Join("\n", failures)));
+        return new ModFixOutcome(plan.FixedCount(left), left.Count, Changed: true, loaderNote);
     }
 
     /// <summary>The loaders by uid, when the instance's loader may change (not another launcher's read-only instance).</summary>

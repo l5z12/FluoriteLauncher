@@ -108,10 +108,24 @@ public sealed class ModFixPlan
     public IReadOnlyList<ModIssue> Remaining() => Evaluate(_fixes.Where(f => f.Selected));
 
     /// <summary>How many of <see cref="Targets"/> the selected changes clear.</summary>
-    public int FixedCount()
+    public int FixedCount() => FixedCount(Remaining());
+
+    /// <summary>How many of <see cref="Targets"/> aren't among <paramref name="left"/>.</summary>
+    public int FixedCount(IEnumerable<ModIssue> left)
     {
-        var left = Remaining().Select(Identity).ToHashSet(StringComparer.Ordinal);
-        return Targets.Count(t => !left.Contains(Identity(t)));
+        var still = left.Select(Identity).ToHashSet(StringComparer.Ordinal);
+        return Targets.Count(t => !still.Contains(Identity(t)));
+    }
+
+    /// <summary>
+    /// What's wrong once the changes are made, counted as <see cref="Remaining"/> is: from the instance as it is now,
+    /// since a change may not have gone through (a file in the way, the loader not saved).
+    /// </summary>
+    public async Task<IReadOnlyList<ModIssue>> RecheckAsync(InstanceManifest manifest, CancellationToken ct = default)
+    {
+        var now = await Manager.ScanAsync(new ContentLocation(ContentKind.Mod), ct).ConfigureAwait(false);
+        var loader = ComponentResolver.PrimaryLoader(manifest);
+        return Relevant(ModChecker.Check(now, loader?.Uid, loader?.Version, manifest.MinecraftVersion));
     }
 
     /// <summary>Deletes the downloads: the changes won't be made.</summary>
@@ -132,9 +146,13 @@ public sealed class ModFixPlan
     /// <summary>The loader in effect with the changes so far (one may add it).</summary>
     internal string? EffectiveLoaderUid => _fixes.LastOrDefault(f => f.Kind == ModFixKind.AddLoader)?.Loader?.Uid ?? LoaderUid;
 
+    /// <summary>Goes up with every change added or taken out.</summary>
+    internal int Edits { get; private set; }
+
     internal void Add(ModFix fix)
     {
         _fixes.Add(fix);
+        Edits++;
         if (fix.Download is { } d)
             Downloads.Files.Add(d);
     }
@@ -142,7 +160,9 @@ public sealed class ModFixPlan
     /// <summary>Takes a change out again, deleting its download.</summary>
     internal void Withdraw(ModFix fix)
     {
-        _fixes.Remove(fix);
+        if (!_fixes.Remove(fix))
+            return;
+        Edits++;
         if (fix.Download is { } d)
             Drop(d);
     }
@@ -166,8 +186,10 @@ public sealed class ModFixPlan
     internal List<ModIssue> Evaluate(IEnumerable<ModFix> fixes)
     {
         var list = fixes.ToList();
-        // A replaced file goes, and its turned-off twin with it (as when it's put in place).
-        var replaced = list.Select(f => f.Download?.ReplacesKey).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // A replaced file goes, and its turned-off twin with it (as when it's put in place); until its download is read,
+        // it's what's there.
+        var replaced = list.Select(f => f.Download).OfType<PlannedFile>().Where(Read.ContainsKey)
+            .Select(d => d.ReplacesKey).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
         var off = new HashSet<ContentFile>(list.SelectMany(f => f.TurnedOff), ReferenceEqualityComparer.Instance);
         var on = new HashSet<ContentFile>(list.Where(f => f.Kind == ModFixKind.Enable).Select(f => f.File).OfType<ContentFile>(), ReferenceEqualityComparer.Instance);
         var (uid, version) = (LoaderUid, LoaderVersion);
@@ -180,18 +202,22 @@ public sealed class ModFixPlan
                 after.Add(off.Contains(m) ? Toggled(m, enabled: false) : on.Contains(m) ? Toggled(m, enabled: true) : m);
         }
         after.AddRange(list.Select(f => f.Download).OfType<PlannedFile>().Where(Read.ContainsKey).Select(d => Read[d]));
-        // Those asked about, and new ones; not the rest of what was wrong already (dismissed, other mods').
-        return ModChecker.Check(after, uid, version, MinecraftVersion)
-            .Where(i => Counts(i) && (_targets.Contains(Identity(i)) || !_before.Contains(Identity(i))))
-            .ToList();
+        return Relevant(ModChecker.Check(after, uid, version, MinecraftVersion));
     }
+
+    /// <summary>Those asked about, and new ones; not the rest of what was wrong already (dismissed, other mods').</summary>
+    private List<ModIssue> Relevant(IEnumerable<ModIssue> issues) =>
+        issues.Where(i => Counts(i) && (_targets.Contains(Identity(i)) || !_before.Contains(Identity(i)))).ToList();
 
     /// <summary>Errors, and the missing loader (a warning, as mods do nothing without one).</summary>
     private static bool Counts(ModIssue issue) => issue.Severity == ModIssueSeverity.Error || issue.Kind == ModIssueKind.NoLoader;
 
     /// <summary>The same problem whatever the files are called and whatever versions they're at.</summary>
-    internal static string Identity(ModIssue issue) =>
-        $"{issue.Kind}|{(issue.ModId ?? issue.File).ToLowerInvariant()}|{(issue.OtherId ?? issue.Other)?.ToLowerInvariant()}";
+    internal static string Identity(ModIssue issue) => issue.Kind == ModIssueKind.NoLoader
+        ? nameof(ModIssueKind.NoLoader) // Its file is just the first mod found.
+        : $"{issue.Kind}|{(issue.ModId ?? issue.File).ToLowerInvariant()}|{(issue.OtherId ?? issue.Other)?.ToLowerInvariant()}";
+
+    internal static HashSet<string> Identities(IEnumerable<ModIssue> issues) => issues.Select(Identity).ToHashSet(StringComparer.Ordinal);
 
     internal static ContentFile Toggled(ContentFile m, bool enabled) => m.Enabled == enabled ? m : new()
     {
@@ -237,6 +263,7 @@ public sealed partial class ContentService
         {
             for (var round = 0; round < MaxFixRounds && plan.Targets.Count > 0; round++)
             {
+                ct.ThrowIfCancellationRequested();
                 // What the last round's downloads turned out to be decides what's tried next.
                 var pruned = session.PruneUnhelpful();
                 var advanced = await session.AdvanceAsync().ConfigureAwait(false);
@@ -245,9 +272,12 @@ public sealed partial class ContentService
                     break;
             }
             session.PruneUnhelpful();
+            session.DropNeedless();
+            ct.ThrowIfCancellationRequested(); // Not a review after Cancel, even when the last steps didn't wait on anything.
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
+            // Cancelled, or failed: no download stays behind in the mods folder.
             Discard(manager, plan.Downloads);
             throw;
         }
@@ -258,17 +288,29 @@ public sealed partial class ContentService
     /// Makes the selected changes of <paramref name="plan"/>, except the loader's (the instance's to save, see
     /// <see cref="ModFixPlan.Loader"/>), and deletes the downloads of the changes left out.
     /// </summary>
-    public static async Task ApplyFixesAsync(ContentManager manager, ModFixPlan plan)
+    /// <returns>The mods that couldn't be turned off (a file of that name already turned off is in the way…), and why.</returns>
+    public static async Task<IReadOnlyList<(ContentFile File, Exception Error)>> ApplyFixesAsync(ContentManager manager, ModFixPlan plan)
     {
         foreach (var d in plan.Fixes.Where(f => !f.Selected).Select(f => f.Download).OfType<PlannedFile>().ToList())
             plan.Drop(d);
         var selected = plan.Fixes.Where(f => f.Selected).ToList();
         await CommitAsync(manager, plan.Downloads, selected.Where(f => f.Kind == ModFixKind.Enable).Select(f => f.File).OfType<ContentFile>()).ConfigureAwait(false);
+        // One that won't go doesn't stop the rest (the downloads are in place already, and may need the others off).
+        var failed = new List<(ContentFile, Exception)>();
         foreach (var file in selected.SelectMany(f => f.TurnedOff).Distinct())
         {
-            if (file.Enabled && File.Exists(file.Path))
+            if (!file.Enabled || !File.Exists(file.Path))
+                continue;
+            try
+            {
                 await manager.SetEnabledAsync(file, false).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                failed.Add((file, ex));
+            }
         }
+        return failed;
     }
 
     /// <summary>A way out of a problem, in the order they're tried (see <see cref="FixSession.Ladder"/>).</summary>
@@ -337,24 +379,53 @@ public sealed partial class ContentService
         /// <summary>Changes whose problems are all still there didn't help: they go, and their problems try the next way out.</summary>
         public bool PruneUnhelpful()
         {
-            var left = plan.Remaining().Select(ModFixPlan.Identity).ToHashSet(StringComparer.Ordinal);
+            var left = ModFixPlan.Identities(plan.Remaining());
             var unhelpful = plan.Fixes.Where(f => f.Issues.Count > 0 && f.Issues.All(i => left.Contains(ModFixPlan.Identity(i)))).ToList();
             foreach (var fix in unhelpful)
                 plan.Withdraw(fix);
             return unhelpful.Count > 0;
         }
 
+        /// <summary>
+        /// Changes the others make needless go: installing OptiFabric when OptiFine is turned off anyway, turning off a
+        /// mod that's swapped for a version that works. Turning off goes first, then what was found last.
+        /// </summary>
+        public void DropNeedless()
+        {
+            var order = plan.Fixes
+                .Select((fix, i) => (Fix: fix, Index: i))
+                .OrderBy(x => x.Fix.Kind is ModFixKind.Disable or ModFixKind.KeepOne ? 0 : 1)
+                .ThenByDescending(x => x.Index)
+                .Select(x => x.Fix)
+                .ToList();
+            var left = ModFixPlan.Identities(plan.Remaining());
+            foreach (var fix in order)
+            {
+                var without = ModFixPlan.Identities(plan.Evaluate(plan.Fixes.Where(f => f.Selected && f != fix)));
+                if (!without.IsSubsetOf(left))
+                    continue;
+                plan.Withdraw(fix);
+                left = without;
+            }
+        }
+
         /// <summary>Each problem left takes its next way out. False when there was none.</summary>
         public async Task<bool> AdvanceAsync()
         {
             var problems = plan.Remaining().OrderBy(p => Priority(p.Kind)).ToList();
+            // A change made this round can take a problem away (its mod turned off or swapped): it waits for the next
+            // round, which sees whether it's still there, rather than spending its ways out on a mod that's gone.
+            var inPlay = problems.SelectMany(p => new[] { p.File, p.OtherFile }).OfType<string>()
+                .Where(name => Find(name) != default).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            bool Gone(ModIssue i) => new[] { i.File, i.OtherFile }.Any(name => name is not null && inPlay.Contains(name) && Find(name) == default);
             var handled = new HashSet<string>(StringComparer.Ordinal);
             var any = false;
             foreach (var p in problems)
             {
-                if (handled.Contains(ModFixPlan.Identity(p)))
+                ct.ThrowIfCancellationRequested();
+                if (handled.Contains(ModFixPlan.Identity(p)) || Gone(p))
                     continue;
-                var group = GroupOf(p, problems);
+                var group = GroupOf(p, problems).Where(g => !Gone(g)).ToList();
                 handled.UnionWith(group.Select(ModFixPlan.Identity));
                 foreach (var step in Ladder(p.Kind))
                 {
@@ -384,6 +455,7 @@ public sealed partial class ContentService
 
         private async Task<bool> TryAsync(FixStep step, ModIssue p, List<ModIssue> group)
         {
+            var edits = plan.Edits;
             try
             {
                 return step switch
@@ -404,10 +476,28 @@ public sealed partial class ContentService
                     _ => false,
                 };
             }
-            catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or System.Text.Json.JsonException or System.Xml.XmlException
-                || (ex is TaskCanceledException && !ct.IsCancellationRequested))
+            catch (Exception ex) when (IsOffline(ex))
             {
-                return false; // Offline, or the platform didn't answer (in time): the next way out.
+                // What it found before the platform stopped answering stays; with nothing found, the next way out.
+                return plan.Edits != edits;
+            }
+        }
+
+        /// <summary>Offline, or a platform or loader site didn't answer (in time, or sensibly): not a reason to stop looking.</summary>
+        private bool IsOffline(Exception ex) =>
+            ex is HttpRequestException or IOException or InvalidDataException or System.Text.Json.JsonException or System.Xml.XmlException
+            || (ex is TaskCanceledException && !ct.IsCancellationRequested);
+
+        /// <summary>A project's versions for the target; null when the platform can't be reached (the next project is tried).</summary>
+        private async Task<IReadOnlyList<RemoteVersion>?> VersionsAsync(IContentPlatform platform, string projectId)
+        {
+            try
+            {
+                return await platform.GetVersionsAsync(projectId, Target, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (IsOffline(ex))
+            {
+                return null;
             }
         }
 
@@ -487,7 +577,7 @@ public sealed partial class ContentService
                     {
                         project = await platform.GetProjectAsync(projectId, ct).ConfigureAwait(false);
                     }
-                    catch (HttpRequestException)
+                    catch (Exception ex) when (IsOffline(ex))
                     {
                     }
                     candidates.Add((projectId, project));
@@ -497,7 +587,7 @@ public sealed partial class ContentService
                 var added = false;
                 foreach (var (projectId, project) in named.Count > 0 ? named : candidates)
                 {
-                    if (Best(await platform.GetVersionsAsync(projectId, Target, ct).ConfigureAwait(false)) is { PrimaryFile: { } file } best)
+                    if (await VersionsAsync(platform, projectId).ConfigureAwait(false) is { } versions && Best(versions) is { PrimaryFile: { } file } best)
                         added |= AddDownload(ModFixKind.Install, new PlannedFile(best, file, s_mods, IsDependency: true) { Project = project }, group);
                 }
                 if (added)
@@ -511,14 +601,16 @@ public sealed partial class ContentService
             if (id is null || await service.FindByModIdAsync(id, Target, plan.Downloads, [], ct).ConfigureAwait(false) is not { } found)
                 return false;
             // The project is installed already, in a version that doesn't provide it (another Minecraft version…):
-            // this one takes its place.
-            var installed = plan.Current.FirstOrDefault(m => m.Enabled && m.Record.Source is { } s && s.Platform == found.Version.Platform && s.ProjectId == found.Version.ProjectId);
+            // this one takes its place, a copy that stays on first. One a change turns off stays turned off until the
+            // swap works out (then turning it off is needless, see DropNeedless).
+            var installed = plan.Current
+                .Where(m => m.Enabled && m.Record.Source is { } s && s.Platform == found.Version.Platform && s.ProjectId == found.Version.ProjectId)
+                .OrderBy(plan.IsTurnedOff)
+                .FirstOrDefault();
             if (installed is null)
                 return AddDownload(ModFixKind.Install, found, group);
             if (installed.Record.Pinned || plan.IsReplaced(installed) || SameFile(installed, found))
                 return false;
-            foreach (var off in plan.Fixes.Where(f => f.TurnedOff.Contains(installed)).ToList())
-                plan.Withdraw(off);
             return AddDownload(ModFixKind.Replace, found with { ReplacesKey = installed.Key, IsDependency = installed.Record.IsDependency }, group, installed);
         }
 
@@ -579,9 +671,10 @@ public sealed partial class ContentService
             var added = false;
             foreach (var p in group)
             {
-                if (Swappable(Find(p.File)) is not { Record.Source: { } source } file || !service._platforms.TryGetValue(source.Platform, out var platform))
+                if (Swappable(Find(p.File)) is not { Record.Source: { } source } file || !service._platforms.TryGetValue(source.Platform, out var platform)
+                    || await VersionsAsync(platform, source.ProjectId).ConfigureAwait(false) is not { } all)
                     continue;
-                var versions = Candidates(await platform.GetVersionsAsync(source.ProjectId, Target, ct).ConfigureAwait(false), source);
+                var versions = Candidates(all, source);
                 var pick = p.Kind is ModIssueKind.DependencyVersion or ModIssueKind.Incompatible
                     ? Stablest(versions.Where(v => Newer(v, source)).ToList(), source)
                     : PickBest(versions, Target);
@@ -601,37 +694,57 @@ public sealed partial class ContentService
             return AddDownload(ModFixKind.Replace, found with { ReplacesKey = file.Key, IsDependency = file.Record.IsDependency }, [p], file);
         }
 
-        /// <summary>The newest loader version that every mod accepts (an old mod may cap it), stable builds first.</summary>
+        /// <summary>
+        /// A newer loader version: the one that clears the most of <paramref name="group"/> and breaks nothing else
+        /// (an old mod may cap it), stable builds and then the newest first. What it doesn't clear takes its next way
+        /// out. When a change moves or adds the loader already (for mods that came in since), that change moves on.
+        /// </summary>
         private async Task<bool> LoaderVersionAsync(List<ModIssue> group)
         {
-            if (plan.LoaderUid is not { } uid || plan.LoaderVersion is not { } from || plan.MinecraftVersion is not { } mc
-                || plan.Fixes.Any(f => f.Loader is not null) || loaders?.Invoke(uid) is not { } provider)
+            var existing = plan.Fixes.LastOrDefault(f => f.Loader is not null);
+            var uid = existing?.Loader?.Uid ?? plan.LoaderUid;
+            var from = existing?.Loader?.To ?? plan.LoaderVersion;
+            if (uid is null || from is null || plan.MinecraftVersion is not { } mc || loaders?.Invoke(uid) is not { } provider)
                 return false;
             var versions = await provider.GetVersionsAsync(mc, ct).ConfigureAwait(false);
-            var candidates = versions
-                .Where(v => LoaderVersionComparer.Instance.Compare(v.Version, from) > 0)
-                .OrderBy(v => IsPreview(v.Version))
-                .ThenByDescending(v => v.Version, LoaderVersionComparer.Instance)
-                .Take(MaxLoaderCandidates);
-            var chosen = plan.Fixes.Where(f => f.Selected).ToList();
-            foreach (var v in candidates)
+            var others = plan.Fixes.Where(f => f.Selected && f != existing).ToList();
+            var before = ModFixPlan.Identities(plan.Evaluate(plan.Fixes.Where(f => f.Selected)));
+            ModFix Move(string to, IReadOnlyList<ModIssue> issues) => new()
             {
-                var fix = new ModFix
+                Kind = existing?.Kind ?? ModFixKind.LoaderVersion,
+                Loader = new LoaderChange(uid, existing?.Loader?.From ?? from, to)
                 {
-                    Kind = ModFixKind.LoaderVersion,
-                    Loader = new LoaderChange(uid, from, v.Version) { NeededBy = group.Select(g => g.Subject).Distinct().ToList() },
-                    Issues = group,
-                };
-                if (!plan.Evaluate(chosen.Append(fix)).Any(i => i.Kind == ModIssueKind.WrongLoaderVersion))
-                {
-                    plan.Add(fix);
-                    return true;
-                }
+                    NeededBy = existing is { Kind: ModFixKind.AddLoader, Loader: { } added }
+                        ? added.NeededBy
+                        : issues.Where(i => i.Kind == ModIssueKind.WrongLoaderVersion).Select(i => i.Subject).Distinct().ToList(),
+                },
+                Issues = issues,
+            };
+            (string Version, List<ModIssue> Cleared)? best = null;
+            foreach (var v in Ranked(versions.Where(v => LoaderVersionComparer.Instance.Compare(v.Version, from) > 0)))
+            {
+                var after = ModFixPlan.Identities(plan.Evaluate(others.Append(Move(v.Version, []))));
+                if (!after.IsSubsetOf(before))
+                    continue; // It breaks something else.
+                var cleared = group.Where(g => !after.Contains(ModFixPlan.Identity(g))).ToList();
+                if (cleared.Count > (best?.Cleared.Count ?? 0))
+                    best = (v.Version, cleared);
+                if (cleared.Count == group.Count)
+                    break;
             }
-            return false;
+            if (best is not { } pick)
+                return false;
+            var issues = existing?.Issues.Concat(pick.Cleared).ToList() ?? pick.Cleared;
+            if (existing is not null)
+                plan.Withdraw(existing);
+            plan.Add(Move(pick.Version, issues));
+            return true;
         }
 
-        /// <summary>The loader most of the mods are for, at its recommended (else newest stable) version.</summary>
+        /// <summary>
+        /// The loader most of the mods are for: its recommended build if they all take it, else the version that leaves
+        /// the fewest of them out (stable builds and then the newest first).
+        /// </summary>
         private async Task<bool> AddLoaderAsync(ModIssue p)
         {
             if (plan.LoaderUid is not null || plan.MinecraftVersion is not { } mc || loaders is null || plan.Fixes.Any(f => f.Loader is not null))
@@ -643,19 +756,44 @@ public sealed partial class ContentService
                 .OrderByDescending(g => g.Count())
                 .ThenBy(g => Array.IndexOf(s_loaderPreference, g.Key))
                 .Select(g => g.Key);
+            var chosen = plan.Fixes.Where(f => f.Selected).ToList();
             foreach (var uid in votes)
             {
                 if (loaders(uid) is not { } provider)
                     continue;
                 var versions = await provider.GetVersionsAsync(mc, ct).ConfigureAwait(false);
-                if ((versions.FirstOrDefault(v => v.Recommended) ?? versions.FirstOrDefault(v => !IsPreview(v.Version)) ?? (versions.Count > 0 ? versions[0] : null)) is not { } pick)
-                    continue;
+                var recommended = versions.FirstOrDefault(v => v.Recommended);
                 var forIt = mods.Where(m => m.Metadata.Loaders.Any(l => UidFor(l) == uid)).Select(m => m.DisplayName).Take(3).ToList();
-                plan.Add(new ModFix { Kind = ModFixKind.AddLoader, Loader = new LoaderChange(uid, "", pick.Version) { NeededBy = forIt }, Issues = [p] });
+                var order = Ranked(versions).ToList();
+                if (recommended is not null)
+                {
+                    order.Remove(recommended);
+                    order.Insert(0, recommended);
+                }
+                ModFix? best = null;
+                var fewest = int.MaxValue;
+                foreach (var v in order)
+                {
+                    var fix = new ModFix { Kind = ModFixKind.AddLoader, Loader = new LoaderChange(uid, "", v.Version) { NeededBy = forIt }, Issues = [p] };
+                    var left = plan.Evaluate(chosen.Append(fix)).Count;
+                    if (left < fewest)
+                        (best, fewest) = (fix, left);
+                    if (left == 0)
+                        break;
+                }
+                if (best is null)
+                    continue;
+                plan.Add(best);
                 return true;
             }
             return false;
         }
+
+        /// <summary>Loader versions to try, stable builds and then the newest first.</summary>
+        private static IEnumerable<LoaderVersion> Ranked(IEnumerable<LoaderVersion> versions) => versions
+            .OrderBy(v => IsPreview(v.Version))
+            .ThenByDescending(v => v.Version, LoaderVersionComparer.Instance)
+            .Take(MaxLoaderCandidates);
 
         private static string? UidFor(ModLoaderKind kind) => kind switch
         {
@@ -779,9 +917,19 @@ public sealed partial class ContentService
             {
                 await service.StageAsync(plan.Manager, plan.Downloads, progress, ct).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is HttpRequestException or DownloadFailedException or IOException or UnauthorizedAccessException)
+            catch (DownloadFailedException ex)
             {
-                // Left out below; the problems they were for take their next way out.
+                // What came in stays. What didn't is left out below, and the problems it was for take their next way out.
+                var failed = ex.Failures.Select(f => Path.GetFullPath(f.Item.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var fix in _pending.Where(plan.Fixes.Contains))
+                {
+                    if (!failed.Contains(Path.GetFullPath(PartPath(plan.Manager, fix.Download!))))
+                        plan.Downloads.Staged.Add(fix.Download!);
+                }
+            }
+            catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException)
+            {
+                // All left out below.
             }
             foreach (var fix in _pending)
             {

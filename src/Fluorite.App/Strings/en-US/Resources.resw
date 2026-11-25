@@ -1275,6 +1275,8 @@
   <data name="ModFix_DoneMany" xml:space="preserve"><value>Fixed {0} problems.</value></data>
   <data name="ModFix_DoneLeft" xml:space="preserve"><value>Problems left: {0}.</value></data>
   <data name="ModFix_PlayAgain" xml:space="preserve"><value>Play again to check.</value></data>
+  <data name="ModFix_NotTurnedOff" xml:space="preserve"><value>{0} is still on: {1}</value></data>
+  <data name="ModFix_LoaderNotSaved" xml:space="preserve"><value>{0} wasn&apos;t changed. Check the instance&apos;s Version tab.</value></data>
   <data name="Snapshot_BeforeFix" xml:space="preserve"><value>Before fixing mods</value></data>
   <data name="Content_LoaderAdded" xml:space="preserve"><value>{0} {1} added</value></data>
   <data name="ModIssues_Fix" xml:space="preserve"><value>Fix problems</value></data>

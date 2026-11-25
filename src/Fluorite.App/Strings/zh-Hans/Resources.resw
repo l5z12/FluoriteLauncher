@@ -1275,6 +1275,8 @@
   <data name="ModFix_DoneMany" xml:space="preserve"><value>已修复 {0} 个问题。</value></data>
   <data name="ModFix_DoneLeft" xml:space="preserve"><value>剩余问题：{0} 个。</value></data>
   <data name="ModFix_PlayAgain" xml:space="preserve"><value>再次启动游戏即可验证。</value></data>
+  <data name="ModFix_NotTurnedOff" xml:space="preserve"><value>{0} 仍处于启用状态：{1}</value></data>
+  <data name="ModFix_LoaderNotSaved" xml:space="preserve"><value>{0} 未更改。请查看实例的“版本”选项卡。</value></data>
   <data name="Snapshot_BeforeFix" xml:space="preserve"><value>修复模组前</value></data>
   <data name="Content_LoaderAdded" xml:space="preserve"><value>已添加 {0} {1}</value></data>
   <data name="ModIssues_Fix" xml:space="preserve"><value>修复问题</value></data>
