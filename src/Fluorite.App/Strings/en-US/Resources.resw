@@ -418,6 +418,9 @@
   <data name="Browse_InstallButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Install</value></data>
   <data name="Browse_Install.Text" xml:space="preserve"><value>Install</value></data>
   <data name="Browse_Installed.Text" xml:space="preserve"><value>Installed</value></data>
+  <data name="Browse_PickVersion.Text" xml:space="preserve"><value>Choose a version</value></data>
+  <data name="Browse_InstallThis.Content" xml:space="preserve"><value>Install</value></data>
+  <data name="Browse_SeeAllVersions.Content" xml:space="preserve"><value>See all versions…</value></data>
   <data name="Browse_LoadMore.Content" xml:space="preserve"><value>Load more</value></data>
   <data name="Browse_ByAuthor" xml:space="preserve"><value>by {0}</value></data>
   <data name="Browse_Downloads" xml:space="preserve"><value>{0} downloads</value></data>
