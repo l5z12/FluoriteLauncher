@@ -187,6 +187,10 @@
                 <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE9D5;" /></toolkit:SettingsCard.HeaderIcon>
                 <ToggleSwitch IsOn="{x:Bind ViewModel.CheckModsBeforeLaunch, Mode=TwoWay}" />
             </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_FixMods">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE90F;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.FixModProblems, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
             <toolkit:SettingsCard x:Uid="Settings_SnapshotBeforeUpdates">
                 <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE81C;" /></toolkit:SettingsCard.HeaderIcon>
                 <ToggleSwitch IsOn="{x:Bind ViewModel.SnapshotBeforeUpdates, Mode=TwoWay}" />

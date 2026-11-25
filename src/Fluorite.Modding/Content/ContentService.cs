@@ -42,10 +42,13 @@ public sealed partial class ContentService : IDisposable
     // ── Targets ─────────────────────────────────────────────────────────
 
     /// <summary>Platform loader names (lower-case) whose mods run on the instance's loader.</summary>
-    public static IReadOnlyList<string> ModLoaderNames(InstanceManifest manifest)
+    public static IReadOnlyList<string> ModLoaderNames(InstanceManifest manifest) =>
+        ModLoaderNames(ComponentResolver.PrimaryLoader(manifest)?.Uid, manifest.MinecraftVersion);
+
+    /// <summary>Platform loader names (lower-case) whose mods run on the loader <paramref name="loaderUid"/>.</summary>
+    public static IReadOnlyList<string> ModLoaderNames(string? loaderUid, string? mc)
     {
-        var mc = manifest.MinecraftVersion;
-        return ComponentResolver.PrimaryLoader(manifest)?.Uid switch
+        return loaderUid switch
         {
             ComponentUids.FabricLoader => ["fabric"],
             ComponentUids.QuiltLoader => ["quilt", "fabric"],

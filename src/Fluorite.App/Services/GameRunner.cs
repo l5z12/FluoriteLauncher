@@ -290,11 +290,45 @@ public sealed class GameRunner(
 
     /// <summary>
     /// Pre-launch mod checks: everything goes to the log; errors (missing dependencies, wrong loader…) that weren't
-    /// dismissed ask the user whether to launch anyway. Returns false to cancel.
+    /// dismissed ask the user whether to fix them (when Fix mod problems is on in Settings), or launch anyway. After a
+    /// fix the mods are checked again (and asked about again, without the fix, while errors are left). Returns false to
+    /// cancel.
     /// </summary>
     private async Task<bool> CheckModsAsync(RunningGame game, CancellationToken ct)
     {
-        game.Status = Loc.Get("Launch_CheckingMods");
+        var offerFix = settings.Current.FixModProblems;
+        for (var pass = 0; ; pass++)
+        {
+            game.Status = Loc.Get("Launch_CheckingMods");
+            var (choice, asked) = await CheckModsOnceAsync(game, offerFix, log: pass == 0, ct);
+            switch (choice)
+            {
+                case ContentInstallService.LaunchChoice.Launch:
+                    return true;
+                case ContentInstallService.LaunchChoice.Fix:
+                    game.Status = Loc.Get("Launch_FixingMods");
+                    var outcome = await App.Get<ModFixService>().FixAsync(game.Instance, asked, forLaunch: true);
+                    ct.ThrowIfCancellationRequested(); // Stopped meanwhile.
+                    if (outcome is not null)
+                    {
+                        // Fixed (or nothing could be): checked again, without offering the same fix twice. Cancelled:
+                        // asked again as it was.
+                        offerFix = false;
+                        if (outcome.Changed)
+                            AppendLocal(game, GameLogLevel.Info, outcome.Summary);
+                    }
+                    break;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    /// <summary>One check, and what the user chose; with the keys of the problems asked about (what Fix fixes).</summary>
+    /// <param name="log">Write the problems found to the game's log (once: a check after a fix would repeat them).</param>
+    private async Task<(ContentInstallService.LaunchChoice Choice, IReadOnlyList<string> Asked)> CheckModsOnceAsync(RunningGame game, bool offerFix, bool log, CancellationToken ct)
+    {
+        const ContentInstallService.LaunchChoice Launch = ContentInstallService.LaunchChoice.Launch;
         var instance = game.Instance;
         var manager = content.For(instance);
         IReadOnlyList<Fluorite.Modding.Content.ContentFile> mods;
@@ -308,7 +342,7 @@ public sealed class GameRunner(
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return true; // A check that can't run never blocks playing.
+            return (Launch, []); // A check that can't run never blocks playing.
         }
         try
         {
@@ -323,7 +357,7 @@ public sealed class GameRunner(
         {
             // Forgotten next time.
         }
-        foreach (var issue in issues)
+        foreach (var issue in log ? issues : [])
         {
             // Dismissed ones too: if the game then crashes, the log still says what was off.
             var text = ContentInstallService.Describe(issue);
@@ -332,9 +366,10 @@ public sealed class GameRunner(
         }
         var active = issues.Where(i => !dismissed.Contains(i.Key)).ToList();
         if (!active.Any(i => i.Severity == Fluorite.Modding.Content.ModIssueSeverity.Error))
-            return true;
-        var (launch, dontAskAgain) = await ContentInstallService.ConfirmLaunchAsync(instance.Name, active);
-        if (launch && dontAskAgain)
+            return (Launch, []);
+        var keys = active.Select(i => i.Key).ToList();
+        var (choice, dontAskAgain) = await ContentInstallService.ConfirmLaunchAsync(instance.Name, active, offerFix);
+        if (choice == Launch && dontAskAgain)
         {
             try
             {
@@ -348,7 +383,7 @@ public sealed class GameRunner(
                 // Asked again next time; nothing worse.
             }
         }
-        return launch;
+        return (choice, keys);
     }
 
     private async Task<string> EnsureLoaderAsync(RunningGame game, CancellationToken ct)

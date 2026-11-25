@@ -55,12 +55,20 @@
 
         <StackPanel Grid.Row="1" Spacing="6">
             <InfoBar x:Uid="Content_NoLoaderBar" Severity="Warning" IsClosable="False" IsOpen="{x:Bind ViewModel.NoLoader, Mode=OneWay}" />
-            <!-- Not closable: closing would only hide it until the next scan. Dismiss all is remembered (and undoable). -->
+            <!-- Not closable: closing would only hide it until the next scan. Dismiss all is remembered (and undoable).
+                 Fix (when something can be) and Dismiss all sit under the message: the action button slot takes one. -->
             <InfoBar Severity="{x:Bind local:Bind.Severity(ViewModel.IssueSummaryIsError), Mode=OneWay}" IsClosable="False"
                      IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.IssueSummary), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.IssueSummary, Mode=OneWay}">
-                <InfoBar.ActionButton>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
+                    <Button Style="{StaticResource AccentButtonStyle}" x:Uid="Content_FixIssues" Command="{x:Bind ViewModel.FixAllIssuesCommand, Mode=OneWay}"
+                            Visibility="{x:Bind local:Bind.Visible(ViewModel.CanFix), Mode=OneWay, FallbackValue=Collapsed}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE90F;" FontSize="14" />
+                            <TextBlock x:Uid="Content_FixIssuesText" />
+                        </StackPanel>
+                    </Button>
                     <Button x:Uid="Content_DismissAllIssues" Command="{x:Bind ViewModel.DismissAllIssuesCommand, Mode=OneWay}" />
-                </InfoBar.ActionButton>
+                </StackPanel>
             </InfoBar>
             <InfoBar Severity="Success" IsClosable="True" IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.Status), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.Status, Mode=OneWay}" />
             <InfoBar Severity="Error" IsClosable="True" IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.Error), Mode=OneWay, FallbackValue=False}" Message="{x:Bind ViewModel.Error, Mode=OneWay}" />
@@ -86,7 +94,10 @@
                     <MenuFlyoutItem x:Name="MenuDisable" x:Uid="Content_DisableSelected" Click="DisableSelected_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+E">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE711;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
-                    <!-- Only when some of the selection has issues showing / dismissed. -->
+                    <!-- Only when some of the selection has issues showing (that can be fixed) / dismissed. -->
+                    <MenuFlyoutItem x:Name="MenuFixIssues" x:Uid="Content_FixSelectedIssues" Click="FixSelectedIssues_Click">
+                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE90F;" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
                     <MenuFlyoutItem x:Name="MenuDismissIssues" x:Uid="Content_DismissIssues" Click="DismissSelectedIssues_Click">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xED1A;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
@@ -169,6 +180,9 @@
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem x:Uid="Content_EditManifest" Tag="{x:Bind}" Click="EditManifest_Click" Visibility="{x:Bind local:Bind.Visible(IsMod)}">
                                             <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE70F;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Uid="Content_FixSelectedIssues" Tag="{x:Bind}" Click="FixIssues_Click" Visibility="{x:Bind local:Bind.Visible(CanFixIssue), Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE90F;" /></MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem x:Uid="Content_DismissIssues" Tag="{x:Bind}" Click="DismissIssues_Click" Visibility="{x:Bind local:Bind.Visible(HasIssue), Mode=OneWay}">
                                             <MenuFlyoutItem.Icon><FontIcon Glyph="&#xED1A;" /></MenuFlyoutItem.Icon>

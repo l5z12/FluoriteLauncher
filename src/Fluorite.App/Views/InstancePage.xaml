@@ -140,6 +140,14 @@
                 <TextBlock x:Uid="Crash_NoFindings" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            Visibility="{x:Bind local:Bind.Visible(ViewModel.NoFindings), Mode=OneWay}" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
+                    <!-- When the loader refused the mods: their own details say how, and what can be done. -->
+                    <Button Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.FixModsCommand}" x:Uid="Crash_FixModsButton"
+                            Visibility="{x:Bind local:Bind.Visible(ViewModel.CrashFromMods), Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE90F;" FontSize="12" />
+                            <TextBlock x:Uid="Crash_FixMods" />
+                        </StackPanel>
+                    </Button>
                     <Button Command="{x:Bind ViewModel.UploadLogCommand}" x:Uid="Crash_UploadLogButton">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon Glyph="&#xE898;" FontSize="12" />
@@ -155,6 +163,8 @@
                     <HyperlinkButton x:Uid="Crash_OpenReport" Command="{x:Bind ViewModel.OpenCrashReportCommand}"
                                      Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.CrashReportFile), Mode=OneWay, FallbackValue=Collapsed}" />
                 </StackPanel>
+                <TextBlock Text="{x:Bind ViewModel.FixModsStatus, Mode=OneWay}" TextWrapping="Wrap" Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                           Visibility="{x:Bind local:Bind.VisibleIfText(ViewModel.FixModsStatus), Mode=OneWay, FallbackValue=Collapsed}" />
             </StackPanel>
             <TextBlock Text="{x:Bind ViewModel.Game.Status, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                        Visibility="{x:Bind local:Bind.Collapsed(ViewModel.ShowCrash), Mode=OneWay}" TextWrapping="Wrap" />

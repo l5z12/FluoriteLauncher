@@ -83,6 +83,9 @@ public sealed partial class ContentItemViewModel : ObservableObject
     public bool HasIssue => Issue is not null;
     [ObservableProperty] public partial bool IssueIsError { get; set; }
 
+    /// <summary>Some issue showing is one Fix looks for a way out of (an error, or no loader).</summary>
+    [ObservableProperty] public partial bool CanFixIssue { get; set; }
+
     /// <summary>Its dismissed issues while they're shown (Show dismissed), else null.</summary>
     [ObservableProperty] public partial string? DismissedIssue { get; set; }
 
@@ -214,6 +217,9 @@ public sealed partial class ContentListViewModel(ContentService content, Content
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? IssueSummary { get; set; }
     [ObservableProperty] public partial bool IssueSummaryIsError { get; set; }
+
+    /// <summary>Some issue showing can be fixed (an error, or no loader): the issue bar offers Fix.</summary>
+    [ObservableProperty] public partial bool CanFix { get; set; }
 
     /// <summary>Issues dismissed in this instance (<see cref="ModIssue.Key"/>), as last read.</summary>
     private IReadOnlySet<string> _dismissed = new HashSet<string>();
@@ -453,6 +459,7 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         if (!IsMods || Instance is null)
             return;
         var issues = _issues = ModChecker.Check(_all.Select(i => i.File).ToList(), Instance.Manifest);
+        var fixOn = ModFixService.Enabled; // Read each time: the page is made anew after a visit to Settings.
         static string Lines(List<ModIssue> list) => string.Join("\n", list.Select(ContentInstallService.Describe));
         foreach (var item in _all)
         {
@@ -464,6 +471,7 @@ public sealed partial class ContentListViewModel(ContentService content, Content
             item.DismissedKeys = dismissed.Select(i => i.Key).ToList();
             item.Issue = shown.Count == 0 ? null : Lines(shown);
             item.IssueIsError = shown.Any(i => i.Severity == ModIssueSeverity.Error);
+            item.CanFixIssue = fixOn && shown.Any(Fixable);
             item.HasDismissedIssues = dismissed.Count > 0;
             item.DismissedIssue = ShowDismissed && dismissed.Count > 0 ? Lines(dismissed) : null;
         }
@@ -473,6 +481,7 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         var warnings = active.Count - errors;
         IssueSummary = active.Count == 0 ? null : Loc.Format("Content_IssueSummary", errors, warnings);
         IssueSummaryIsError = errors > 0;
+        CanFix = fixOn && active.Any(Fixable);
         UpdateDismissedList(issues);
         HasDismissedHere = issues.Count > active.Count;
         if (!HasDismissedHere)
@@ -543,6 +552,32 @@ public sealed partial class ContentListViewModel(ContentService content, Content
     /// <summary>The issue bar's Dismiss all.</summary>
     [RelayCommand]
     private Task DismissAllIssuesAsync() => DismissIssuesAsync(_all);
+
+    /// <summary>What Fix looks for a way out of: errors, and mods without a loader (other warnings are only advice).</summary>
+    private static bool Fixable(ModIssue issue) => issue.Severity == ModIssueSeverity.Error || issue.Kind == ModIssueKind.NoLoader;
+
+    /// <summary>The issue bar's Fix: every issue showing.</summary>
+    [RelayCommand]
+    private Task FixAllIssuesAsync() => FixIssuesAsync(_all);
+
+    /// <summary>
+    /// Looks for changes that fix the issues showing under these mods (dismissed ones stay as they are), shows them,
+    /// and makes those the user keeps; the list then reloads, and says what was fixed.
+    /// </summary>
+    public async Task FixIssuesAsync(IEnumerable<ContentItemViewModel> items)
+    {
+        if (Instance is not { } instance)
+            return;
+        var keys = items.SelectMany(i => i.IssueKeys).Distinct().ToList();
+        if (keys.Count == 0)
+            return;
+        Status = null;
+        if (await App.Get<ModFixService>().FixAsync(instance, keys) is { Changed: true } outcome)
+        {
+            Status = outcome.Summary;
+            OnPropertyChanged(nameof(NoLoader)); // One may have been added.
+        }
+    }
 
     /// <summary>The dismissed list's Show again, on one line.</summary>
     public Task RestoreDismissedAsync(DismissedIssueViewModel entry) => SetDismissedAsync(entry.Keys, dismissed: false);
