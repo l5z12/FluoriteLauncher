@@ -423,6 +423,8 @@ public sealed partial class BrowseViewModel(
 
     public async Task InstallAsync(ProjectCard card, RemoteVersion? version = null)
     {
+        if (card.IsInstalling)
+            return;
         if (IsModpackKind)
         {
             card.IsInstalling = true;
@@ -467,7 +469,7 @@ public sealed partial class BrowseViewModel(
                 card.Versions.Add(new VersionChoice(v));
             card.VersionsLoaded = true;
         }
-        catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or System.Text.Json.JsonException)
+        catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or System.Text.Json.JsonException or TaskCanceledException)
         {
             card.VersionsError = ex.Message;
         }
