@@ -346,7 +346,8 @@ public static class ModChecker
             ? rest
             : version;
 
-    private static bool Accepts(string loaderUid, string? minecraftVersion, ModInfo mod) => (loaderUid, mod.Loader) switch
+    /// <summary>The loader <paramref name="loaderUid"/> loads this mod entry.</summary>
+    internal static bool Accepts(string loaderUid, string? minecraftVersion, ModInfo mod) => (loaderUid, mod.Loader) switch
     {
         (ComponentUids.FabricLoader or ComponentUids.LegacyFabric, ModLoaderKind.Fabric) => true,
         (ComponentUids.QuiltLoader, ModLoaderKind.Quilt or ModLoaderKind.Fabric) => true,

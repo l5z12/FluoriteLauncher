@@ -67,6 +67,7 @@ public static class AppHost
         s.AddSingleton<ContentInstallService>();
         s.AddSingleton<UpdateBadgeService>();
         s.AddSingleton<SnapshotService>();
+        s.AddSingleton<ModFixService>();
         s.AddSingleton(sp => new Fluorite.Modding.Modpacks.ModpackService(sp.GetRequiredService<Fluorite.Modding.Content.ContentService>(), sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<DownloadEngine>(), sp.GetRequiredService<MirrorTable>()));
         s.AddSingleton<ModpackInstallService>();
         s.AddSingleton<OtherLaunchersService>();

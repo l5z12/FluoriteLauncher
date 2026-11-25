@@ -28,6 +28,25 @@ public sealed partial class InstanceViewModel(
 
     private Core.Diagnostics.CrashAnalysis? _shownDiagnosis;
 
+    /// <summary>Findings that say the loader refused the mods: what their own details (and so Fix) can tell.</summary>
+    private static readonly HashSet<string> s_modFindings = ["FabricIncompatibleMods", "MissingDependencies", "DuplicateMods", "LoaderTooOld", "OptiFineIncompatible"];
+
+    /// <summary>The crash was the mods' (the loader refused them): Fix mod problems is offered.</summary>
+    [ObservableProperty] public partial bool CrashFromMods { get; set; }
+
+    /// <summary>What Fix mod problems did, by its button.</summary>
+    [ObservableProperty] public partial string? FixModsStatus { get; set; }
+
+    [RelayCommand]
+    private async Task FixModsAsync()
+    {
+        if (Instance is null)
+            return;
+        FixModsStatus = null;
+        if (await App.Get<ModFixService>().FixAsync(Instance) is { Changed: true } outcome)
+            FixModsStatus = $"{outcome.Summary} {Loc.Get("ModFix_PlayAgain")}";
+    }
+
     private void UpdateDiagnosis()
     {
         var diagnosis = ShowCrash ? Game?.Diagnosis : null;
@@ -37,7 +56,9 @@ public sealed partial class InstanceViewModel(
             CrashFindings.Clear();
             foreach (var f in diagnosis?.Findings ?? [])
                 CrashFindings.Add(CrashFindingItem.From(f));
+            FixModsStatus = null;
         }
+        CrashFromMods = diagnosis?.Findings.Any(f => s_modFindings.Contains(f.Id)) == true;
         HasDiagnosis = diagnosis is not null;
         NoFindings = diagnosis is { Findings.Count: 0 };
         CrashReportFile = diagnosis?.CrashReportFile ?? diagnosis?.JvmCrashFile;

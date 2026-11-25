@@ -182,6 +182,9 @@ public sealed class InstanceSnapshots(string root, Func<string, string, bool>? t
         foreach (var file in Directory.EnumerateFiles(source))
         {
             ct.ThrowIfCancellationRequested();
+            // A download not in place yet (an install or a fix waiting to be confirmed) isn't part of the instance.
+            if (file.EndsWith(".part", StringComparison.OrdinalIgnoreCase))
+                continue;
             CopyFile(file, Path.Combine(target, Path.GetFileName(file)));
         }
     }

@@ -1238,4 +1238,51 @@
   <data name="Library_NewGroupItem.Text" xml:space="preserve"><value>New group…</value></data>
   <data name="Library_EmptyGroup.Text" xml:space="preserve"><value>Nothing in this group yet. Drag instances here, or right-click one and choose Move to group.</value></data>
   <data name="Library_GroupExists" xml:space="preserve"><value>There's already a group called “{0}”.</value></data>
+  <data name="ModFix_Title" xml:space="preserve"><value>Fix mod problems</value></data>
+  <data name="ModFix_StopFirst" xml:space="preserve"><value>Close the game first: its mods can&apos;t be changed while it&apos;s running.</value></data>
+  <data name="ModFix_Looking" xml:space="preserve"><value>Looking for fixes and checking them…</value></data>
+  <data name="ModFix_Failed" xml:space="preserve"><value>Couldn&apos;t look for fixes: {0}</value></data>
+  <data name="ModFix_NothingToFix" xml:space="preserve"><value>Fluorite found no problems to fix in the mods&apos; own details.</value></data>
+  <data name="ModFix_NoFixes" xml:space="preserve"><value>Fluorite couldn&apos;t find a way to fix these problems by itself. What&apos;s wrong is shown under each mod in the Mods tab.</value></data>
+  <data name="ModFix_ApplyFailed" xml:space="preserve"><value>Couldn&apos;t make all the changes: {0}</value></data>
+  <data name="ModFix_ApplyAndPlay" xml:space="preserve"><value>Fix and play</value></data>
+  <data name="ModFix_ApplyOne" xml:space="preserve"><value>Make 1 change</value></data>
+  <data name="ModFix_ApplyMany" xml:space="preserve"><value>Make {0} changes</value></data>
+  <data name="ModFix_AllFixed" xml:space="preserve"><value>These changes fix every problem found.</value></data>
+  <data name="ModFix_Left" xml:space="preserve"><value>Left after these changes:</value></data>
+  <data name="ModFix_Intro" xml:space="preserve"><value>These changes fix the problems Fluorite found. Untick any you&apos;d rather not make.</value></data>
+  <data name="ModFix_OffNote" xml:space="preserve"><value>Turned-off mods stay in the Mods tab, to turn back on any time.</value></data>
+  <data name="ModFix_TurnOff" xml:space="preserve"><value>Turn off</value></data>
+  <data name="ModFix_Keep" xml:space="preserve"><value>Keep</value></data>
+  <data name="ModFix_WhichOff" xml:space="preserve"><value>Mod to turn off</value></data>
+  <data name="ModFix_WhichKeep" xml:space="preserve"><value>Copy to keep</value></data>
+  <data name="ModFix_KeepRestOne" xml:space="preserve"><value>and turn off the other copy</value></data>
+  <data name="ModFix_KeepRestMany" xml:space="preserve"><value>and turn off the other {0} copies</value></data>
+  <data name="ModFix_Install" xml:space="preserve"><value>Install {0} {1}</value></data>
+  <data name="ModFix_Update" xml:space="preserve"><value>Update {0} from {1} to {2}</value></data>
+  <data name="ModFix_Switch" xml:space="preserve"><value>Switch {0} from {1} to {2}</value></data>
+  <data name="ModFix_UpdateTo" xml:space="preserve"><value>Update {0} to {1}</value></data>
+  <data name="ModFix_SwitchTo" xml:space="preserve"><value>Switch {0} to {1}</value></data>
+  <data name="ModFix_Enable" xml:space="preserve"><value>Turn on {0}</value></data>
+  <data name="ModFix_Disable" xml:space="preserve"><value>Turn off {0}</value></data>
+  <data name="ModFix_LoaderUpdate" xml:space="preserve"><value>Update {0} from {1} to {2}</value></data>
+  <data name="ModFix_LoaderAdd" xml:space="preserve"><value>Add {0} {1}</value></data>
+  <data name="ModFix_For" xml:space="preserve"><value>For: {0}</value></data>
+  <data name="ModFix_AndMore" xml:space="preserve"><value>…and {0} more</value></data>
+  <data name="ModFix_LoaderNote" xml:space="preserve"><value>Installed the next time you play.</value></data>
+  <data name="ModFix_DoneNone" xml:space="preserve"><value>Made the changes.</value></data>
+  <data name="ModFix_DoneOne" xml:space="preserve"><value>Fixed 1 problem.</value></data>
+  <data name="ModFix_DoneMany" xml:space="preserve"><value>Fixed {0} problems.</value></data>
+  <data name="ModFix_DoneLeft" xml:space="preserve"><value>Problems left: {0}.</value></data>
+  <data name="ModFix_PlayAgain" xml:space="preserve"><value>Play again to check.</value></data>
+  <data name="Snapshot_BeforeFix" xml:space="preserve"><value>Before fixing mods</value></data>
+  <data name="Content_LoaderAdded" xml:space="preserve"><value>{0} {1} added</value></data>
+  <data name="ModIssues_Fix" xml:space="preserve"><value>Fix problems</value></data>
+  <data name="Launch_FixingMods" xml:space="preserve"><value>Fixing mods…</value></data>
+  <data name="Content_FixIssues.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Fix problems</value></data>
+  <data name="Content_FixIssues.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Look for changes that fix these problems: versions that fit, missing dependencies, a newer loader. You see them before anything changes.</value></data>
+  <data name="Content_FixIssuesText.Text" xml:space="preserve"><value>Fix</value></data>
+  <data name="Content_FixSelectedIssues.Text" xml:space="preserve"><value>Fix problems</value></data>
+  <data name="Crash_FixMods.Text" xml:space="preserve"><value>Fix mod problems</value></data>
+  <data name="Crash_FixModsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Fix mod problems</value></data>
 </root>

@@ -255,10 +255,19 @@ public sealed partial class ContentInstallService(ContentService content)
     /// <summary>Raised on the UI thread with the instance whose loader version an install changed.</summary>
     public event EventHandler<GameInstance>? ComponentsChanged;
 
-    /// <summary>Moves the instance to the loader version the new mods need; it's installed on the next launch.</summary>
-    private async Task<string?> ApplyLoaderAsync(GameInstance instance, LoaderChange change)
+    /// <summary>
+    /// Moves the instance to the loader version the mods need, or adds the loader to an instance without one (an
+    /// empty <see cref="LoaderChange.From"/>); it's installed on the next launch. Returns what changed, or null.
+    /// </summary>
+    internal async Task<string?> ApplyLoaderAsync(GameInstance instance, LoaderChange change)
     {
         var component = instance.Manifest.Components.FirstOrDefault(c => c.Uid == change.Uid);
+        var added = component is null && change.From.Length == 0 && ComponentResolver.PrimaryLoader(instance.Manifest) is null;
+        if (added)
+        {
+            component = new ComponentRef { Uid = change.Uid, Version = change.From };
+            instance.Manifest.Components.Add(component);
+        }
         if (component is null || component.Version != change.From)
             return null;
         var profile = component.ProfileId;
@@ -270,15 +279,17 @@ public sealed partial class ContentInstallService(ContentService content)
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
+            if (added)
+                instance.Manifest.Components.Remove(component);
             component.Version = change.From;
             component.ProfileId = profile;
             return null;
         }
         ComponentsChanged?.Invoke(this, instance);
-        return Loc.Format("Content_LoaderChanged", LoaderName(change.Uid), change.To);
+        return Loc.Format(added ? "Content_LoaderAdded" : "Content_LoaderChanged", LoaderName(change.Uid), change.To);
     }
 
-    private static string LoaderName(string uid) =>
+    internal static string LoaderName(string uid) =>
         App.Get<Modding.Loaders.LoaderService>().Providers.FirstOrDefault(p => p.Uid == uid)?.DisplayName ?? uid;
 
     /// <summary>Copies local files (drag and drop / file picker) into the instance.</summary>
@@ -472,7 +483,7 @@ public sealed partial class ContentInstallService(ContentService content)
     }
 
     /// <summary>Like <see cref="Describe"/>, without pointing at the Version tab (the dialog offers the loader itself).</summary>
-    private static string DescribeForReview(ModIssue issue) => issue.Kind == ModIssueKind.WrongLoaderVersion
+    internal static string DescribeForReview(ModIssue issue) => issue.Kind == ModIssueKind.WrongLoaderVersion
         ? Loc.Format("Review_WrongLoaderVersion", issue.Subject, LoaderDisplayName(issue.Other), issue.Detail ?? "")
         : Describe(issue);
 
@@ -629,8 +640,20 @@ public sealed partial class ContentInstallService(ContentService content)
         _ => id ?? "",
     };
 
-    /// <summary>Asks whether to launch despite errors, and whether to stop asking about these (dismiss them).</summary>
-    public static async Task<(bool Launch, bool DontAskAgain)> ConfirmLaunchAsync(string instanceName, IReadOnlyList<ModIssue> issues)
+    public enum LaunchChoice
+    {
+        Cancel,
+        Launch,
+
+        /// <summary>Fix the problems first (<see cref="ModFixService"/>).</summary>
+        Fix,
+    }
+
+    /// <summary>
+    /// Asks whether to fix the errors (when <paramref name="offerFix"/>), launch despite them, or not launch; and
+    /// whether to stop asking about these (dismiss them), which goes with launching anyway.
+    /// </summary>
+    public static async Task<(LaunchChoice Choice, bool DontAskAgain)> ConfirmLaunchAsync(string instanceName, IReadOnlyList<ModIssue> issues, bool offerFix)
     {
         var panel = new StackPanel { Spacing = 8, MinWidth = 480 };
         panel.Children.Add(Dialogs.Text(Loc.Format("ModIssues_Body", instanceName), secondary: true));
@@ -652,7 +675,21 @@ public sealed partial class ContentInstallService(ContentService content)
         var body = new StackPanel { Spacing = 12 };
         body.Children.Add(Dialogs.Scroll(panel, 420));
         body.Children.Add(dontAsk);
-        var result = await Dialogs.ShowAsync(Loc.Get("ModIssues_Title"), body, Loc.Get("ModIssues_LaunchAnyway"));
-        return (result == ContentDialogResult.Primary, dontAsk.IsChecked == true);
+        var dialog = offerFix
+            ? Dialogs.Create(Loc.Get("ModIssues_Title"), body, Loc.Get("ModIssues_Fix"), secondary: Loc.Get("ModIssues_LaunchAnyway"))
+            : Dialogs.Create(Loc.Get("ModIssues_Title"), body, Loc.Get("ModIssues_LaunchAnyway"));
+        if (offerFix)
+        {
+            // Not asking again goes with launching anyway: ticked, Enter does that.
+            dontAsk.Checked += (_, _) => dialog.DefaultButton = ContentDialogButton.Secondary;
+            dontAsk.Unchecked += (_, _) => dialog.DefaultButton = ContentDialogButton.Primary;
+        }
+        var choice = await Dialogs.ShowAsync(dialog) switch
+        {
+            ContentDialogResult.Primary => offerFix ? LaunchChoice.Fix : LaunchChoice.Launch,
+            ContentDialogResult.Secondary => LaunchChoice.Launch,
+            _ => LaunchChoice.Cancel,
+        };
+        return (choice, dontAsk.IsChecked == true);
     }
 }

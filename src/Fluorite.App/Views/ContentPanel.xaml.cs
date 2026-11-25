@@ -81,6 +81,7 @@ public sealed partial class ContentPanel : UserControl
         var visibility = List.SelectedItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         MenuEnable.Visibility = MenuDisable.Visibility = MenuDelete.Visibility = MenuSelectionSeparator.Visibility = visibility;
         var selected = Selected;
+        MenuFixIssues.Visibility = Bind.Visible(selected.Any(i => i.CanFixIssue));
         MenuDismissIssues.Visibility = Bind.Visible(selected.Any(i => i.HasIssue));
         MenuRestoreIssues.Visibility = Bind.Visible(selected.Any(i => i.HasDismissedIssues));
         var row = target is { IsMod: true } ? Visibility.Visible : Visibility.Collapsed;
@@ -196,6 +197,18 @@ public sealed partial class ContentPanel : UserControl
     {
         if (ViewModel is { } vm)
             await vm.DismissIssuesAsync(Selected);
+    }
+
+    private async void FixSelectedIssues_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is { } vm)
+            await vm.FixIssuesAsync(Selected);
+    }
+
+    private async void FixIssues_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is { } vm && Bind.ItemOf<ContentItemViewModel>(sender) is { } item)
+            await vm.FixIssuesAsync([item]);
     }
 
     private async void RestoreSelectedIssues_Click(object sender, RoutedEventArgs e)

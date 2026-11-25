@@ -1238,4 +1238,51 @@
   <data name="Library_NewGroupItem.Text" xml:space="preserve"><value>新建分组…</value></data>
   <data name="Library_EmptyGroup.Text" xml:space="preserve"><value>此分组中还没有实例。将实例拖到这里，或右键单击实例并选择“移到分组”。</value></data>
   <data name="Library_GroupExists" xml:space="preserve"><value>已存在名为“{0}”的分组。</value></data>
+  <data name="ModFix_Title" xml:space="preserve"><value>修复模组问题</value></data>
+  <data name="ModFix_StopFirst" xml:space="preserve"><value>请先关闭游戏：游戏运行时无法更改其模组。</value></data>
+  <data name="ModFix_Looking" xml:space="preserve"><value>正在查找并检查修复方法…</value></data>
+  <data name="ModFix_Failed" xml:space="preserve"><value>无法查找修复方法：{0}</value></data>
+  <data name="ModFix_NothingToFix" xml:space="preserve"><value>Fluorite 未在模组自身信息中发现可修复的问题。</value></data>
+  <data name="ModFix_NoFixes" xml:space="preserve"><value>Fluorite 找不到自动修复这些问题的方法。具体问题显示在“模组”页中各模组下方。</value></data>
+  <data name="ModFix_ApplyFailed" xml:space="preserve"><value>未能完成全部更改：{0}</value></data>
+  <data name="ModFix_ApplyAndPlay" xml:space="preserve"><value>修复并启动</value></data>
+  <data name="ModFix_ApplyOne" xml:space="preserve"><value>进行 1 项更改</value></data>
+  <data name="ModFix_ApplyMany" xml:space="preserve"><value>进行 {0} 项更改</value></data>
+  <data name="ModFix_AllFixed" xml:space="preserve"><value>这些更改可以修复发现的全部问题。</value></data>
+  <data name="ModFix_Left" xml:space="preserve"><value>进行这些更改后仍存在的问题：</value></data>
+  <data name="ModFix_Intro" xml:space="preserve"><value>以下更改可以修复 Fluorite 发现的问题。不需要的更改可以取消勾选。</value></data>
+  <data name="ModFix_OffNote" xml:space="preserve"><value>禁用的模组仍保留在“模组”页中，可随时重新启用。</value></data>
+  <data name="ModFix_TurnOff" xml:space="preserve"><value>禁用</value></data>
+  <data name="ModFix_Keep" xml:space="preserve"><value>保留</value></data>
+  <data name="ModFix_WhichOff" xml:space="preserve"><value>要禁用的模组</value></data>
+  <data name="ModFix_WhichKeep" xml:space="preserve"><value>要保留的副本</value></data>
+  <data name="ModFix_KeepRestOne" xml:space="preserve"><value>并禁用另一个副本</value></data>
+  <data name="ModFix_KeepRestMany" xml:space="preserve"><value>并禁用其他 {0} 个副本</value></data>
+  <data name="ModFix_Install" xml:space="preserve"><value>安装 {0} {1}</value></data>
+  <data name="ModFix_Update" xml:space="preserve"><value>将 {0} 从 {1} 更新到 {2}</value></data>
+  <data name="ModFix_Switch" xml:space="preserve"><value>将 {0} 从 {1} 换成 {2}</value></data>
+  <data name="ModFix_UpdateTo" xml:space="preserve"><value>将 {0} 更新到 {1}</value></data>
+  <data name="ModFix_SwitchTo" xml:space="preserve"><value>将 {0} 换成 {1}</value></data>
+  <data name="ModFix_Enable" xml:space="preserve"><value>启用 {0}</value></data>
+  <data name="ModFix_Disable" xml:space="preserve"><value>禁用 {0}</value></data>
+  <data name="ModFix_LoaderUpdate" xml:space="preserve"><value>将 {0} 从 {1} 更新到 {2}</value></data>
+  <data name="ModFix_LoaderAdd" xml:space="preserve"><value>添加 {0} {1}</value></data>
+  <data name="ModFix_For" xml:space="preserve"><value>解决：{0}</value></data>
+  <data name="ModFix_AndMore" xml:space="preserve"><value>…以及另外 {0} 个</value></data>
+  <data name="ModFix_LoaderNote" xml:space="preserve"><value>将在下次启动游戏时安装。</value></data>
+  <data name="ModFix_DoneNone" xml:space="preserve"><value>已完成更改。</value></data>
+  <data name="ModFix_DoneOne" xml:space="preserve"><value>已修复 1 个问题。</value></data>
+  <data name="ModFix_DoneMany" xml:space="preserve"><value>已修复 {0} 个问题。</value></data>
+  <data name="ModFix_DoneLeft" xml:space="preserve"><value>剩余问题：{0} 个。</value></data>
+  <data name="ModFix_PlayAgain" xml:space="preserve"><value>再次启动游戏即可验证。</value></data>
+  <data name="Snapshot_BeforeFix" xml:space="preserve"><value>修复模组前</value></data>
+  <data name="Content_LoaderAdded" xml:space="preserve"><value>已添加 {0} {1}</value></data>
+  <data name="ModIssues_Fix" xml:space="preserve"><value>修复问题</value></data>
+  <data name="Launch_FixingMods" xml:space="preserve"><value>正在修复模组…</value></data>
+  <data name="Content_FixIssues.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>修复问题</value></data>
+  <data name="Content_FixIssues.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>查找能修复这些问题的更改：合适的版本、缺失的前置、更新的加载器。更改前会先列出供你确认。</value></data>
+  <data name="Content_FixIssuesText.Text" xml:space="preserve"><value>修复</value></data>
+  <data name="Content_FixSelectedIssues.Text" xml:space="preserve"><value>修复问题</value></data>
+  <data name="Crash_FixMods.Text" xml:space="preserve"><value>修复模组问题</value></data>
+  <data name="Crash_FixModsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>修复模组问题</value></data>
 </root>

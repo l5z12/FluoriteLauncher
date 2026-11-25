@@ -833,6 +833,105 @@ public class ContentServiceTests
         }
     }
 
+    [Fact]
+    public async Task Fix_FindsAWayOutOfEachProblem_AndFallsBackToTurningOff()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var jars = new Dictionary<string, byte[]>
+        {
+            ["https://cdn.test/oldmod-2.jar"] = Jar.Build(("fabric.mod.json", Jar.FabricMod("oldmod", "2.0.0", """{ "minecraft": "1.20.x" }"""))),
+            // Tagged for 1.20.1 on the platform, but its own manifest still wants 1.19.
+            ["https://cdn.test/liar-2.jar"] = Jar.Build(("fabric.mod.json", Jar.FabricMod("liar", "2.0.0", """{ "minecraft": "1.19.x" }"""))),
+            ["https://cdn.test/cloth-config-1.jar"] = Jar.Build(("fabric.mod.json", Jar.FabricMod("cloth-config", "11.0.0"))),
+        };
+        RemoteVersion Remote(string project, string id, string mc, int day) => new(ContentPlatform.Modrinth, project, id, id, id)
+        {
+            Published = new DateTimeOffset(2026, 1, day, 0, 0, 0, TimeSpan.Zero),
+            GameVersions = [mc],
+            Loaders = ["fabric"],
+            Files = [new RemoteFile($"{id}.jar", 0) { Url = $"https://cdn.test/{id}.jar", Primary = true }],
+        };
+        var platform = new FakePlatform();
+        platform.Add(Remote("oldmod", "oldmod-1", "1.19.2", 1));
+        platform.Add(Remote("oldmod", "oldmod-2", "1.20.1", 5));
+        platform.Add(Remote("liar", "liar-1", "1.19.2", 1));
+        platform.Add(Remote("liar", "liar-2", "1.20.1", 5));
+        platform.Add(Remote("cloth-config", "cloth-config-1", "1.20.1", 5));
+
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var mods = Path.Combine(dir, "mods");
+            // Needs Fabric API, which is there but turned off.
+            Jar.Write(mods, "modmenu-1.0.0.jar", ("fabric.mod.json", Jar.FabricMod("modmenu", "1.0.0", """{ "fabric-api": "*" }""")));
+            Jar.Write(mods, "fabric-api-0.92.0.jar.disabled", ("fabric.mod.json", Jar.FabricMod("fabric-api", "0.92.0")));
+            // Two copies.
+            Jar.Write(mods, "sodium-0.5.0.jar", ("fabric.mod.json", Jar.FabricMod("sodium", "0.5.0")));
+            Jar.Write(mods, "sodium-0.6.0.jar", ("fabric.mod.json", Jar.FabricMod("sodium", "0.6.0")));
+            // Needs a newer loader.
+            Jar.Write(mods, "newmod-1.0.0.jar", ("fabric.mod.json", Jar.FabricMod("newmod", "1.0.0", """{ "fabricloader": ">=0.16.0" }""")));
+            // For 1.19, from Modrinth.
+            Jar.Write(mods, "oldmod-1.jar", ("fabric.mod.json", Jar.FabricMod("oldmod", "1.0.0", """{ "minecraft": "1.19.x" }""")));
+            Jar.Write(mods, "liar-1.jar", ("fabric.mod.json", Jar.FabricMod("liar", "1.0.0", """{ "minecraft": "1.19.x" }""")));
+            // Needs a library added by hand nowhere: found by its mod id.
+            Jar.Write(mods, "settings-1.0.0.jar", ("fabric.mod.json", Jar.FabricMod("settings", "1.0.0", """{ "cloth-config": "*" }""")));
+            // A Forge mod, not from any platform.
+            Jar.Write(mods, "forgeonly.jar", ("META-INF/mods.toml", "modLoader=\"javafml\"\n[[mods]]\nmodId=\"forgeonly\"\nversion=\"1\"\n"));
+
+            using var http = new HttpClient(new Serve(jars));
+            using var service = new ContentService([platform], new Core.Net.DownloadEngine(http), Core.Net.MirrorTable.Official);
+            using var manager = new ContentManager(dir, Path.Combine(dir, ".fluorite"));
+            var location = new ContentLocation(ContentKind.Mod);
+            await manager.ScanAsync(location, ct);
+            await manager.UpdateAsync(index =>
+            {
+                foreach (var name in new[] { "oldmod", "liar" })
+                    index.Files[$"mods/{name}-1.jar"].Source = new RemoteRef { Platform = ContentPlatform.Modrinth, ProjectId = name, VersionId = name + "-1", Published = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) };
+                return true;
+            }, ct);
+            var manifest = new InstanceManifest { Components = [new() { Uid = ComponentUids.Minecraft, Version = "1.20.1" }, new() { Uid = ComponentUids.FabricLoader, Version = "0.15.0" }] };
+            var loader = new FakeLoader("0.16.9", "0.16.5", "0.15.11", "0.15.0");
+
+            var plan = await service.PlanFixesAsync(manager, manifest, loaders: uid => uid == loader.Uid ? loader : null, ct: ct);
+
+            string Describe(ModFix f) => f.Kind switch
+            {
+                ModFixKind.Enable => $"Enable {f.File!.FileName}",
+                ModFixKind.Install => $"Install {f.Download!.Version.Id}",
+                ModFixKind.Replace => $"Replace {f.File!.FileName} {f.Download!.Version.Id}",
+                ModFixKind.Disable => $"Disable {f.Choices[f.Choice].FileName}",
+                ModFixKind.KeepOne => $"Keep {f.Choices[f.Choice].FileName}",
+                ModFixKind.LoaderVersion => $"Loader {f.Loader!.To}",
+                _ => f.Kind.ToString(),
+            };
+            Assert.Equal(
+                ["Disable forgeonly.jar", "Disable liar-1.jar", "Enable fabric-api-0.92.0.jar", "Install cloth-config-1", "Keep sodium-0.6.0.jar", "Loader 0.16.9", "Replace oldmod-1.jar oldmod-2"],
+                plan.Fixes.Select(Describe).Order(StringComparer.Ordinal));
+            Assert.Empty(plan.Remaining());
+            Assert.Equal(plan.Targets.Count, plan.FixedCount());
+            // The version that only claimed to fit was tried, and its download is gone again.
+            Assert.False(File.Exists(Path.Combine(mods, "liar-2.jar.part")));
+
+            // Leaving a change out brings its problem back.
+            var replace = plan.Fixes.Single(f => f.Kind == ModFixKind.Replace);
+            replace.Selected = false;
+            Assert.Equal(ModIssueKind.WrongMinecraftVersion, Assert.Single(plan.Remaining()).Kind);
+            replace.Selected = true;
+
+            await ContentService.ApplyFixesAsync(manager, plan);
+            Assert.Equal(
+                ["cloth-config-1.jar", "fabric-api-0.92.0.jar", "forgeonly.jar.disabled", "liar-1.jar.disabled", "modmenu-1.0.0.jar", "newmod-1.0.0.jar", "oldmod-2.jar", "settings-1.0.0.jar", "sodium-0.5.0.jar.disabled", "sodium-0.6.0.jar"],
+                Directory.GetFiles(mods).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+            var after = await manager.ScanAsync(location, ct);
+            Assert.Empty(ModChecker.Check(after, ComponentUids.FabricLoader, plan.Loader!.To, "1.20.1"));
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, true);
+        }
+    }
+
     private sealed class Serve(Dictionary<string, byte[]> files) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
