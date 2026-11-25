@@ -133,6 +133,12 @@ public sealed class LauncherSettings
     /// <summary>Scan mods for missing dependencies, wrong loader/version, duplicates… before every launch.</summary>
     public bool CheckModsBeforeLaunch { get; set; } = true;
 
+    /// <summary>
+    /// Offer Fix for mod problems (in the Mods tab, before launching, after a crash the mods caused): Fluorite looks
+    /// for changes that fix them and shows them before making any. Off until turned on.
+    /// </summary>
+    public bool FixModProblems { get; set; }
+
     /// <summary>Snapshot an instance's mods, configs and loader setup before updating its mods or modpack.</summary>
     public bool SnapshotBeforeUpdates { get; set; } = true;
 

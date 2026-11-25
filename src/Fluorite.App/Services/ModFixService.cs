@@ -38,6 +38,9 @@ public sealed record ModFixOutcome(int Fixed, int Left, bool Changed, string? Lo
 /// </summary>
 public sealed class ModFixService(ContentService content, ContentInstallService installer, SnapshotService snapshots)
 {
+    /// <summary>Settings › Fix mod problems: Fix is offered (Mods tab, before launching, after a crash) only when on.</summary>
+    public static bool Enabled => App.Get<SettingsService>().Current.FixModProblems;
+
     /// <param name="keys">The problems to fix (<see cref="ModIssue.Key"/>s); null for every one that isn't dismissed.</param>
     /// <param name="forLaunch">Asked before playing: the game isn't running yet, and confirming plays.</param>
     /// <param name="includeDismissed">With no <paramref name="keys"/>, dismissed problems too (after a crash they caused).</param>

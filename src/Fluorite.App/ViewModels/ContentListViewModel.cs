@@ -459,6 +459,7 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         if (!IsMods || Instance is null)
             return;
         var issues = _issues = ModChecker.Check(_all.Select(i => i.File).ToList(), Instance.Manifest);
+        var fixOn = ModFixService.Enabled; // Read each time: the page is made anew after a visit to Settings.
         static string Lines(List<ModIssue> list) => string.Join("\n", list.Select(ContentInstallService.Describe));
         foreach (var item in _all)
         {
@@ -470,7 +471,7 @@ public sealed partial class ContentListViewModel(ContentService content, Content
             item.DismissedKeys = dismissed.Select(i => i.Key).ToList();
             item.Issue = shown.Count == 0 ? null : Lines(shown);
             item.IssueIsError = shown.Any(i => i.Severity == ModIssueSeverity.Error);
-            item.CanFixIssue = shown.Any(Fixable);
+            item.CanFixIssue = fixOn && shown.Any(Fixable);
             item.HasDismissedIssues = dismissed.Count > 0;
             item.DismissedIssue = ShowDismissed && dismissed.Count > 0 ? Lines(dismissed) : null;
         }
@@ -480,7 +481,7 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         var warnings = active.Count - errors;
         IssueSummary = active.Count == 0 ? null : Loc.Format("Content_IssueSummary", errors, warnings);
         IssueSummaryIsError = errors > 0;
-        CanFix = active.Any(Fixable);
+        CanFix = fixOn && active.Any(Fixable);
         UpdateDismissedList(issues);
         HasDismissedHere = issues.Count > active.Count;
         if (!HasDismissedHere)

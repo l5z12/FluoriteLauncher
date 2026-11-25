@@ -44,6 +44,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         ShowLogOnCrash = s.ShowLogOnCrash;
         NotifyOnGameExit = s.NotifyOnGameExit;
         CheckModsBeforeLaunch = s.CheckModsBeforeLaunch;
+        FixModProblems = s.FixModProblems;
         SnapshotBeforeUpdates = s.SnapshotBeforeUpdates;
         ShowLoaderAvailability = s.ShowLoaderAvailability;
         AutoBackupWorlds = s.AutoBackupWorlds;
@@ -107,6 +108,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial bool ShowLogOnCrash { get; set; }
     [ObservableProperty] public partial bool NotifyOnGameExit { get; set; }
     [ObservableProperty] public partial bool CheckModsBeforeLaunch { get; set; }
+    [ObservableProperty] public partial bool FixModProblems { get; set; }
     [ObservableProperty] public partial bool SnapshotBeforeUpdates { get; set; }
     [ObservableProperty] public partial bool ShowLoaderAvailability { get; set; }
 
@@ -222,6 +224,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             _discord.Update(); // Shows or clears it right away for a game already running.
     }
     partial void OnCheckModsBeforeLaunchChanged(bool value) => Persist(s => s.CheckModsBeforeLaunch = value);
+    partial void OnFixModProblemsChanged(bool value) => Persist(s => s.FixModProblems = value);
     partial void OnSnapshotBeforeUpdatesChanged(bool value) => Persist(s => s.SnapshotBeforeUpdates = value);
     partial void OnShowLoaderAvailabilityChanged(bool value) => Persist(s => s.ShowLoaderAvailability = value);
 

@@ -31,7 +31,7 @@ public sealed partial class InstanceViewModel(
     /// <summary>Findings that say the loader refused the mods: what their own details (and so Fix) can tell.</summary>
     private static readonly HashSet<string> s_modFindings = ["FabricIncompatibleMods", "MissingDependencies", "DuplicateMods", "LoaderTooOld", "OptiFineIncompatible"];
 
-    /// <summary>The crash was the mods' (the loader refused them): Fix mod problems is offered.</summary>
+    /// <summary>The crash was the mods' (the loader refused them) and Fix is on in Settings: Fix mod problems is offered.</summary>
     [ObservableProperty] public partial bool CrashFromMods { get; set; }
 
     /// <summary>What Fix mod problems did, by its button.</summary>
@@ -59,7 +59,7 @@ public sealed partial class InstanceViewModel(
                 CrashFindings.Add(CrashFindingItem.From(f));
             FixModsStatus = null;
         }
-        CrashFromMods = diagnosis?.Findings.Any(f => s_modFindings.Contains(f.Id)) == true;
+        CrashFromMods = settings.Current.FixModProblems && diagnosis?.Findings.Any(f => s_modFindings.Contains(f.Id)) == true;
         HasDiagnosis = diagnosis is not null;
         NoFindings = diagnosis is { Findings.Count: 0 };
         CrashReportFile = diagnosis?.CrashReportFile ?? diagnosis?.JvmCrashFile;

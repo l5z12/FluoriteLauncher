@@ -622,6 +622,8 @@
   <data name="Launch_CheckingMods" xml:space="preserve"><value>Checking mods…</value></data>
   <data name="Settings_CheckMods.Header" xml:space="preserve"><value>Check mods before launching</value></data>
   <data name="Settings_CheckMods.Description" xml:space="preserve"><value>Warn about missing dependencies, wrong loaders or Minecraft versions, and duplicate mods.</value></data>
+  <data name="Settings_FixMods.Header" xml:space="preserve"><value>Fix mod problems</value></data>
+  <data name="Settings_FixMods.Description" xml:space="preserve"><value>Offer Fix in the Mods tab, before launching and after a crash: it looks for versions that fit, missing dependencies or a newer loader, and shows the changes before making them.</value></data>
   <data name="Settings_LoaderAvailability.Header" xml:space="preserve"><value>Show which mod loaders support the chosen version</value></data>
   <data name="Settings_LoaderAvailability.Description" xml:space="preserve"><value>Loaders with no build for the selected Minecraft version are greyed out when you pick one. Checks online.</value></data>
   <data name="Content_AlreadyInstalled" xml:space="preserve"><value>This version is already installed.</value></data>

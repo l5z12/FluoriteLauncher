@@ -622,6 +622,8 @@
   <data name="Launch_CheckingMods" xml:space="preserve"><value>正在检查模组…</value></data>
   <data name="Settings_CheckMods.Header" xml:space="preserve"><value>启动前检查模组</value></data>
   <data name="Settings_CheckMods.Description" xml:space="preserve"><value>检查缺失的前置、错误的加载器或 Minecraft 版本，以及重复的模组。</value></data>
+  <data name="Settings_FixMods.Header" xml:space="preserve"><value>修复模组问题</value></data>
+  <data name="Settings_FixMods.Description" xml:space="preserve"><value>在“模组”选项卡、启动前和崩溃后提供“修复”：查找合适的版本、缺失的前置或更新的加载器，并在更改前列出，供你确认。</value></data>
   <data name="Settings_LoaderAvailability.Header" xml:space="preserve"><value>标出支持所选版本的模组加载器</value></data>
   <data name="Settings_LoaderAvailability.Description" xml:space="preserve"><value>选择加载器时，不支持所选 Minecraft 版本的加载器会显示为灰色。需要联网检查。</value></data>
   <data name="Content_AlreadyInstalled" xml:space="preserve"><value>此版本已安装。</value></data>

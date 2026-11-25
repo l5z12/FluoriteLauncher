@@ -290,12 +290,13 @@ public sealed class GameRunner(
 
     /// <summary>
     /// Pre-launch mod checks: everything goes to the log; errors (missing dependencies, wrong loader…) that weren't
-    /// dismissed ask the user whether to fix them, or launch anyway. After a fix the mods are checked again (and asked
-    /// about again, without the fix, while errors are left). Returns false to cancel.
+    /// dismissed ask the user whether to fix them (when Fix mod problems is on in Settings), or launch anyway. After a
+    /// fix the mods are checked again (and asked about again, without the fix, while errors are left). Returns false to
+    /// cancel.
     /// </summary>
     private async Task<bool> CheckModsAsync(RunningGame game, CancellationToken ct)
     {
-        var offerFix = true;
+        var offerFix = settings.Current.FixModProblems;
         for (var pass = 0; ; pass++)
         {
             game.Status = Loc.Get("Launch_CheckingMods");
