@@ -418,6 +418,9 @@
   <data name="Browse_InstallButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>安装</value></data>
   <data name="Browse_Install.Text" xml:space="preserve"><value>安装</value></data>
   <data name="Browse_Installed.Text" xml:space="preserve"><value>已安装</value></data>
+  <data name="Browse_PickVersion.Text" xml:space="preserve"><value>选择版本</value></data>
+  <data name="Browse_InstallThis.Content" xml:space="preserve"><value>安装</value></data>
+  <data name="Browse_SeeAllVersions.Content" xml:space="preserve"><value>查看所有版本…</value></data>
   <data name="Browse_LoadMore.Content" xml:space="preserve"><value>加载更多</value></data>
   <data name="Browse_ByAuthor" xml:space="preserve"><value>作者：{0}</value></data>
   <data name="Browse_Downloads" xml:space="preserve"><value>{0} 次下载</value></data>

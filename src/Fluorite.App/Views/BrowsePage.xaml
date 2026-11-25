@@ -128,13 +128,66 @@
                                         </Grid>
                                     </StackPanel>
                                     <Grid Grid.Column="2" VerticalAlignment="Center" MinWidth="96">
-                                        <Button Style="{StaticResource AccentButtonStyle}" Tag="{x:Bind}" Click="Install_Click" HorizontalAlignment="Right"
-                                                Visibility="{x:Bind local:Bind.Visible(CanInstall), Mode=OneWay}" x:Uid="Browse_InstallButton">
+                                        <SplitButton Tag="{x:Bind}" Click="Install_Click" HorizontalAlignment="Right"
+                                                     Visibility="{x:Bind local:Bind.Visible(CanInstall), Mode=OneWay}" x:Uid="Browse_InstallButton">
+                                            <SplitButton.Resources>
+                                                <StaticResource x:Key="SplitButtonBackground" ResourceKey="AccentButtonBackground" />
+                                                <StaticResource x:Key="SplitButtonBackgroundPointerOver" ResourceKey="AccentButtonBackgroundPointerOver" />
+                                                <StaticResource x:Key="SplitButtonBackgroundPressed" ResourceKey="AccentButtonBackgroundPressed" />
+                                                <StaticResource x:Key="SplitButtonBackgroundDisabled" ResourceKey="AccentButtonBackgroundDisabled" />
+                                                <StaticResource x:Key="SplitButtonForeground" ResourceKey="AccentButtonForeground" />
+                                                <StaticResource x:Key="SplitButtonForegroundPointerOver" ResourceKey="AccentButtonForegroundPointerOver" />
+                                                <StaticResource x:Key="SplitButtonForegroundPressed" ResourceKey="AccentButtonForegroundPressed" />
+                                                <StaticResource x:Key="SplitButtonForegroundDisabled" ResourceKey="AccentButtonForegroundDisabled" />
+                                                <StaticResource x:Key="SplitButtonBorderBrush" ResourceKey="AccentButtonBorderBrush" />
+                                                <StaticResource x:Key="SplitButtonBorderBrushPointerOver" ResourceKey="AccentButtonBorderBrushPointerOver" />
+                                                <StaticResource x:Key="SplitButtonBorderBrushPressed" ResourceKey="AccentButtonBorderBrushPressed" />
+                                                <StaticResource x:Key="SplitButtonForegroundSecondary" ResourceKey="AccentButtonForeground" />
+                                                <StaticResource x:Key="SplitButtonForegroundSecondaryPressed" ResourceKey="AccentButtonForegroundPressed" />
+                                                <StaticResource x:Key="SplitButtonBorderBrushDisabled" ResourceKey="AccentButtonBorderBrushDisabled" />
+                                            </SplitButton.Resources>
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <FontIcon Glyph="&#xE896;" FontSize="12" />
                                                 <TextBlock x:Uid="Browse_Install" />
                                             </StackPanel>
-                                        </Button>
+                                            <SplitButton.Flyout>
+                                                <Flyout Placement="BottomEdgeAlignedRight" Opening="VersionFlyout_Opening">
+                                                    <Grid MinWidth="320" MaxWidth="460" RowSpacing="8">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+                                                        <TextBlock x:Uid="Browse_PickVersion" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                                        <ProgressRing Grid.Row="1" IsActive="{x:Bind IsLoadingVersions, Mode=OneWay}" Width="20" Height="20"
+                                                                      Visibility="{x:Bind local:Bind.Visible(IsLoadingVersions), Mode=OneWay}" />
+                                                        <ListView Grid.Row="2" ItemsSource="{x:Bind Versions, Mode=OneWay}" SelectionMode="None" MaxHeight="360"
+                                                                 Visibility="{x:Bind local:Bind.Visible(VersionsLoaded), Mode=OneWay}">
+                                                            <ListView.ItemTemplate>
+                                                                <DataTemplate x:DataType="vm:VersionChoice">
+                                                                    <Grid Padding="0,4" ColumnSpacing="8">
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="*" />
+                                                                            <ColumnDefinition Width="Auto" />
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel VerticalAlignment="Center">
+                                                                            <TextBlock Text="{x:Bind Display}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                                            <TextBlock Text="{x:Bind Detail}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"
+                                                                                       Visibility="{x:Bind local:Bind.VisibleIfText(Detail), FallbackValue=Collapsed}" />
+                                                                        </StackPanel>
+                                                                        <Button Grid.Column="1" x:Uid="Browse_InstallThis" Tag="{x:Bind}" Click="InstallVersion_Click" VerticalAlignment="Center" />
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ListView.ItemTemplate>
+                                                        </ListView>
+                                                        <TextBlock Grid.Row="2" Text="{x:Bind VersionsError, Mode=OneWay}" TextWrapping="Wrap" Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                                   Visibility="{x:Bind local:Bind.VisibleIfText(VersionsError), Mode=OneWay, FallbackValue=Collapsed}" />
+                                                        <HyperlinkButton Grid.Row="3" x:Uid="Browse_SeeAllVersions" Tag="{x:Bind}" Click="SeeAllVersions_Click" Padding="0" />
+                                                    </Grid>
+                                                </Flyout>
+                                            </SplitButton.Flyout>
+                                        </SplitButton>
                                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Visibility="{x:Bind local:Bind.Visible(IsInstalled), Mode=OneWay}">
                                             <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
                                             <TextBlock x:Uid="Browse_Installed" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />

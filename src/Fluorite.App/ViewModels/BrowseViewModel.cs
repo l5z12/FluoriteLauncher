@@ -27,6 +27,32 @@ public sealed record NamedChoice(string? Id, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>A row in the version-pick flyout on a browse card.</summary>
+public sealed class VersionChoice(RemoteVersion version)
+{
+    public RemoteVersion Version { get; } = version;
+    public string Display => Version.VersionNumber;
+
+    public string Detail => string.Join("  ·  ", new[]
+    {
+        Version.Channel != ReleaseChannel.Release ? ChannelText : null,
+        Summarise(Version.GameVersions),
+        string.Join(", ", Version.Loaders.Select(Capitalise)),
+    }.Where(s => !string.IsNullOrEmpty(s)));
+
+    private string ChannelText => Version.Channel switch
+    {
+        ReleaseChannel.Beta => Loc.Get("Channel_Beta"),
+        ReleaseChannel.Alpha => Loc.Get("Channel_Alpha"),
+        _ => "",
+    };
+
+    private static string Summarise(IReadOnlyList<string> versions) =>
+        versions.Count <= 3 ? string.Join(", ", versions) : $"{string.Join(", ", versions.Take(2))} +{versions.Count - 2}";
+
+    private static string Capitalise(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+}
+
 /// <summary>A search result card.</summary>
 public sealed partial class ProjectCard(RemoteProject project) : ObservableObject
 {
@@ -59,6 +85,12 @@ public sealed partial class ProjectCard(RemoteProject project) : ObservableObjec
     public partial bool IsInstalling { get; set; }
 
     public bool CanInstall => !IsInstalled && !IsInstalling;
+
+    public ObservableCollection<VersionChoice> Versions { get; } = [];
+
+    [ObservableProperty] public partial bool IsLoadingVersions { get; set; }
+    [ObservableProperty] public partial bool VersionsLoaded { get; set; }
+    [ObservableProperty] public partial string? VersionsError { get; set; }
 }
 
 public sealed partial class BrowseViewModel(
@@ -389,14 +421,16 @@ public sealed partial class BrowseViewModel(
         }
     }
 
-    public async Task InstallAsync(ProjectCard card)
+    public async Task InstallAsync(ProjectCard card, RemoteVersion? version = null)
     {
+        if (card.IsInstalling)
+            return;
         if (IsModpackKind)
         {
             card.IsInstalling = true;
             try
             {
-                await App.Get<ModpackInstallService>().InstallProjectAsync(card.Project, null);
+                await App.Get<ModpackInstallService>().InstallProjectAsync(card.Project, version);
             }
             finally
             {
@@ -412,12 +446,36 @@ public sealed partial class BrowseViewModel(
         card.IsInstalling = true;
         try
         {
-            if (await installer.InstallAsync(instance, card.Project, null, Kind))
+            if (await installer.InstallAsync(instance, card.Project, version, Kind))
                 card.IsInstalled = true;
         }
         finally
         {
             card.IsInstalling = false;
+        }
+    }
+
+    public async Task LoadVersionsAsync(ProjectCard card)
+    {
+        if (card.VersionsLoaded || card.IsLoadingVersions)
+            return;
+        card.IsLoadingVersions = true;
+        card.VersionsError = null;
+        try
+        {
+            var versions = await Platform.GetVersionsAsync(card.Project.Id, Target);
+            card.Versions.Clear();
+            foreach (var v in versions.Take(20))
+                card.Versions.Add(new VersionChoice(v));
+            card.VersionsLoaded = true;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or System.Text.Json.JsonException or TaskCanceledException)
+        {
+            card.VersionsError = ex.Message;
+        }
+        finally
+        {
+            card.IsLoadingVersions = false;
         }
     }
 
