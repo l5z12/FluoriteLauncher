@@ -162,7 +162,8 @@
                                                         <TextBlock x:Uid="Browse_PickVersion" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                                         <ProgressRing Grid.Row="1" IsActive="{x:Bind IsLoadingVersions, Mode=OneWay}" Width="20" Height="20"
                                                                       Visibility="{x:Bind local:Bind.Visible(IsLoadingVersions), Mode=OneWay}" />
-                                                        <ListView Grid.Row="2" ItemsSource="{x:Bind Versions, Mode=OneWay}" SelectionMode="None" MaxHeight="360">
+                                                        <ListView Grid.Row="2" ItemsSource="{x:Bind Versions, Mode=OneWay}" SelectionMode="None" MaxHeight="360"
+                                                                 Visibility="{x:Bind local:Bind.Visible(VersionsLoaded), Mode=OneWay}">
                                                             <ListView.ItemTemplate>
                                                                 <DataTemplate x:DataType="vm:VersionChoice">
                                                                     <Grid Padding="0,4" ColumnSpacing="8">
@@ -172,7 +173,8 @@
                                                                         </Grid.ColumnDefinitions>
                                                                         <StackPanel VerticalAlignment="Center">
                                                                             <TextBlock Text="{x:Bind Display}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                                                            <TextBlock Text="{x:Bind Detail}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                                            <TextBlock Text="{x:Bind Detail}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"
+                                                                                       Visibility="{x:Bind local:Bind.VisibleIfText(Detail), FallbackValue=Collapsed}" />
                                                                         </StackPanel>
                                                                         <Button Grid.Column="1" x:Uid="Browse_InstallThis" Tag="{x:Bind}" Click="InstallVersion_Click" VerticalAlignment="Center" />
                                                                     </Grid>
