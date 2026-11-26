@@ -26,6 +26,10 @@ public sealed class VersionRepository(GameDirectories dirs, HttpClient http, Mir
     /// <summary>Fetches the manifest (cached in memory and on disk; falls back to the disk copy when offline).</summary>
     public async Task<VersionManifest> GetManifestAsync(bool refresh = false, CancellationToken ct = default)
     {
+        // The copy in memory needs no lock: a refresh downloading under it (Home's F5) mustn't hold up launching and
+        // the version pickers, which are happy with what's there.
+        if (!refresh && Volatile.Read(ref _manifest) is { } cached)
+            return cached;
         await _manifestLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
