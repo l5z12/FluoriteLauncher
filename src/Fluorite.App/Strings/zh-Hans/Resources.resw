@@ -301,6 +301,9 @@
   <data name="Delete_Title" xml:space="preserve"><value>删除“{0}”？</value></data>
   <data name="Delete_Body" xml:space="preserve"><value>该实例及其存档、模组和设置将被移到回收站。</value></data>
   <data name="Delete_Running" xml:space="preserve"><value>请先停止游戏，再删除此实例。</value></data>
+  <data name="Delete_PermanentTitle" xml:space="preserve"><value>永久删除“{0}”？</value></data>
+  <data name="Delete_PermanentBody" xml:space="preserve"><value>该实例及其存档、模组和设置将被永久删除，不会移到回收站，且无法撤销。</value></data>
+  <data name="Delete_Permanently" xml:space="preserve"><value>永久删除</value></data>
   <data name="Duplicate_Suffix" xml:space="preserve"><value>{0}（副本）</value></data>
   <data name="Shortcut_Created" xml:space="preserve"><value>已为“{0}”创建桌面快捷方式。</value></data>
   <!-- 实例 -->
@@ -1141,6 +1144,8 @@
   <data name="Common_UndoTip" xml:space="preserve"><value>撤销 (Ctrl+Z)</value></data>
   <data name="Undo_RemovedOne" xml:space="preserve"><value>已移除“{0}”。</value></data>
   <data name="Undo_RemovedMany" xml:space="preserve"><value>已移除 {0} 项。</value></data>
+  <data name="Undo_DeletingOne" xml:space="preserve"><value>即将永久删除“{0}”。</value></data>
+  <data name="Undo_DeletingMany" xml:space="preserve"><value>即将永久删除 {0} 项。</value></data>
   <data name="Undo_DismissedOne" xml:space="preserve"><value>已忽略 1 个问题。</value></data>
   <data name="Undo_DismissedMany" xml:space="preserve"><value>已忽略 {0} 个问题。</value></data>
   <data name="Undo_RestoredOne" xml:space="preserve"><value>已重新显示 1 个问题。</value></data>
@@ -1165,6 +1170,8 @@
   <data name="Library_SelectionClear.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>取消选择 (Esc)</value></data>
   <data name="Library_DeleteManyTitle" xml:space="preserve"><value>删除 {0} 个实例？</value></data>
   <data name="Library_DeleteManyBody" xml:space="preserve"><value>这些实例及其存档、模组和设置将被移到回收站。</value></data>
+  <data name="Library_DeletePermanentManyTitle" xml:space="preserve"><value>永久删除 {0} 个实例？</value></data>
+  <data name="Library_DeletePermanentManyBody" xml:space="preserve"><value>这些实例及其存档、模组和设置将被永久删除，不会移到回收站，且无法撤销。</value></data>
   <data name="Library_DeleteKept" xml:space="preserve"><value>{0} 个未删除：游戏正在运行，或它们属于其他启动器。</value></data>
   <data name="Library_DropToGroup" xml:space="preserve"><value>移到“{0}”</value></data>
   <data name="Library_UpdateOne" xml:space="preserve"><value>1 个更新</value></data>

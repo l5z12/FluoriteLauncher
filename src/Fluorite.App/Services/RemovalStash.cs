@@ -1,4 +1,5 @@
 using System.Globalization;
+using Fluorite.Core.Platform;
 using Fluorite.Platform.Windows.Shell;
 using Microsoft.Extensions.Logging;
 
@@ -8,11 +9,15 @@ namespace Fluorite.App.Services;
 /// What was just removed (mods, worlds, screenshots…) waits in a hidden folder of the game directory, where neither
 /// the game nor Fluorite's lists see it, so Undo can put it back. When the chance to undo has passed, each item goes
 /// back to where it was for an instant and from there to the Recycle Bin, so the bin's Restore puts it back too.
+/// Removed with Shift+Del, it's deleted for good instead.
 /// </summary>
 public sealed class RemovalStash
 {
     private const string FolderName = ".fluorite-removed";
     private const string OriginsFile = "origins.txt";
+
+    /// <summary>Present in a stash removed with Shift+Del: deleted for good, not to the Recycle Bin.</summary>
+    private const string PermanentFile = "permanent";
 
     /// <summary>Stashes of this run that are still waiting (not leftovers of an earlier run).</summary>
     private static readonly HashSet<string> s_waiting = new(StringComparer.OrdinalIgnoreCase);
@@ -21,18 +26,21 @@ public sealed class RemovalStash
 
     private readonly string _dir;
     private readonly List<(string Original, string Stashed)> _items;
+    private readonly bool _permanent;
 
-    private RemovalStash(string dir, List<(string Original, string Stashed)> items)
+    private RemovalStash(string dir, List<(string Original, string Stashed)> items, bool permanent)
     {
         _dir = dir;
         _items = items;
+        _permanent = permanent;
     }
 
     /// <summary>
     /// Moves the paths out of the way, all or none: on failure the ones already moved go back and it throws.
     /// The list of where each came from is written first, so even a crash midway loses nothing.
     /// </summary>
-    public static RemovalStash Create(string gameDirectory, IEnumerable<string> paths)
+    /// <param name="permanent">Shift+Del: when final, deleted for good instead of going to the Recycle Bin.</param>
+    public static RemovalStash Create(string gameDirectory, IEnumerable<string> paths, bool permanent = false)
     {
         var root = Path.Combine(gameDirectory, FolderName);
         var dir = Path.Combine(root, DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N")[..8]);
@@ -41,6 +49,8 @@ public sealed class RemovalStash
         Directory.CreateDirectory(dir);
         TryHide(root);
         File.WriteAllLines(Path.Combine(dir, OriginsFile), originals);
+        if (permanent)
+            File.WriteAllText(Path.Combine(dir, PermanentFile), "");
         lock (s_waiting)
             s_waiting.Add(dir);
         var moved = new List<(string Original, string Stashed)>();
@@ -60,10 +70,13 @@ public sealed class RemovalStash
             Forget(dir);
             throw;
         }
-        return new RemovalStash(dir, moved);
+        return new RemovalStash(dir, moved, permanent);
     }
 
-    /// <summary>Puts everything back. One whose place was taken meanwhile (the same name added again) stays removed.</summary>
+    /// <summary>
+    /// Puts everything back. One whose place was taken meanwhile (the same name added again) stays removed, in the
+    /// Recycle Bin even after Shift+Del: Undo asked for it back, so it isn't deleted for good.
+    /// </summary>
     public void Restore()
     {
         foreach (var (original, stashed) in _items)
@@ -71,11 +84,16 @@ public sealed class RemovalStash
             if (!Exists(original) && Exists(stashed))
                 Move(stashed, original);
         }
-        Commit(); // Whatever couldn't go back.
+        Finish(permanent: false); // Whatever couldn't go back.
     }
 
-    /// <summary>Final: to the Recycle Bin, from where each item was (or from here when that place is taken).</summary>
-    public void Commit()
+    /// <summary>
+    /// Final: to the Recycle Bin, from where each item was (or from here when that place is taken). After Shift+Del,
+    /// deleted for good from here.
+    /// </summary>
+    public void Commit() => Finish(_permanent);
+
+    private void Finish(bool permanent)
     {
         foreach (var (original, stashed) in _items)
         {
@@ -83,7 +101,11 @@ public sealed class RemovalStash
                 continue;
             try
             {
-                if (!Exists(original))
+                if (permanent)
+                {
+                    PermanentDelete.Run(stashed);
+                }
+                else if (!Exists(original))
                 {
                     Move(stashed, original);
                     RecycleBin.Send(original);
@@ -122,7 +144,7 @@ public sealed class RemovalStash
                 var origins = Path.Combine(dir, OriginsFile);
                 var originals = File.Exists(origins) ? File.ReadAllLines(origins) : [];
                 var items = originals.Select((p, i) => (p, Path.Combine(dir, i.ToString(CultureInfo.InvariantCulture), Path.GetFileName(p)))).ToList();
-                new RemovalStash(dir, items).Commit();
+                new RemovalStash(dir, items, File.Exists(Path.Combine(dir, PermanentFile))).Commit();
             }
             if (!Directory.EnumerateFileSystemEntries(root).Any())
                 Directory.Delete(root);

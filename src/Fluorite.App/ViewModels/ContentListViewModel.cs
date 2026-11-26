@@ -671,19 +671,20 @@ public sealed partial class ContentListViewModel(ContentService content, Content
 
     /// <summary>
     /// Removed at once, no question: they wait out of the game's sight for a few seconds (Undo), then go to the
-    /// Recycle Bin. Undo also brings back what Fluorite knew about them (source, pin).
+    /// Recycle Bin (<paramref name="permanent"/>: deleted for good). Undo also brings back what Fluorite knew about
+    /// them (source, pin).
     /// </summary>
-    public async Task DeleteAsync(IReadOnlyList<ContentItemViewModel> items)
+    public async Task DeleteAsync(IReadOnlyList<ContentItemViewModel> items, bool permanent = false)
     {
         if (items.Count == 0 || Instance is null)
             return;
         var manager = Manager;
         var files = items.Select(i => i.File).ToList();
-        var message = items.Count == 1 ? Loc.Format("Undo_RemovedOne", items[0].Name) : Loc.Format("Undo_RemovedMany", items.Count);
+        var message = UndoOffer.RemovedText(items.Select(i => i.Name).ToList(), permanent);
         RemovalStash stash;
         try
         {
-            stash = await Task.Run(() => RemovalStash.Create(manager.GameDirectory, files.Select(f => f.Path)));
+            stash = await Task.Run(() => RemovalStash.Create(manager.GameDirectory, files.Select(f => f.Path), permanent));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

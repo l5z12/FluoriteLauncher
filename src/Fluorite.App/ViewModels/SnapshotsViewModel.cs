@@ -151,8 +151,8 @@ public sealed partial class SnapshotsViewModel(SnapshotService snapshots, GameRu
         }
     }
 
-    /// <summary>Gone at once; Undo for a few seconds, then the Recycle Bin.</summary>
-    public async Task DeleteAsync(SnapshotItem item)
+    /// <summary>Gone at once; Undo for a few seconds, then the Recycle Bin (<paramref name="permanent"/>: deleted for good).</summary>
+    public async Task DeleteAsync(SnapshotItem item, bool permanent = false)
     {
         if (Instance is not { } instance)
             return;
@@ -160,7 +160,7 @@ public sealed partial class SnapshotsViewModel(SnapshotService snapshots, GameRu
         try
         {
             var dir = snapshots.DirectoryFor(instance);
-            stash = await Task.Run(() => RemovalStash.Create(dir, [item.Snapshot.Directory]));
+            stash = await Task.Run(() => RemovalStash.Create(dir, [item.Snapshot.Directory], permanent));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -169,7 +169,7 @@ public sealed partial class SnapshotsViewModel(SnapshotService snapshots, GameRu
         }
         Items.Remove(item);
         IsEmpty = Items.Count == 0;
-        var offer = new UndoOffer(Loc.Format("Undo_RemovedOne", item.Title), async () =>
+        var offer = new UndoOffer(UndoOffer.RemovedText([item.Title], permanent), async () =>
         {
             await Task.Run(stash.Restore);
             Refresh();

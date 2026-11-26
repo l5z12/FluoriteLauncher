@@ -46,7 +46,7 @@ public sealed partial class ServersPanel : UserControl
             case ItemKeys.MoveDown:
                 MoveDown_Click(row, e);
                 break;
-            case ItemKeys.Delete:
+            case ItemKeys.Delete or ItemKeys.DeletePermanently: // An entry in servers.dat: no Recycle Bin either way.
                 Delete_Click(row, e);
                 break;
             default:

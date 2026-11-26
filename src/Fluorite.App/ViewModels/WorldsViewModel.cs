@@ -342,14 +342,17 @@ public sealed partial class WorldsViewModel(GameRunner runner, ShortcutService s
         PendingUndo = offer;
     }
 
-    /// <summary>Stashed for Undo, then to the Recycle Bin; null (and the error shown) when it couldn't be moved.</summary>
-    private async Task<RemovalStash?> StashAsync(string path)
+    /// <summary>
+    /// Stashed for Undo, then to the Recycle Bin (<paramref name="permanent"/>: deleted for good); null (and the error
+    /// shown) when it couldn't be moved.
+    /// </summary>
+    private async Task<RemovalStash?> StashAsync(string path, bool permanent)
     {
         if (Instance is not { } instance)
             return null;
         try
         {
-            return await Task.Run(() => RemovalStash.Create(instance.GameDirectory, [path]));
+            return await Task.Run(() => RemovalStash.Create(instance.GameDirectory, [path], permanent));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -358,13 +361,13 @@ public sealed partial class WorldsViewModel(GameRunner runner, ShortcutService s
         }
     }
 
-    public async Task DeleteBackupAsync(WorldBackupItem item)
+    public async Task DeleteBackupAsync(WorldBackupItem item, bool permanent = false)
     {
-        if (await StashAsync(item.Backup.Path) is not { } stash)
+        if (await StashAsync(item.Backup.Path, permanent) is not { } stash)
             return;
         Backups.Remove(item);
         HasNoBackups = Backups.Count == 0;
-        OfferUndo(new UndoOffer(Loc.Format("Undo_RemovedOne", item.Title), async () =>
+        OfferUndo(new UndoOffer(UndoOffer.RemovedText([item.Title], permanent), async () =>
         {
             await Task.Run(stash.Restore);
             await RefreshAsync();
@@ -412,14 +415,17 @@ public sealed partial class WorldsViewModel(GameRunner runner, ShortcutService s
         }
     }
 
-    /// <summary>Gone from the list (and the game's) at once; Undo for a few seconds, then the Recycle Bin.</summary>
-    public async Task DeleteAsync(WorldItemViewModel world)
+    /// <summary>
+    /// Gone from the list (and the game's) at once; Undo for a few seconds, then the Recycle Bin
+    /// (<paramref name="permanent"/>: deleted for good).
+    /// </summary>
+    public async Task DeleteAsync(WorldItemViewModel world, bool permanent = false)
     {
-        if (!EnsureNotRunning() || await StashAsync(world.Info.Path) is not { } stash)
+        if (!EnsureNotRunning() || await StashAsync(world.Info.Path, permanent) is not { } stash)
             return;
         Status = null;
         await RefreshAsync();
-        OfferUndo(new UndoOffer(Loc.Format("Undo_RemovedOne", world.Name), async () =>
+        OfferUndo(new UndoOffer(UndoOffer.RemovedText([world.Name], permanent), async () =>
         {
             await Task.Run(stash.Restore);
             await RefreshAsync();

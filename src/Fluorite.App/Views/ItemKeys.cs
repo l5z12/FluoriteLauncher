@@ -27,6 +27,14 @@ internal static class ItemKeys
     public const string Disable = "Ctrl+Shift+E";
     public const string ShowInFolder = "Ctrl+Shift+O";
     public const string Delete = "Del";
+
+    /// <summary>
+    /// Delete for good, past the Recycle Bin, as in Explorer. A menu's Delete reads "Delete permanently" while Shift
+    /// is held (<see cref="ShiftDelete"/>), and Shift+click on another Delete button does the same. Where nothing goes
+    /// to the bin anyway (a server entry, a group), it's plain Delete.
+    /// </summary>
+    public const string DeletePermanently = "Shift+Del";
+
     public const string MoveUp = "Alt+Up";
     public const string MoveDown = "Alt+Down";
     public const string Select = "Ctrl+Space";

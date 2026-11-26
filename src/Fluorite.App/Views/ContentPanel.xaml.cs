@@ -131,7 +131,10 @@ public sealed partial class ContentPanel : UserControl
             _ = item.LoadIconAsync();
     }
 
-    /// <summary>The keys shown in the menus: Del, Ctrl+E and Ctrl+Shift+E on the selection; Enter and Ctrl+Shift+O on the focused row.</summary>
+    /// <summary>
+    /// The keys shown in the menus: Del (Shift+Del for good), Ctrl+E and Ctrl+Shift+E on the selection; Enter and
+    /// Ctrl+Shift+O on the focused row.
+    /// </summary>
     private async void List_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (ViewModel is not { } vm)
@@ -145,11 +148,12 @@ public sealed partial class ContentPanel : UserControl
             e.Handled = true;
             ListMenu.Hide();
         }
-        switch (ItemKeys.Chord(e))
+        var chord = ItemKeys.Chord(e);
+        switch (chord)
         {
-            case ItemKeys.Delete when selected.Count > 0:
+            case ItemKeys.Delete or ItemKeys.DeletePermanently when selected.Count > 0:
                 Act();
-                await vm.DeleteAsync(selected);
+                await vm.DeleteAsync(selected, permanent: chord == ItemKeys.DeletePermanently);
                 break;
             case ItemKeys.Enable when selected.Count > 0:
                 Act();
@@ -190,7 +194,7 @@ public sealed partial class ContentPanel : UserControl
     private async void DeleteSelected_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel is { } vm)
-            await vm.DeleteAsync(Selected);
+            await vm.DeleteAsync(Selected, permanent: ShiftDelete.ForGood(sender));
     }
 
     private async void DismissSelectedIssues_Click(object sender, RoutedEventArgs e)
@@ -270,7 +274,7 @@ public sealed partial class ContentPanel : UserControl
     private async void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel is { } vm && Bind.ItemOf<ContentItemViewModel>(sender) is { } item)
-            await vm.DeleteAsync([item]);
+            await vm.DeleteAsync([item], permanent: ShiftDelete.ForGood(sender));
     }
 
     private async void Update_Click(object sender, RoutedEventArgs e)

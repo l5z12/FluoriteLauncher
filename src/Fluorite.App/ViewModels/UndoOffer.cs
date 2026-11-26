@@ -1,3 +1,4 @@
+using Fluorite.App.Services;
 using Microsoft.UI.Dispatching;
 
 namespace Fluorite.App.ViewModels;
@@ -35,6 +36,11 @@ public sealed partial class UndoOffer
     }
 
     public string Message { get; }
+
+    /// <summary>"Removed “X”." / "Removed 3 items."; after Shift+Del, "Deleting “X” permanently."</summary>
+    public static string RemovedText(IReadOnlyList<string> names, bool permanent) => names.Count == 1
+        ? Loc.Format(permanent ? "Undo_DeletingOne" : "Undo_RemovedOne", names[0])
+        : Loc.Format(permanent ? "Undo_DeletingMany" : "Undo_RemovedMany", names.Count);
 
     /// <summary>Undone or final: the bar goes away.</summary>
     public event EventHandler? Finished;

@@ -301,6 +301,9 @@
   <data name="Delete_Title" xml:space="preserve"><value>Delete "{0}"?</value></data>
   <data name="Delete_Body" xml:space="preserve"><value>The instance, including its worlds, mods and settings, will be moved to the Recycle Bin.</value></data>
   <data name="Delete_Running" xml:space="preserve"><value>Stop the game before deleting this instance.</value></data>
+  <data name="Delete_PermanentTitle" xml:space="preserve"><value>Permanently delete "{0}"?</value></data>
+  <data name="Delete_PermanentBody" xml:space="preserve"><value>The instance, including its worlds, mods and settings, will be deleted for good. It won't go to the Recycle Bin, and this can't be undone.</value></data>
+  <data name="Delete_Permanently" xml:space="preserve"><value>Delete permanently</value></data>
   <data name="Duplicate_Suffix" xml:space="preserve"><value>{0} (copy)</value></data>
   <data name="Shortcut_Created" xml:space="preserve"><value>Created a desktop shortcut for "{0}".</value></data>
   <!-- Instance -->
@@ -1141,6 +1144,8 @@
   <data name="Common_UndoTip" xml:space="preserve"><value>Undo (Ctrl+Z)</value></data>
   <data name="Undo_RemovedOne" xml:space="preserve"><value>Removed “{0}”.</value></data>
   <data name="Undo_RemovedMany" xml:space="preserve"><value>Removed {0} items.</value></data>
+  <data name="Undo_DeletingOne" xml:space="preserve"><value>Deleting “{0}” permanently.</value></data>
+  <data name="Undo_DeletingMany" xml:space="preserve"><value>Deleting {0} items permanently.</value></data>
   <data name="Undo_DismissedOne" xml:space="preserve"><value>Dismissed 1 issue.</value></data>
   <data name="Undo_DismissedMany" xml:space="preserve"><value>Dismissed {0} issues.</value></data>
   <data name="Undo_RestoredOne" xml:space="preserve"><value>Showing 1 issue again.</value></data>
@@ -1165,6 +1170,8 @@
   <data name="Library_SelectionClear.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Clear selection (Esc)</value></data>
   <data name="Library_DeleteManyTitle" xml:space="preserve"><value>Delete {0} instances?</value></data>
   <data name="Library_DeleteManyBody" xml:space="preserve"><value>They will be moved to the Recycle Bin, with their worlds, mods and settings.</value></data>
+  <data name="Library_DeletePermanentManyTitle" xml:space="preserve"><value>Permanently delete {0} instances?</value></data>
+  <data name="Library_DeletePermanentManyBody" xml:space="preserve"><value>They will be deleted for good, with their worlds, mods and settings. They won't go to the Recycle Bin, and this can't be undone.</value></data>
   <data name="Library_DeleteKept" xml:space="preserve"><value>{0} not deleted: a game is running, or they belong to another launcher.</value></data>
   <data name="Library_DropToGroup" xml:space="preserve"><value>Move to “{0}”</value></data>
   <data name="Library_UpdateOne" xml:space="preserve"><value>1 update</value></data>

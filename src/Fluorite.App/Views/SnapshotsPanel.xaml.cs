@@ -39,7 +39,7 @@ public sealed partial class SnapshotsPanel : UserControl
             case ItemKeys.ShowInFolder:
                 ShowInFolder_Click(row, e);
                 break;
-            case ItemKeys.Delete:
+            case ItemKeys.Delete or ItemKeys.DeletePermanently:
                 Delete_Click(row, e);
                 break;
             default:
@@ -60,9 +60,10 @@ public sealed partial class SnapshotsPanel : UserControl
             SnapshotsViewModel.ShowInFolder(item);
     }
 
+    /// <summary>With Shift (Shift+Del, or Shift held while clicking): deleted for good.</summary>
     private async void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel is { } vm && Bind.ItemOf<SnapshotItem>(sender) is { } item)
-            await vm.DeleteAsync(item);
+            await vm.DeleteAsync(item, permanent: ShiftDelete.ForGood(sender));
     }
 }

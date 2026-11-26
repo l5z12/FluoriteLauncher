@@ -669,8 +669,8 @@ public sealed partial class LibraryViewModel(
         await LoadAsync();
     }
 
-    /// <summary>Moves the instance folder to the Recycle Bin.</summary>
-    public async Task DeleteAsync(InstanceItem item)
+    /// <summary>Moves the instance folder to the Recycle Bin (<paramref name="permanent"/>: deletes it for good).</summary>
+    public async Task DeleteAsync(InstanceItem item, bool permanent = false)
     {
         if (runner.Find(item.Instance) is not null)
         {
@@ -682,29 +682,44 @@ public sealed partial class LibraryViewModel(
             ErrorMessage = Loc.Get("Delete_External"); // Never delete another launcher's files from Fluorite.
             return;
         }
-        await Task.Run(() => RecycleBin.Send(item.Instance.Directory));
+        try
+        {
+            await Task.Run(() => Remove(item.Instance.Directory, permanent));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            ErrorMessage = ex.Message;
+        }
         await LoadAsync();
     }
 
     /// <summary>
-    /// The selection to the Recycle Bin, except what can't go: a game that's running, another launcher's instance.
-    /// Says how many were left.
+    /// The selection to the Recycle Bin (<paramref name="permanent"/>: deleted for good), except what can't go: a
+    /// game that's running, another launcher's instance. Says how many were left.
     /// </summary>
-    public async Task DeleteAsync(IReadOnlyList<InstanceItem> items)
+    public async Task DeleteAsync(IReadOnlyList<InstanceItem> items, bool permanent = false)
     {
         var deletable = items.Where(i => !i.Instance.IsExternal && runner.Find(i.Instance) is null).ToList();
         try
         {
             foreach (var item in deletable)
-                await Task.Run(() => RecycleBin.Send(item.Instance.Directory));
+                await Task.Run(() => Remove(item.Instance.Directory, permanent));
         }
-        catch (System.ComponentModel.Win32Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
             ErrorMessage = ex.Message;
         }
         await LoadAsync();
         if (items.Count > deletable.Count)
             ErrorMessage = Loc.Format("Library_DeleteKept", items.Count - deletable.Count);
+    }
+
+    private static void Remove(string directory, bool permanent)
+    {
+        if (permanent)
+            Fluorite.Core.Platform.PermanentDelete.Run(directory);
+        else
+            RecycleBin.Send(directory);
     }
 
     public void CreateShortcut(InstanceItem item)
