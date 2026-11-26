@@ -114,8 +114,9 @@ public sealed partial class InstanceViewModel(
             foreach (var v in list)
                 MinecraftVersions.Add(v);
         }
-        catch (HttpRequestException)
+        catch (Exception ex) when (Core.Versions.VersionRepository.IsManifestUnavailable(ex))
         {
+            // Just the instance's own version. Thrown from here (async void), it would end the app.
             MinecraftVersions.Clear();
             if (current is not null)
                 MinecraftVersions.Add(current);

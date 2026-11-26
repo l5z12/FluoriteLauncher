@@ -608,7 +608,7 @@ public sealed partial class LibraryPage : Page
                 _askedToPickVersion = true;
             }
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (VersionRepository.IsManifestUnavailable(ex))
         {
             ShowError(ex.Message);
         }

@@ -73,7 +73,7 @@
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
 
-            <Border Style="{StaticResource CardBorderStyle}" Visibility="{x:Bind local:Bind.Collapsed(ViewModel.HasRecent), Mode=OneWay}">
+            <Border Style="{StaticResource CardBorderStyle}" Visibility="{x:Bind local:Bind.Visible(ViewModel.ShowNoInstances), Mode=OneWay}">
                 <StackPanel Spacing="12">
                     <TextBlock x:Uid="Home_Empty" TextWrapping="Wrap" />
                     <Button x:Uid="Home_CreateFirst" Style="{StaticResource AccentButtonStyle}" Click="GoLibrary_Click" />

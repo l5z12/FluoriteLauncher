@@ -18,7 +18,9 @@ public sealed class NewsCard
     public required string Title { get; init; }
     public required string Subtitle { get; init; }
     public string? Text { get; init; }
-    public required BitmapImage Image { get; init; }
+
+    /// <summary>Null when the entry has no picture.</summary>
+    public BitmapImage? Image { get; init; }
     public PatchNoteEntry? PatchNote { get; init; }
     public Uri? Link { get; init; }
 }
@@ -76,6 +78,13 @@ public sealed partial class HomeViewModel(
     public PatchNoteEntry? PatchNoteFor(string? version) =>
         version is null ? null : _allPatchNotes.FirstOrDefault(n => n.Version == version);
     [ObservableProperty] public partial bool HasRecent { get; set; }
+
+    /// <summary>
+    /// "You don't have any instances yet": once the instances were read and none are there to show. Not while they're
+    /// being read, nor when they couldn't be (that would tell someone with instances to make a first one).
+    /// </summary>
+    [ObservableProperty] public partial bool ShowNoInstances { get; set; }
+
     [ObservableProperty] public partial bool NeedsAccount { get; set; }
 
     [ObservableProperty]
@@ -121,6 +130,11 @@ public sealed partial class HomeViewModel(
         {
             await LoadCoreAsync();
         }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Thrown out of Home's OnNavigatedTo (async void), anything left would end the app: what's shown stays.
+            logger.LogError(ex, "Loading Home failed");
+        }
         finally
         {
             _firstLoad.TrySetResult();
@@ -146,21 +160,41 @@ public sealed partial class HomeViewModel(
         // Started first: the network is the slow part, and it needn't wait for the local reads below.
         IsLoadingVersions = LatestRelease is null;
         var manifestTask = versions.GetManifestAsync(refresh, ct);
-        var account = await accounts.GetSelectedAsync();
-        NeedsAccount = account is null;
-        Greeting = account is null ? Loc.Get("Home_GreetingAnonymous") : Loc.Format("Home_Greeting", account.PlayerName);
 
-        // Fetch first, then clear+fill with no await in between, so overlapping loads can't interleave duplicates.
-        var recent = (await layout.GetInstancesAsync())
-            .Where(i => !settings.Current.IsHidden(i.Manifest))
-            .OrderByDescending(i => i.Manifest.Stats.LastPlayed ?? i.Manifest.Created)
-            .Take(6)
-            .Select(i => new InstanceItem(i) { IsRunning = runner.Find(i) is not null })
-            .ToList();
-        Recent.Clear();
-        foreach (var item in recent)
-            Recent.Add(item);
-        HasRecent = Recent.Count > 0;
+        // Each part on its own: one that can't be read leaves what it showed, and the rest still loads (the version
+        // rings stop, the feeds come in).
+        try
+        {
+            var account = await accounts.GetSelectedAsync();
+            NeedsAccount = account is null;
+            Greeting = account is null ? Loc.Get("Home_GreetingAnonymous") : Loc.Format("Home_Greeting", account.PlayerName);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            logger.LogError(ex, "Reading the account for Home failed");
+            if (Greeting.Length == 0)
+                Greeting = Loc.Get("Home_GreetingAnonymous"); // Not a blank heading.
+        }
+
+        try
+        {
+            // Fetch first, then clear+fill with no await in between, so overlapping loads can't interleave duplicates.
+            var recent = (await layout.GetInstancesAsync())
+                .Where(i => !settings.Current.IsHidden(i.Manifest))
+                .OrderByDescending(i => i.Manifest.Stats.LastPlayed ?? i.Manifest.Created)
+                .Take(6)
+                .Select(i => new InstanceItem(i) { IsRunning = runner.Find(i) is not null })
+                .ToList();
+            Recent.Clear();
+            foreach (var item in recent)
+                Recent.Add(item);
+            HasRecent = Recent.Count > 0;
+            ShowNoInstances = !HasRecent;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            logger.LogError(ex, "Reading the instances for Home failed");
+        }
 
         // Feeds change rarely: loaded once per session, again on F5, and again on the next visit when the last load
         // found nothing (offline with no cache). A load still running is shared, F5's included, so two never fetch
@@ -182,8 +216,9 @@ public sealed partial class HomeViewModel(
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            // Offline with nothing cached, a timeout, a garbled manifest: what an earlier visit found stays; with
-            // nothing found yet, the cards go.
+            // Offline with nothing cached, a timeout, no source with a usable manifest: what an earlier visit found
+            // stays; with nothing found yet, the cards go.
+            logger.LogWarning(ex, "Loading the latest versions for Home failed");
         }
         finally
         {
@@ -232,32 +267,33 @@ public sealed partial class HomeViewModel(
         var noteImage = ImagesOf(PatchNotes);
         var newsImage = ImagesOf(News);
 
+        // Every card made before any is shown: something failing partway leaves the cards from before, not half a list.
+        var noteCards = notes.DistinctBy(n => n.Id).Take(8).Select(n => new NewsCard
+        {
+            Title = n.Title,
+            Subtitle = (n.Type == "snapshot" ? Loc.Get("News_Snapshot") : Loc.Get("News_Release"))
+                + (n.Date is { } date ? " · " + date.LocalDateTime.ToString("d", CultureInfo.CurrentCulture) : ""),
+            Text = n.ShortText,
+            Image = noteImage(MojangNewsClient.ImageUri(n.Image), 280),
+            PatchNote = n,
+        }).ToList();
+        var newsCards = articles.DistinctBy(n => n.Id).Take(6).Select(n => new NewsCard
+        {
+            Title = n.Title,
+            Subtitle = n.Date ?? "",
+            Text = n.Text,
+            // The play-page picture when the news-page one is missing or has no address.
+            Image = newsImage(MojangNewsClient.ImageUri(n.NewsPageImage) ?? MojangNewsClient.ImageUri(n.PlayPageImage), 400),
+            Link = Uri.TryCreate(n.ReadMoreLink, UriKind.Absolute, out var link) ? link : null,
+        }).ToList();
+
         _allPatchNotes = [.. notes];
         PatchNotes.Clear();
-        foreach (var n in notes.DistinctBy(n => n.Id).Take(8))
-        {
-            PatchNotes.Add(new NewsCard
-            {
-                Title = n.Title,
-                Subtitle = (n.Type == "snapshot" ? Loc.Get("News_Snapshot") : Loc.Get("News_Release")) + " · " + n.Date?.LocalDateTime.ToString("d", CultureInfo.CurrentCulture),
-                Text = n.ShortText,
-                Image = noteImage(MojangNewsClient.ImageUri(n.Image), 280),
-                PatchNote = n,
-            });
-        }
-
+        foreach (var card in noteCards)
+            PatchNotes.Add(card);
         News.Clear();
-        foreach (var n in articles.DistinctBy(n => n.Id).Take(6))
-        {
-            News.Add(new NewsCard
-            {
-                Title = n.Title,
-                Subtitle = n.Date ?? "",
-                Text = n.Text,
-                Image = newsImage(MojangNewsClient.ImageUri(n.NewsPageImage ?? n.PlayPageImage), 400),
-                Link = Uri.TryCreate(n.ReadMoreLink, UriKind.Absolute, out var link) ? link : null,
-            });
-        }
+        foreach (var card in newsCards)
+            News.Add(card);
         HasNews = PatchNotes.Count > 0 || News.Count > 0;
     }
 
@@ -265,15 +301,17 @@ public sealed partial class HomeViewModel(
     /// Makes a card's picture, reusing the one a card in <paramref name="shown"/> already has for that address. Only
     /// one that loaded: a picture that failed (offline) doesn't try again, and F5 is how it should.
     /// </summary>
-    private static Func<Uri, int, BitmapImage> ImagesOf(IEnumerable<NewsCard> shown)
+    private static Func<Uri?, int, BitmapImage?> ImagesOf(IEnumerable<NewsCard> shown)
     {
         var images = new Dictionary<Uri, BitmapImage>();
         foreach (var card in shown)
         {
-            if (card.Image is { UriSource: { } uri, PixelWidth: > 0 })
-                images.TryAdd(uri, card.Image);
+            if (card.Image is { UriSource: { } uri, PixelWidth: > 0 } image)
+                images.TryAdd(uri, image);
         }
-        return (uri, decodeWidth) => images.TryGetValue(uri, out var image) ? image : new(uri) { DecodePixelWidth = decodeWidth };
+        return (uri, decodeWidth) => uri is null ? null
+            : images.TryGetValue(uri, out var image) ? image
+            : new(uri) { DecodePixelWidth = decodeWidth };
     }
 
     [RelayCommand]

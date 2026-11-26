@@ -24,7 +24,25 @@
             </Grid.ColumnDefinitions>
             <!-- WinUI's title bar back button (the TitleBar control's own style). Enabled when there's somewhere to go
                  back to (code); the title bar drags the window, so it gets a pass-through region like the search. -->
-            <Button x:Name="BackButton" x:Uid="TitleBar_BackButton" Style="{StaticResource TitleBarBackButtonStyle}" IsEnabled="False" Click="BackButton_Click" />
+            <Button x:Name="BackButton" x:Uid="TitleBar_BackButton" Style="{StaticResource TitleBarBackButtonStyle}" IsEnabled="False" Click="BackButton_Click">
+                <!-- Disabled, the style fills the button grey (ControlFillColorDisabledBrush), so it looks pressed; other
+                     apps' back buttons are just a dimmed arrow. High contrast keeps WinUI's own. -->
+                <Button.Resources>
+                    <ResourceDictionary>
+                        <ResourceDictionary.ThemeDictionaries>
+                            <ResourceDictionary x:Key="Light">
+                                <StaticResource x:Key="TitleBarBackButtonBackgroundDisabled" ResourceKey="SubtleFillColorTransparentBrush" />
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="Dark">
+                                <StaticResource x:Key="TitleBarBackButtonBackgroundDisabled" ResourceKey="SubtleFillColorTransparentBrush" />
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="HighContrast">
+                                <StaticResource x:Key="TitleBarBackButtonBackgroundDisabled" ResourceKey="SystemControlBackgroundBaseLowBrush" />
+                            </ResourceDictionary>
+                        </ResourceDictionary.ThemeDictionaries>
+                    </ResourceDictionary>
+                </Button.Resources>
+            </Button>
             <!-- Decoded at 18 DIP times the display scale, so the logo stays crisp at every DPI. -->
             <Image Grid.Column="1" Width="18" Height="18" VerticalAlignment="Center">
                 <Image.Source>

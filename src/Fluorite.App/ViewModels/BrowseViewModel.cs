@@ -218,8 +218,9 @@ public sealed partial class BrowseViewModel(
                     foreach (var v in manifest.Versions.Where(v => v.Type == VersionTypes.Release).OrderByDescending(v => v.ParsedReleaseTime))
                         GameVersions.Add(new NamedChoice(v.Id, v.Id));
                 }
-                catch (HttpRequestException)
+                catch (Exception ex) when (VersionRepository.IsManifestUnavailable(ex))
                 {
+                    // Only "Any version" to filter by. Thrown from here (async void), it would end the app.
                 }
             }
             ApplyInstanceFilters();
