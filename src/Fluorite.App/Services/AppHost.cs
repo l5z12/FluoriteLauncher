@@ -113,7 +113,8 @@ public static class AppHost
         s.AddSingleton<QuickPlaySupport>();
         s.AddSingleton<Fluorite.Core.Servers.ISrvResolver, Fluorite.Platform.Windows.Network.DnsSrvResolver>();
         s.AddSingleton(sp => new Fluorite.Core.Servers.ServerPinger(sp.GetRequiredService<Fluorite.Core.Servers.ISrvResolver>()));
-        s.AddSingleton(sp => new MojangNewsClient(sp.GetRequiredService<HttpClient>(), Path.Combine(AppPaths.DataRoot, "cache", "news")));
+        s.AddSingleton(sp => new MojangNewsClient(sp.GetRequiredService<HttpClient>(), Path.Combine(AppPaths.DataRoot, "cache", "news"),
+            sp.GetService<ILogger<MojangNewsClient>>()));
 
         s.AddSingleton<HomeViewModel>();
         s.AddSingleton<LibraryViewModel>();

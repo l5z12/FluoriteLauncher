@@ -39,19 +39,23 @@ public sealed class VersionRepository(GameDirectories dirs, HttpClient http, Mir
             var cachePath = Path.Combine(dirs.Versions, "version_manifest_v2.json");
             try
             {
-                var bytes = await GetBytesWithFallbackAsync(ManifestUrl, ct).ConfigureAwait(false);
-                // Checked before it replaces anything: a mirror answering "{}" (or garbage) with 200 mustn't empty the
-                // version lists, here or in the copy on disk. The disk copy is used instead, as when offline.
-                _manifest = Listed(JsonSerializer.Deserialize(bytes, FluoriteJsonContext.Default.VersionManifest), "Downloaded");
-                Directory.CreateDirectory(dirs.Versions);
-                await File.WriteAllBytesAsync(cachePath, bytes, ct).ConfigureAwait(false);
+                // Each source's answer is checked before it's taken: a mirror answering "{}" or an error page with 200
+                // moves on to the next source, and only when none has a usable one is the disk copy used, as offline.
+                // Nothing unusable replaces the copy in memory or on disk.
+                var (bytes, manifest) = await GetWithFallbackAsync(ManifestUrl,
+                    (_, b) => (b, Usable(JsonSerializer.Deserialize(b, FluoriteJsonContext.Default.VersionManifest), "Downloaded")), ct).ConfigureAwait(false);
+                _manifest = manifest;
+                // A copy that can't be saved (another launcher holding it open in a shared .minecraft) doesn't undo
+                // the download: it's logged, and the old copy stays for offline use.
+                if (await CacheFile.TrySaveAsync(cachePath, bytes).ConfigureAwait(false) is { } notSaved)
+                    CoreLog.CacheNotSaved(_logger, notSaved, cachePath);
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidDataException
                 && !ct.IsCancellationRequested && File.Exists(cachePath))
             {
                 CoreLog.ManifestFromCache(_logger, ex);
                 await using var fs = File.OpenRead(cachePath);
-                _manifest = Listed(await JsonSerializer.DeserializeAsync(fs, FluoriteJsonContext.Default.VersionManifest, ct).ConfigureAwait(false), "Cached");
+                _manifest = Usable(await JsonSerializer.DeserializeAsync(fs, FluoriteJsonContext.Default.VersionManifest, ct).ConfigureAwait(false), "Cached");
             }
             return _manifest;
         }
@@ -61,9 +65,25 @@ public sealed class VersionRepository(GameDirectories dirs, HttpClient http, Mir
         }
     }
 
-    /// <summary><paramref name="manifest"/> when it lists versions; a refresh that fails this keeps the copy it had.</summary>
-    private static VersionManifest Listed(VersionManifest? manifest, string which) =>
-        manifest is { Versions.Count: > 0 } ? manifest : throw new InvalidDataException($"{which} version manifest lists no versions.");
+    /// <summary>
+    /// What <see cref="GetManifestAsync"/> throws when there's no manifest to be had: offline with no copy on disk,
+    /// every source answering something unusable, a disk copy that can't be read. Callers show what they can without
+    /// one (an empty list, the instance's own version) instead.
+    /// </summary>
+    public static bool IsManifestUnavailable(Exception ex) =>
+        ex is HttpRequestException or TaskCanceledException or JsonException or InvalidDataException or IOException or UnauthorizedAccessException;
+
+    /// <summary>
+    /// <paramref name="manifest"/> when it can be used: entries without an id are dropped, and at least one has to be
+    /// left, with the latest release named. A refresh that fails this keeps the copy it had.
+    /// </summary>
+    private static VersionManifest Usable(VersionManifest? manifest, string which)
+    {
+        manifest?.Versions?.RemoveAll(v => v is null || string.IsNullOrEmpty(v.Id));
+        return manifest is { Versions.Count: > 0, Latest.Release.Length: > 0 }
+            ? manifest
+            : throw new InvalidDataException($"{which} version manifest lists no versions or no latest release.");
+    }
 
     /// <summary>Lists version ids that have a JSON in the local <c>versions/</c> folder.</summary>
     public IEnumerable<string> GetInstalledVersionIds()
@@ -130,22 +150,27 @@ public sealed class VersionRepository(GameDirectories dirs, HttpClient http, Mir
     public async Task<ResolvedVersion> ResolveAsync(string id, CancellationToken ct = default) =>
         VersionMerger.Merge(await LoadChainAsync(id, ct).ConfigureAwait(false));
 
-    private async Task<byte[]> GetBytesWithFallbackAsync(string url, CancellationToken ct, string? sha1 = null)
+    private Task<byte[]> GetBytesWithFallbackAsync(string url, CancellationToken ct, string? sha1 = null) =>
+        GetWithFallbackAsync(url, (uri, bytes) =>
+            sha1 is null || HashUtil.HashEquals(sha1, Convert.ToHexStringLower(System.Security.Cryptography.SHA1.HashData(bytes)))
+                ? bytes
+                : throw new InvalidDataException($"SHA-1 mismatch for {uri}"), ct);
+
+    /// <summary>
+    /// The first source (official or mirror, in the user's order) whose answer <paramref name="read"/> accepts. It
+    /// rejects one by throwing <see cref="InvalidDataException"/> or <see cref="JsonException"/>: a hash mismatch, a
+    /// mirror's "{}" or error page served with 200. The next source may have it right.
+    /// </summary>
+    private async Task<T> GetWithFallbackAsync<T>(string url, Func<Uri, byte[], T> read, CancellationToken ct)
     {
         Exception? last = null;
         foreach (var uri in mirrors.Candidates(url))
         {
             try
             {
-                var bytes = await http.GetByteArrayAsync(uri, ct).ConfigureAwait(false);
-                if (sha1 is not null && !HashUtil.HashEquals(sha1, Convert.ToHexStringLower(System.Security.Cryptography.SHA1.HashData(bytes))))
-                {
-                    last = new InvalidDataException($"SHA-1 mismatch for {uri}");
-                    continue;
-                }
-                return bytes;
+                return read(uri, await http.GetByteArrayAsync(uri, ct).ConfigureAwait(false));
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or JsonException)
             {
                 last = ex;
             }

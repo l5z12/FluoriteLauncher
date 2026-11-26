@@ -11,6 +11,9 @@ internal static partial class CoreLog
     [LoggerMessage(1002, LogLevel.Warning, "Version manifest unreachable or unusable, using cached copy")]
     public static partial void ManifestFromCache(ILogger logger, Exception ex);
 
+    [LoggerMessage(1003, LogLevel.Warning, "Couldn't save the offline copy {Path}; the one from before stays")]
+    public static partial void CacheNotSaved(ILogger logger, Exception ex, string path);
+
     [LoggerMessage(2001, LogLevel.Information, "Prepared {Version} with {Java}: {Command}")]
     public static partial void Prepared(ILogger logger, string version, string java, string command);
 

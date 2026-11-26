@@ -78,6 +78,13 @@ public sealed partial class HomeViewModel(
     public PatchNoteEntry? PatchNoteFor(string? version) =>
         version is null ? null : _allPatchNotes.FirstOrDefault(n => n.Version == version);
     [ObservableProperty] public partial bool HasRecent { get; set; }
+
+    /// <summary>
+    /// "You don't have any instances yet": once the instances were read and none are there to show. Not while they're
+    /// being read, nor when they couldn't be (that would tell someone with instances to make a first one).
+    /// </summary>
+    [ObservableProperty] public partial bool ShowNoInstances { get; set; }
+
     [ObservableProperty] public partial bool NeedsAccount { get; set; }
 
     [ObservableProperty]
@@ -165,6 +172,8 @@ public sealed partial class HomeViewModel(
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             logger.LogError(ex, "Reading the account for Home failed");
+            if (Greeting.Length == 0)
+                Greeting = Loc.Get("Home_GreetingAnonymous"); // Not a blank heading.
         }
 
         try
@@ -180,6 +189,7 @@ public sealed partial class HomeViewModel(
             foreach (var item in recent)
                 Recent.Add(item);
             HasRecent = Recent.Count > 0;
+            ShowNoInstances = !HasRecent;
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -206,8 +216,9 @@ public sealed partial class HomeViewModel(
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            // Offline with nothing cached, a timeout, a garbled manifest: what an earlier visit found stays; with
-            // nothing found yet, the cards go.
+            // Offline with nothing cached, a timeout, no source with a usable manifest: what an earlier visit found
+            // stays; with nothing found yet, the cards go.
+            logger.LogWarning(ex, "Loading the latest versions for Home failed");
         }
         finally
         {
@@ -256,33 +267,33 @@ public sealed partial class HomeViewModel(
         var noteImage = ImagesOf(PatchNotes);
         var newsImage = ImagesOf(News);
 
+        // Every card made before any is shown: something failing partway leaves the cards from before, not half a list.
+        var noteCards = notes.DistinctBy(n => n.Id).Take(8).Select(n => new NewsCard
+        {
+            Title = n.Title,
+            Subtitle = (n.Type == "snapshot" ? Loc.Get("News_Snapshot") : Loc.Get("News_Release"))
+                + (n.Date is { } date ? " · " + date.LocalDateTime.ToString("d", CultureInfo.CurrentCulture) : ""),
+            Text = n.ShortText,
+            Image = noteImage(MojangNewsClient.ImageUri(n.Image), 280),
+            PatchNote = n,
+        }).ToList();
+        var newsCards = articles.DistinctBy(n => n.Id).Take(6).Select(n => new NewsCard
+        {
+            Title = n.Title,
+            Subtitle = n.Date ?? "",
+            Text = n.Text,
+            // The play-page picture when the news-page one is missing or has no address.
+            Image = newsImage(MojangNewsClient.ImageUri(n.NewsPageImage) ?? MojangNewsClient.ImageUri(n.PlayPageImage), 400),
+            Link = Uri.TryCreate(n.ReadMoreLink, UriKind.Absolute, out var link) ? link : null,
+        }).ToList();
+
         _allPatchNotes = [.. notes];
         PatchNotes.Clear();
-        foreach (var n in notes.DistinctBy(n => n.Id).Take(8))
-        {
-            PatchNotes.Add(new NewsCard
-            {
-                Title = n.Title,
-                Subtitle = (n.Type == "snapshot" ? Loc.Get("News_Snapshot") : Loc.Get("News_Release"))
-                    + (n.Date is { } date ? " · " + date.LocalDateTime.ToString("d", CultureInfo.CurrentCulture) : ""),
-                Text = n.ShortText,
-                Image = noteImage(MojangNewsClient.ImageUri(n.Image), 280),
-                PatchNote = n,
-            });
-        }
-
+        foreach (var card in noteCards)
+            PatchNotes.Add(card);
         News.Clear();
-        foreach (var n in articles.DistinctBy(n => n.Id).Take(6))
-        {
-            News.Add(new NewsCard
-            {
-                Title = n.Title,
-                Subtitle = n.Date ?? "",
-                Text = n.Text,
-                Image = newsImage(MojangNewsClient.ImageUri(n.NewsPageImage ?? n.PlayPageImage), 400),
-                Link = Uri.TryCreate(n.ReadMoreLink, UriKind.Absolute, out var link) ? link : null,
-            });
-        }
+        foreach (var card in newsCards)
+            News.Add(card);
         HasNews = PatchNotes.Count > 0 || News.Count > 0;
     }
 

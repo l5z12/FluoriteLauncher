@@ -80,6 +80,49 @@ public class MojangNewsClientTests
         using var http = new HttpClient(new StubHandler(_ => throw new HttpRequestException("offline")));
         Assert.Empty(await new MojangNewsClient(http, dir.Path).GetPatchNotesAsync(TestContext.Current.CancellationToken));
     }
+
+    [Fact]
+    public async Task NullEntries_AreNothingToShow_NotAFailure()
+    {
+        using var dir = new TempDir();
+        var answer = """{ "entries": null }""";
+        using var http = new HttpClient(new StubHandler(_ => StubHandler.Json(answer)));
+        var client = new MojangNewsClient(http, dir.Path);
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Empty(await client.GetPatchNotesAsync(ct));
+        Assert.Empty(await client.GetJavaNewsAsync(ct));
+
+        answer = """{ "entries": [ null, { "id": "a", "title": "Java thing", "newsType": ["Java"] } ] }""";
+        Assert.Equal("a", Assert.Single(await client.GetPatchNotesAsync(ct)).Id);
+        Assert.Equal("a", Assert.Single(await client.GetJavaNewsAsync(ct)).Id);
+    }
+
+    [Fact]
+    public async Task AnAnswerWithNothingToShow_IsNotSavedOverTheOfflineCopy()
+    {
+        using var dir = new TempDir();
+        var answer = PatchNotes;
+        using var http = new HttpClient(new StubHandler(_ => StubHandler.Json(answer)));
+        var client = new MojangNewsClient(http, dir.Path);
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Single(await client.GetPatchNotesAsync(ct));
+        var saved = await File.ReadAllTextAsync(Path.Combine(dir.Path, "patch-notes.json"), ct);
+
+        foreach (var bad in new[] { "{}", """{ "entries": [] }""", """{ "entries": null }""" })
+        {
+            answer = bad;
+            Assert.Equal("26-4-snapshot-7", Assert.Single(await client.GetPatchNotesAsync(ct)).Id); // The offline copy.
+            Assert.Equal(saved, await File.ReadAllTextAsync(Path.Combine(dir.Path, "patch-notes.json"), ct));
+        }
+    }
+
+    [Theory]
+    [InlineData("http://")]
+    [InlineData("http://[x")]
+    public void AnAddressThatIsntOne_IsNoPicture(string url) =>
+        Assert.Null(MojangNewsClient.ImageUri(new NewsImage { Url = url }));
 }
 
 public class FluoriteLayoutTests

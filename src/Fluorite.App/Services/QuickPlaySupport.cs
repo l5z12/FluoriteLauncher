@@ -20,7 +20,7 @@ public sealed class QuickPlaySupport(VersionRepository versions)
             var manifest = await versions.GetManifestAsync();
             return manifest.Versions.FirstOrDefault(v => v.Id == mc)?.ParsedReleaseTime is not { } released || released >= s_firstSnapshot;
         }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or TaskCanceledException or System.Text.Json.JsonException)
+        catch (Exception ex) when (VersionRepository.IsManifestUnavailable(ex))
         {
             return true;
         }
