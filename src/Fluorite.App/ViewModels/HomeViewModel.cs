@@ -125,12 +125,23 @@ public sealed partial class HomeViewModel(
         }
     }
 
-    private async Task LoadCoreAsync()
+    /// <summary>
+    /// F5: the latest versions and the news feeds fetched again, not this session's copy. What's shown stays until
+    /// the new copy is in; offline, the cached one does.
+    /// </summary>
+    [RelayCommand]
+    private Task RefreshAsync()
+    {
+        _newsLoad = null;
+        return LoadCoreAsync(refresh: true);
+    }
+
+    private async Task LoadCoreAsync(bool refresh = false)
     {
         CardAction = settings.Current.VersionCardClick;
         // Started first: the network is the slow part, and it needn't wait for the local reads below.
         IsLoadingVersions = LatestRelease is null;
-        var manifestTask = versions.GetManifestAsync();
+        var manifestTask = versions.GetManifestAsync(refresh);
         var account = await accounts.GetSelectedAsync();
         NeedsAccount = account is null;
         Greeting = account is null ? Loc.Get("Home_GreetingAnonymous") : Loc.Format("Home_Greeting", account.PlayerName);
@@ -187,6 +198,10 @@ public sealed partial class HomeViewModel(
         var notes = await notesTask;
         var articles = await newsTask;
 
+        // Refreshed (F5), the cards already shown keep their pictures instead of going blank while they load again.
+        var noteImage = ImagesOf(PatchNotes);
+        var newsImage = ImagesOf(News);
+
         _allPatchNotes = [.. notes];
         PatchNotes.Clear();
         foreach (var n in notes.DistinctBy(n => n.Id).Take(8))
@@ -196,7 +211,7 @@ public sealed partial class HomeViewModel(
                 Title = n.Title,
                 Subtitle = (n.Type == "snapshot" ? Loc.Get("News_Snapshot") : Loc.Get("News_Release")) + " · " + n.Date?.LocalDateTime.ToString("d", CultureInfo.CurrentCulture),
                 Text = n.ShortText,
-                Image = Bitmap(MojangNewsClient.ImageUri(n.Image), 280),
+                Image = noteImage(MojangNewsClient.ImageUri(n.Image), 280),
                 PatchNote = n,
             });
         }
@@ -209,14 +224,24 @@ public sealed partial class HomeViewModel(
                 Title = n.Title,
                 Subtitle = n.Date ?? "",
                 Text = n.Text,
-                Image = Bitmap(MojangNewsClient.ImageUri(n.NewsPageImage ?? n.PlayPageImage), 400),
+                Image = newsImage(MojangNewsClient.ImageUri(n.NewsPageImage ?? n.PlayPageImage), 400),
                 Link = Uri.TryCreate(n.ReadMoreLink, UriKind.Absolute, out var link) ? link : null,
             });
         }
         HasNews = PatchNotes.Count > 0 || News.Count > 0;
     }
 
-    private static BitmapImage Bitmap(Uri uri, int decodeWidth) => new(uri) { DecodePixelWidth = decodeWidth };
+    /// <summary>Makes a card's picture, reusing the one a card in <paramref name="shown"/> already has for that address.</summary>
+    private static Func<Uri, int, BitmapImage> ImagesOf(IEnumerable<NewsCard> shown)
+    {
+        var images = new Dictionary<Uri, BitmapImage>();
+        foreach (var card in shown)
+        {
+            if (card.Image.UriSource is { } uri)
+                images.TryAdd(uri, card.Image);
+        }
+        return (uri, decodeWidth) => images.TryGetValue(uri, out var image) ? image : new(uri) { DecodePixelWidth = decodeWidth };
+    }
 
     [RelayCommand]
     private void Play(InstanceItem item) => PlayAs(item, null);
