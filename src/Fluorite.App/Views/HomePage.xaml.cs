@@ -12,6 +12,7 @@ public sealed partial class HomePage : Page
     public HomePage()
     {
         InitializeComponent();
+        ItemKeys.AddRefreshKey(this, () => ViewModel.RefreshCommand);
     }
 
     public HomeViewModel ViewModel { get; } = App.Get<HomeViewModel>();
