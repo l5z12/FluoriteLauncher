@@ -65,10 +65,11 @@ public sealed class MojangNewsClient(HttpClient http, string cacheDir)
 {
     public const string BaseUrl = "https://launchercontent.mojang.com";
 
-    public static Uri ImageUri(NewsImage? image) =>
+    /// <summary>Null for an entry without a picture (not the site's front page, which isn't one).</summary>
+    public static Uri? ImageUri(NewsImage? image) =>
         image?.Url is { Length: > 0 } url
             ? new Uri(url.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? url : BaseUrl + url)
-            : new Uri(BaseUrl + "/");
+            : null;
 
     public async Task<IReadOnlyList<PatchNoteEntry>> GetPatchNotesAsync(CancellationToken ct = default) =>
         (await GetCachedAsync("/v2/javaPatchNotes.json", "patch-notes.json", FluoriteJsonContext.Default.PatchNotesFeed, ct).ConfigureAwait(false))?.Entries ?? [];

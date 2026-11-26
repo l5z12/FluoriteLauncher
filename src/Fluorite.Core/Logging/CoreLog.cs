@@ -8,7 +8,7 @@ internal static partial class CoreLog
     [LoggerMessage(1001, LogLevel.Warning, "Download failed: {Item}")]
     public static partial void DownloadFailed(ILogger logger, Exception ex, string item);
 
-    [LoggerMessage(1002, LogLevel.Warning, "Version manifest unreachable, using cached copy")]
+    [LoggerMessage(1002, LogLevel.Warning, "Version manifest unreachable or unusable, using cached copy")]
     public static partial void ManifestFromCache(ILogger logger, Exception ex);
 
     [LoggerMessage(2001, LogLevel.Information, "Prepared {Version} with {Java}: {Command}")]

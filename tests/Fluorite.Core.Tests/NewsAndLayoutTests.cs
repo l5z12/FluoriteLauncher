@@ -61,7 +61,9 @@ public class MojangNewsClientTests
         var note = Assert.Single(notes);
         Assert.Equal("26.4-snapshot-7", note.Version);
         Assert.Equal(new DateTimeOffset(2026, 11, 3, 13, 8, 56, TimeSpan.Zero), note.Date);
-        Assert.Equal("https://launchercontent.mojang.com/v2/images/x.jpg", MojangNewsClient.ImageUri(note.Image).ToString());
+        Assert.Equal("https://launchercontent.mojang.com/v2/images/x.jpg", MojangNewsClient.ImageUri(note.Image)?.ToString());
+        Assert.Null(MojangNewsClient.ImageUri(null));
+        Assert.Null(MojangNewsClient.ImageUri(new NewsImage { Url = "" }));
 
         Assert.Equal("Java thing", Assert.Single(await client.GetJavaNewsAsync(ct)).Title);
         Assert.Equal("<p>Hi</p>", (await client.GetPatchNoteAsync(note, ct))!.Body);

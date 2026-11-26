@@ -40,17 +40,18 @@ public sealed class VersionRepository(GameDirectories dirs, HttpClient http, Mir
             try
             {
                 var bytes = await GetBytesWithFallbackAsync(ManifestUrl, ct).ConfigureAwait(false);
-                _manifest = JsonSerializer.Deserialize(bytes, FluoriteJsonContext.Default.VersionManifest)
-                    ?? throw new InvalidDataException("Empty version manifest.");
+                // Checked before it replaces anything: a mirror answering "{}" (or garbage) with 200 mustn't empty the
+                // version lists, here or in the copy on disk. The disk copy is used instead, as when offline.
+                _manifest = Listed(JsonSerializer.Deserialize(bytes, FluoriteJsonContext.Default.VersionManifest), "Downloaded");
                 Directory.CreateDirectory(dirs.Versions);
                 await File.WriteAllBytesAsync(cachePath, bytes, ct).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested && File.Exists(cachePath))
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidDataException
+                && !ct.IsCancellationRequested && File.Exists(cachePath))
             {
                 CoreLog.ManifestFromCache(_logger, ex);
                 await using var fs = File.OpenRead(cachePath);
-                _manifest = await JsonSerializer.DeserializeAsync(fs, FluoriteJsonContext.Default.VersionManifest, ct).ConfigureAwait(false)
-                    ?? throw new InvalidDataException("Empty cached version manifest.");
+                _manifest = Listed(await JsonSerializer.DeserializeAsync(fs, FluoriteJsonContext.Default.VersionManifest, ct).ConfigureAwait(false), "Cached");
             }
             return _manifest;
         }
@@ -59,6 +60,10 @@ public sealed class VersionRepository(GameDirectories dirs, HttpClient http, Mir
             _manifestLock.Release();
         }
     }
+
+    /// <summary><paramref name="manifest"/> when it lists versions; a refresh that fails this keeps the copy it had.</summary>
+    private static VersionManifest Listed(VersionManifest? manifest, string which) =>
+        manifest is { Versions.Count: > 0 } ? manifest : throw new InvalidDataException($"{which} version manifest lists no versions.");
 
     /// <summary>Lists version ids that have a JSON in the local <c>versions/</c> folder.</summary>
     public IEnumerable<string> GetInstalledVersionIds()
