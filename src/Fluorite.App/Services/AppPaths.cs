@@ -1,3 +1,5 @@
+using Fluorite.Core;
+
 namespace Fluorite.App.Services;
 
 /// <summary>
@@ -48,6 +50,6 @@ public static class AppPaths
         if (string.Equals(Path.GetFullPath(path), DefaultRoot, StringComparison.OrdinalIgnoreCase))
             File.Delete(PointerFile);
         else
-            File.WriteAllText(PointerFile, Path.GetFullPath(path));
+            AtomicFile.WriteAllText(PointerFile, Path.GetFullPath(path)); // Half a path points nowhere: the data would seem gone.
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Fluorite.Core;
 using Fluorite.Core.Json;
 using Fluorite.Core.Settings;
 
@@ -35,9 +36,7 @@ public sealed class SettingsService
     public void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-        var tmp = _path + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(Current, FluoriteJsonContext.Default.LauncherSettings));
-        File.Move(tmp, _path, overwrite: true);
+        AtomicFile.WriteAllText(_path, JsonSerializer.Serialize(Current, FluoriteJsonContext.Default.LauncherSettings));
         Saved?.Invoke(this, EventArgs.Empty);
     }
 }

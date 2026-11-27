@@ -66,7 +66,7 @@ internal sealed class CliServices : IDisposable
         }
     }
 
-    public void SaveSettings() => File.WriteAllBytes(SettingsPath, JsonSerializer.SerializeToUtf8Bytes(Settings, FluoriteJsonContext.Default.LauncherSettings));
+    public void SaveSettings() => AtomicFile.WriteAllBytes(SettingsPath, JsonSerializer.SerializeToUtf8Bytes(Settings, FluoriteJsonContext.Default.LauncherSettings));
 
     /// <summary>The pipeline for the instance's store (another launcher's .minecraft when used in place).</summary>
     public LaunchPipeline PipelineFor(GameInstance instance) => Pipeline.ForStore(instance.Store, Http);
