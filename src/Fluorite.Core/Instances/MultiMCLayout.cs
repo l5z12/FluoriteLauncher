@@ -299,7 +299,7 @@ public sealed class MultiMCLayout(string root, ExternalLayoutContext context) : 
         Directory.CreateDirectory(icons);
         var target = Path.Combine(icons, key + Path.GetExtension(file).ToLowerInvariant());
         if (!File.Exists(target))
-            File.WriteAllBytes(target, bytes);
+            AtomicFile.WriteAllBytes(target, bytes);
         return key;
     }
 

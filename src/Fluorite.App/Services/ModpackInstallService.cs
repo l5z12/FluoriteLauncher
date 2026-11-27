@@ -1,3 +1,4 @@
+using Fluorite.Core;
 using Fluorite.Core.Instances;
 using Fluorite.Core.Net;
 using Fluorite.Modding.Content;
@@ -412,7 +413,7 @@ public sealed class ModpackInstallService(
         {
             var bytes = await http.GetByteArrayAsync(uri);
             var path = Path.Combine(instance.Directory, "icon" + (url.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ? ".jpg" : ".png"));
-            await File.WriteAllBytesAsync(path, bytes);
+            await AtomicFile.WriteAllBytesAsync(path, bytes);
             instance.Manifest.Icon = path;
             await layout.SaveAsync(instance);
         }

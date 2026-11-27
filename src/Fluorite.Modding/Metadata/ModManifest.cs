@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Fluorite.Core;
 using Tomlyn;
 using Tomlyn.Model;
 
@@ -239,7 +240,7 @@ public static partial class ModManifest
             if (!File.Exists(originalCopy))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(originalCopy)!);
-                File.Copy(jarPath, originalCopy);
+                AtomicFile.Copy(jarPath, originalCopy);
                 copied = true;
             }
             try

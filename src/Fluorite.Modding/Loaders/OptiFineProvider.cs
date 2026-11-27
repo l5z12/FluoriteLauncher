@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
+using Fluorite.Core;
 using Fluorite.Core.Instances;
 using Fluorite.Core.Java;
 using Fluorite.Core.Net;
@@ -144,7 +145,7 @@ public sealed class OptiFineProvider(HttpClient http, MirrorTable mirrors) : ILo
         Directory.CreateDirectory(modsDirectory);
         foreach (var old in Directory.EnumerateFiles(modsDirectory, "OptiFine_*.jar"))
             File.Delete(old); // Only one OptiFine at a time.
-        File.Copy(jar, target);
+        AtomicFile.Copy(jar, target);
     }
 
     public async Task<string> InstallAsync(string minecraftVersion, string loaderVersion, LoaderInstallContext ctx, CancellationToken ct = default)
@@ -175,7 +176,7 @@ public sealed class OptiFineProvider(HttpClient http, MirrorTable mirrors) : ILo
             }
             else
             {
-                File.Copy(raw, libPath, overwrite: true);
+                AtomicFile.Copy(raw, libPath);
             }
 
             if (JarTools.ReadText(zip, "launchwrapper-of.txt")?.Trim() is { Length: > 0 } lwVersion)
