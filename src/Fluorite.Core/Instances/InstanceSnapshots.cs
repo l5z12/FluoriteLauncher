@@ -109,7 +109,7 @@ public sealed class InstanceSnapshots(string root, Func<string, string, bool>? t
                 }
                 return m;
             }, ct).ConfigureAwait(false);
-            await File.WriteAllTextAsync(Path.Combine(dir, ManifestFile), JsonSerializer.Serialize(manifest, FluoriteJsonContext.Default.SnapshotManifest), ct).ConfigureAwait(false);
+            await AtomicFile.WriteAllTextAsync(Path.Combine(dir, ManifestFile), JsonSerializer.Serialize(manifest, FluoriteJsonContext.Default.SnapshotManifest), ct: ct).ConfigureAwait(false);
             return new InstanceSnapshot(dir, manifest);
         }
         catch
@@ -146,7 +146,7 @@ public sealed class InstanceSnapshots(string root, Func<string, string, bool>? t
             var saved = Path.Combine(snapshot.Directory, ExtraFolder, i.ToString(CultureInfo.InvariantCulture));
             var target = snapshot.Manifest.Extra[i];
             if (File.Exists(saved) && Path.GetDirectoryName(target) is { } parent && Directory.Exists(parent))
-                File.Copy(saved, target, overwrite: true);
+                AtomicFile.Copy(saved, target);
         }
         return Clone(snapshot.Manifest.Components);
     }, ct);
