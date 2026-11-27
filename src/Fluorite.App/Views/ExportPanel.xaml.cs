@@ -150,6 +150,9 @@ public sealed partial class ExportPanel : UserControl
     /// <summary>Null when empty or when the format has no place for it.</summary>
     public string? Author => AuthorBox.IsEnabled && !string.IsNullOrWhiteSpace(AuthorBox.Text) ? AuthorBox.Text.Trim() : null;
 
+    /// <summary>The format has a place for an author (CurseForge, packwiz).</summary>
+    public bool UsesAuthor => AuthorBox.IsEnabled;
+
     public string? Summary => SummaryBox.IsEnabled && !string.IsNullOrWhiteSpace(SummaryBox.Text) ? SummaryBox.Text.Trim() : null;
 
     /// <summary>Copy every file in, linking nothing (Advanced; what Settings says to start with).</summary>

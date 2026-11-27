@@ -284,8 +284,8 @@ public sealed class ModpackInstallService(
         var format = panel.Format;
         var state = panel.ToState();
         settings.Current.LastExportFormat = panel.FormatIndex;
-        if (state.Author is { } author)
-            settings.Current.LastExportAuthor = author;
+        if (panel.UsesAuthor) // Emptied too, so it can be taken back; a format without one leaves it as it was.
+            settings.Current.LastExportAuthor = panel.Author;
         settings.Save();
         await TrySaveAsync(state, instance);
 
