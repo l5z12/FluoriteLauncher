@@ -716,7 +716,9 @@
   <data name="Export_FieldUnused" xml:space="preserve"><value>{0} 整合包没有此项。</value></data>
   <data name="Export_LastExport" xml:space="preserve"><value>上次导出：{0} · {1} {2}</value></data>
   <data name="Export_Running" xml:space="preserve"><value>游戏正在运行：正在使用的存档和设置可能尚未保存完整。先退出游戏可得到完整的副本。</value></data>
-  <data name="Export_LoaderUnsupported" xml:space="preserve"><value>{0} 整合包无法包含 {1}：安装者只会得到不带它的 Minecraft {2}。Prism 整合包可以。</value></data>
+  <data name="Export_LoaderUnsupported" xml:space="preserve"><value>{0} 整合包无法包含 {1}：安装者只会得到不带它的 Minecraft {2}。</value></data>
+  <data name="Export_LoaderPrismCan" xml:space="preserve"><value>Prism 整合包可以。</value></data>
+  <data name="Export_OptiFineLeftOut" xml:space="preserve"><value>不包含 OptiFine：任何整合包格式都无法包含它。</value></data>
   <data name="Export_IncludeHeader.Text" xml:space="preserve"><value>包含内容</value></data>
   <data name="Export_SelectAllLink.Content" xml:space="preserve"><value>全选</value></data>
   <data name="Export_SelectNoneLink.Content" xml:space="preserve"><value>全不选</value></data>

@@ -229,10 +229,19 @@ public sealed partial class ExportPanel : UserControl
         var format = Format;
         var name = s_shortNames[FormatIndex];
 
-        var unsupported = ModpackExporter.UnsupportedLoader(_instance.Manifest, format);
-        Show(LoaderBar, unsupported is not null);
-        if (unsupported is not null)
-            LoaderBar.Message = Loc.Format("Export_LoaderUnsupported", name, InstanceItem.LoaderName(unsupported), _instance.Manifest.MinecraftVersion ?? "");
+        // The loader this format can't hold (pointing to Prism when it can), and OptiFine as a Forge mod, which none can.
+        var m = _instance.Manifest;
+        var notes = new List<string>();
+        if (ModpackExporter.UnsupportedLoader(m, format) is { } unsupported)
+        {
+            notes.Add(Loc.Format("Export_LoaderUnsupported", name, InstanceItem.LoaderName(unsupported), m.MinecraftVersion ?? ""));
+            if (format != PackFormat.MultiMC && ModpackExporter.UnsupportedLoader(m, PackFormat.MultiMC) is null)
+                notes[^1] += " " + Loc.Get("Export_LoaderPrismCan");
+        }
+        if (ComponentResolver.OptiFineAsMod(m) is not null)
+            notes.Add(Loc.Get("Export_OptiFineLeftOut"));
+        Show(LoaderBar, notes.Count > 0);
+        LoaderBar.Message = string.Join("\n", notes);
 
         // Where each format puts what: Modrinth has no author, CurseForge no summary, Prism keeps the summary as notes.
         SetField(AuthorField, AuthorBox, format is PackFormat.CurseForge or PackFormat.Packwiz, name);

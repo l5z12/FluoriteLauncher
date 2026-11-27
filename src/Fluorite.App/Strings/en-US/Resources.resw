@@ -716,7 +716,9 @@
   <data name="Export_FieldUnused" xml:space="preserve"><value>{0} packs have no place for this.</value></data>
   <data name="Export_LastExport" xml:space="preserve"><value>Last exported {0} · {1} {2}</value></data>
   <data name="Export_Running" xml:space="preserve"><value>The game is running: worlds and settings it&apos;s using may be caught mid-save. Quit it first for a clean copy.</value></data>
-  <data name="Export_LoaderUnsupported" xml:space="preserve"><value>{0} packs can&apos;t hold {1}: whoever installs this one gets Minecraft {2} without it. Prism packs can.</value></data>
+  <data name="Export_LoaderUnsupported" xml:space="preserve"><value>{0} packs can&apos;t hold {1}: whoever installs this one gets Minecraft {2} without it.</value></data>
+  <data name="Export_LoaderPrismCan" xml:space="preserve"><value>Prism packs can.</value></data>
+  <data name="Export_OptiFineLeftOut" xml:space="preserve"><value>OptiFine stays out: no pack format can hold it.</value></data>
   <data name="Export_IncludeHeader.Text" xml:space="preserve"><value>Include</value></data>
   <data name="Export_SelectAllLink.Content" xml:space="preserve"><value>Select all</value></data>
   <data name="Export_SelectNoneLink.Content" xml:space="preserve"><value>Select none</value></data>

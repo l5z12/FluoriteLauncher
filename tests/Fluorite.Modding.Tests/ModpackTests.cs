@@ -416,6 +416,7 @@ public class ModpackInstallTests
     [InlineData(PackFormat.CurseForge, ComponentUids.LegacyFabric, true)]
     [InlineData(PackFormat.Packwiz, ComponentUids.LiteLoader, false)]
     [InlineData(PackFormat.MultiMC, ComponentUids.LiteLoader, false)]
+    [InlineData(PackFormat.MultiMC, ComponentUids.OptiFine, true)]
     public void UnsupportedLoader_SaysWhatAFormatCantHold(PackFormat format, string loader, bool unsupported)
     {
         var manifest = new InstanceManifest
@@ -425,6 +426,25 @@ public class ModpackInstallTests
         };
         Assert.Equal(unsupported ? loader : null, ModpackExporter.UnsupportedLoader(manifest, format));
         Assert.Null(ModpackExporter.UnsupportedLoader(new InstanceManifest { Name = "Vanilla" }, format));
+    }
+
+    [Fact]
+    public async Task Export_Prism_LeavesOutOptiFine()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "OF",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.20.1" }, new ComponentRef { Uid = ComponentUids.OptiFine, Version = "HD_U_I6" }],
+        }, Ct);
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var output = System.IO.Path.Combine(tmp.Path, "of.zip");
+        var result = await new ModpackExporter(content).ExportAsync(source, new PackExportOptions { Format = PackFormat.MultiMC, Name = "OF", Include = [] }, output, Ct);
+        Assert.Single(result.Warnings);
+        using var zip = ZipFile.OpenRead(output);
+        using var reader = new StreamReader(zip.GetEntry("mmc-pack.json")!.Open());
+        Assert.DoesNotContain(ComponentUids.OptiFine, reader.ReadToEnd(), StringComparison.Ordinal); // Prism has no such component.
     }
 
     [Fact]

@@ -78,7 +78,7 @@ public sealed class ModpackExporter(ContentService content)
 
     /// <summary>
     /// What <paramref name="format"/> calls the loader <paramref name="loaderUid"/>, or null when it can't express it
-    /// (a pack made that way installs without it). Prism takes any component.
+    /// (a pack made that way installs without it). Prism takes its own components as they are.
     /// </summary>
     public static string? LoaderKey(PackFormat format, string loaderUid) => format switch
     {
@@ -107,7 +107,11 @@ public sealed class ModpackExporter(ContentService content)
             ComponentUids.LiteLoader => "liteloader",
             _ => null,
         },
-        PackFormat.MultiMC => loaderUid,
+        PackFormat.MultiMC => loaderUid switch
+        {
+            ComponentUids.OptiFine => null, // Prism has no OptiFine component (it goes in as a jar mod there).
+            _ => loaderUid,
+        },
         _ => null,
     };
 
@@ -309,8 +313,11 @@ public sealed class ModpackExporter(ContentService content)
         var m = instance.Manifest;
         var components = new JsonArray();
         var mc = m.MinecraftVersion;
+        var warnings = new List<string>();
         components.Add((JsonNode)new JsonObject { ["uid"] = ComponentUids.Minecraft, ["version"] = mc, ["important"] = true });
-        if (ComponentResolver.PrimaryLoader(m) is { } loader)
+        if (ComponentResolver.PrimaryLoader(m) is { } unsupported && LoaderKey(PackFormat.MultiMC, unsupported.Uid) is null)
+            warnings.Add($"Prism packs can't express {unsupported.Uid}; installers will get vanilla {mc}.");
+        else if (ComponentResolver.PrimaryLoader(m) is { } loader)
         {
             if (loader.Uid is ComponentUids.FabricLoader or ComponentUids.LegacyFabric)
                 components.Add((JsonNode)new JsonObject { ["uid"] = loader.Uid == ComponentUids.LegacyFabric ? "net.legacyfabric.intermediary" : "net.fabricmc.intermediary", ["version"] = mc, ["dependencyOnly"] = true });
@@ -353,7 +360,7 @@ public sealed class ModpackExporter(ContentService content)
             foreach (var (rel, full) in files)
                 zip.CreateEntryFromFile(full, "minecraft/" + rel, CompressionLevel.Optimal);
         }
-        return new PackExportResult(output, 0, files.Count, []);
+        return new PackExportResult(output, 0, files.Count, warnings);
     }
 
     // ── packwiz ───────────────────────────────────────────────────────────
