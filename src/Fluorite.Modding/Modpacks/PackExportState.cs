@@ -58,10 +58,18 @@ public sealed class PackExportState
     {
         Directory.CreateDirectory(metadataDirectory);
         var path = Path.Combine(metadataDirectory, FileName);
-        var tmp = path + ".tmp";
-        await using (var fs = File.Create(tmp))
-            await JsonSerializer.SerializeAsync(fs, this, PackExportStateJsonContext.Default.PackExportState, ct).ConfigureAwait(false);
-        File.Move(tmp, path, overwrite: true);
+        // Through a temp file no other save shares (one export's last save can overlap the next's first).
+        var json = JsonSerializer.SerializeToUtf8Bytes(this, PackExportStateJsonContext.Default.PackExportState);
+        var tmp = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            await File.WriteAllBytesAsync(tmp, json, ct).ConfigureAwait(false);
+            File.Move(tmp, path, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(tmp); // Only there when the write or move failed.
+        }
     }
 
     /// <summary>

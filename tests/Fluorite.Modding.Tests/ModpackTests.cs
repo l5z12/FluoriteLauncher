@@ -502,6 +502,7 @@ public class ModpackInstallTests
         var back = PackExportState.Load(tmp.Path)!;
         Assert.Equal((PackFormat.Packwiz, "N", "2.0", "A", at), (back.Format, back.Name, back.Version, back.Author, back.ExportedAt));
         Assert.Equal((PackFormat.Modrinth, "1.0"), (back.ExportedFormat, back.ExportedVersion)); // What last finished, apart from the choices.
+        Assert.Empty(Directory.GetFiles(tmp.Path, "*.tmp")); // Saved through a temp file, gone after.
         Assert.Equal(["mods"], back.Included);
         Assert.Equal(["saves"], back.Excluded);
         File.WriteAllText(System.IO.Path.Combine(tmp.Path, PackExportState.FileName), "{ not json");
