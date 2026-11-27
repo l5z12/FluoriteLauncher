@@ -123,6 +123,134 @@ public class MojangNewsClientTests
     [InlineData("http://[x")]
     public void AnAddressThatIsntOne_IsNoPicture(string url) =>
         Assert.Null(MojangNewsClient.ImageUri(new NewsImage { Url = url }));
+
+    // Each checked against minecraft.net (2026-11-27).
+    [Theory]
+    [InlineData("26.3", "minecraft-java-edition-26-3")]
+    [InlineData("26.4-snapshot-9", "minecraft-26-4-snapshot-9")]
+    [InlineData("26.4-pre-1", "minecraft-26-4-pre-release-1")]
+    [InlineData("26.3-rc-3", "minecraft-26-3-release-candidate-3")]
+    [InlineData("1.21.4-pre3", "minecraft-1-21-4-pre-release-3")]
+    [InlineData("1.21.8-rc1", "minecraft-1-21-8-release-candidate-1")]
+    [InlineData("24w33a", "minecraft-snapshot-24w33a")]
+    public void PatchNote_Article_IsWorkedOutFromTheVersion(string version, string slug) =>
+        Assert.Equal("https://www.minecraft.net/article/" + slug, MojangNewsClient.ArticleUri(new PatchNoteEntry { Version = version })?.AbsoluteUri);
+
+    // As minecraft.net listed them on 2026-11-27: 26.4 Snapshot 10, a hotfix, took over Snapshot 9's article.
+    private const string ArticleListing = """
+    { "result": { "results": [
+      { "title": "Minecraft 26.4 Snapshot 10", "url": "https://www.minecraft.net/en-us/article/minecraft-26-4-snapshot-9" },
+      { "title": "Minecraft: Java Edition 26.3", "url": "https://feedback.minecraft.net/hc/en-us/articles/1-Minecraft-Java-Edition-26-3" },
+      null ], "numFound": 3, "page": 1 } }
+    """;
+
+    private static string Discovery(string net) => $$"""
+    { "result": { "serviceEnvironments": {
+      "store": { "prod": { "serviceUri": "https://store.mktpl.minecraft-services.net" } },
+      "net": { "prod": { "serviceUri": "{{net}}" } } } } }
+    """;
+
+    [Fact]
+    public async Task PatchNote_Article_IsTheOneTheSiteListsUnderItsTitle()
+    {
+        // Discovery out of reach (and never answered): the service it pointed to in 2026-11.
+        using var dir = new TempDir();
+        using var http = new HttpClient(new StubHandler(req => req.RequestUri!.Host == "net-secondary.web.minecraft-services.net"
+            ? StubHandler.Json(ArticleListing) : new HttpResponseMessage(HttpStatusCode.NotFound)));
+        var articles = await new MojangNewsClient(http, dir.Path).GetJavaArticlesAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(2, articles.Count);
+
+        Assert.Equal("https://www.minecraft.net/article/minecraft-26-4-snapshot-9",
+            MojangNewsClient.ArticleUri(new PatchNoteEntry { Title = "Minecraft 26.4  snapshot 10", Version = "26.4-snapshot-10" }, articles)?.AbsoluteUri);
+        // Not listed, or listed on another site: worked out from the version.
+        Assert.Equal("https://www.minecraft.net/article/minecraft-26-4-snapshot-8",
+            MojangNewsClient.ArticleUri(new PatchNoteEntry { Title = "Minecraft 26.4 Snapshot 8", Version = "26.4-snapshot-8" }, articles)?.AbsoluteUri);
+        Assert.Equal("https://www.minecraft.net/article/minecraft-java-edition-26-3",
+            MojangNewsClient.ArticleUri(new PatchNoteEntry { Title = "Minecraft: Java Edition 26.3", Version = "26.3" }, articles)?.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task JavaArticles_AreSearchedWhereDiscoveryPoints_AskedOnceAWeek()
+    {
+        var discoveries = 0;
+        List<string> searched = [];
+        using var dir = new TempDir();
+        using var http = new HttpClient(new StubHandler(req =>
+        {
+            if (req.RequestUri!.Host == "client.discovery.minecraft-services.net")
+            {
+                discoveries++;
+                return StubHandler.Json(Discovery("https://net-tertiary.web.minecraft-services.net"));
+            }
+            searched.Add(req.RequestUri.Host);
+            return StubHandler.Json(ArticleListing);
+        }));
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Equal(2, (await new MojangNewsClient(http, dir.Path).GetJavaArticlesAsync(ct)).Count);
+        var nextSession = new MojangNewsClient(http, dir.Path);
+        await nextSession.GetJavaArticlesAsync(ct); // From the disk.
+        await nextSession.GetJavaArticlesAsync(ct); // From memory.
+        Assert.Equal(1, discoveries);
+        Assert.Equal(Enumerable.Repeat("net-tertiary.web.minecraft-services.net", 3), searched);
+
+        File.SetLastWriteTimeUtc(Path.Combine(dir.Path, "discovery.json"), DateTime.UtcNow.AddDays(-8));
+        await new MojangNewsClient(http, dir.Path).GetJavaArticlesAsync(ct);
+        Assert.Equal(2, discoveries);
+    }
+
+    [Fact]
+    public async Task JavaArticles_AServiceThatMoved_IsFoundAgain()
+    {
+        var net = "net-old.web.minecraft-services.net";
+        using var dir = new TempDir();
+        using var http = new HttpClient(new StubHandler(req => req.RequestUri!.Host switch
+        {
+            "client.discovery.minecraft-services.net" => StubHandler.Json(Discovery("https://" + net)),
+            var host when host == net => StubHandler.Json(ArticleListing),
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound), // The old one, once it has moved.
+        }));
+        var ct = TestContext.Current.CancellationToken;
+        var client = new MojangNewsClient(http, dir.Path);
+        await client.GetJavaArticlesAsync(ct);
+
+        net = "net-new.web.minecraft-services.net";
+        Assert.Equal(2, (await client.GetJavaArticlesAsync(ct)).Count);
+        Assert.Equal(2, (await new MojangNewsClient(http, dir.Path).GetJavaArticlesAsync(ct)).Count); // The new one, kept.
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{ "result": { "serviceEnvironments": { "net": { "prod": { "serviceUri": "http://net.web.minecraft-services.net" } } } } }""")]
+    [InlineData("""{ "result": { "serviceEnvironments": { "net": { "prod": { "serviceUri": "https://example.com" } } } } }""")]
+    public async Task JavaArticles_ADiscoveryAnswerWithoutAUsableAddress_IsNotUsed(string answer)
+    {
+        using var dir = new TempDir();
+        using var http = new HttpClient(new StubHandler(req => req.RequestUri!.Host switch
+        {
+            "client.discovery.minecraft-services.net" => StubHandler.Json(answer),
+            "net-secondary.web.minecraft-services.net" => StubHandler.Json(ArticleListing),
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound),
+        }));
+        Assert.Equal(2, (await new MojangNewsClient(http, dir.Path).GetJavaArticlesAsync(TestContext.Current.CancellationToken)).Count);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("1.14 Pre-Release 5")]
+    [InlineData("combat-test-8c")]
+    public void PatchNote_AnUnknownVersion_HasNoArticle(string? version) =>
+        Assert.Null(MojangNewsClient.ArticleUri(new PatchNoteEntry { Version = version }));
+
+    [Fact]
+    public void PatchNote_WikiPage_IsTheVersionsOwn()
+    {
+        Assert.Equal("https://minecraft.wiki/w/Java_Edition_26.4-snapshot-10", MojangNewsClient.WikiUri(new PatchNoteEntry { Version = "26.4-snapshot-10" })?.AbsoluteUri);
+        Assert.Equal("https://minecraft.wiki/w/Java_Edition_1.14_Pre-Release_5", MojangNewsClient.WikiUri(new PatchNoteEntry { Version = "1.14 Pre-Release 5" })?.AbsoluteUri);
+        Assert.Equal("https://zh.minecraft.wiki/w/Java%E7%89%8826.4-pre-1", MojangNewsClient.WikiUri(new PatchNoteEntry { Version = "26.4-pre-1" }, chinese: true)?.AbsoluteUri);
+        Assert.Null(MojangNewsClient.WikiUri(new PatchNoteEntry()));
+    }
 }
 
 public class FluoriteLayoutTests

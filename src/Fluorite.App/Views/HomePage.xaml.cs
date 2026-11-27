@@ -12,6 +12,7 @@ public sealed partial class HomePage : Page
     public HomePage()
     {
         InitializeComponent();
+        ItemKeys.FocusOnRightPress(this); // Cards: their menus show keys for the focused one.
         ItemKeys.AddRefreshKey(this, () => ViewModel.RefreshCommand);
     }
 
@@ -117,10 +118,65 @@ public sealed partial class HomePage : Page
         CopiedFeedback.Show(CardOf(sender));
     }
 
-    private void News_Click(object sender, RoutedEventArgs e)
+    /// <summary>A news card's click, and Open in browser on any article card: its minecraft.net article.</summary>
+    private async void OpenInBrowser_Click(object sender, RoutedEventArgs e)
     {
-        if (Bind.ItemOf<NewsCard>(sender) is { Link: { } link })
+        if (Bind.ItemOf<NewsCard>(sender) is { } card && await LinkOfAsync(card) is { } link)
             _ = Windows.System.Launcher.LaunchUriAsync(link);
+    }
+
+    /// <summary>A card's minecraft.net article: for patch notes, the address the site lists when it can be had.</summary>
+    private async Task<Uri?> LinkOfAsync(NewsCard card) =>
+        card.PatchNote is { } note ? await ViewModel.ArticleLinkAsync(note) : card.Link;
+
+    /// <summary>The site's addresses are looked up while the menu is open, so they're in when an item is picked.</summary>
+    private void PatchNoteMenu_Opening(object sender, object e) => ViewModel.LookUpArticles();
+
+    private void OpenWiki_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<NewsCard>(sender) is { WikiLink: { } link })
+            _ = Windows.System.Launcher.LaunchUriAsync(link);
+    }
+
+    private async void CopyLink_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<NewsCard>(sender) is { } card && await LinkOfAsync(card) is { } link)
+            CopyLink(card, link);
+    }
+
+    private void CopyWikiLink_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<NewsCard>(sender) is { WikiLink: { } link } card)
+            CopyLink(card, link);
+    }
+
+    /// <summary>
+    /// Ctrl+C copies the focused patch-notes or news card's link. Enter is the card's own click: the patch notes, or
+    /// the news article in the browser.
+    /// </summary>
+    private async void ArticleCard_PreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (sender is UIElement element && ItemKeys.HasFocus(element) && Bind.ItemOf<NewsCard>(sender) is { HasLink: true } card
+            && ItemKeys.Chord(e) == ItemKeys.Copy)
+        {
+            e.Handled = true;
+            if (await LinkOfAsync(card) is { } link)
+                CopyLink(card, link);
+        }
+    }
+
+    /// <summary>An address to the clipboard (as text and as a link), with "Copied" under the card it's from.</summary>
+    private void CopyLink(NewsCard card, Uri link)
+    {
+        var dp = new Windows.ApplicationModel.DataTransfer.DataPackage();
+        dp.SetText(link.AbsoluteUri);
+        dp.SetWebLink(link);
+        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
+        // Under the card, also when it came from the menu (which has closed); not when F5 has replaced it meanwhile.
+        var element = ViewModel.PatchNotes.IndexOf(card) is >= 0 and var note ? PatchNotesRepeater.TryGetElement(note)
+            : ViewModel.News.IndexOf(card) is >= 0 and var news ? NewsRepeater.TryGetElement(news)
+            : null;
+        CopiedFeedback.Show(element);
     }
 
     private void GoAccounts_Click(object sender, RoutedEventArgs e) => App.Window?.NavigateTo("Accounts");
