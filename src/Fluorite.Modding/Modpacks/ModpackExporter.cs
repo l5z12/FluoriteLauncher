@@ -161,7 +161,7 @@ public sealed class ModpackExporter(ContentService content)
             }
         }
         return result.Where(f => (keepDisabled || !f.Relative.EndsWith(ContentLocation.DisabledSuffix, StringComparison.OrdinalIgnoreCase))
-                && !f.Relative.EndsWith(".part", StringComparison.OrdinalIgnoreCase))
+                && !IsNeverExported(Path.GetFileName(f.Relative)))
             .ToList();
     }
 
@@ -213,6 +213,30 @@ public sealed class ModpackExporter(ContentService content)
         {
             return Path.TrimEndingDirectorySeparator(dir.FullName);
         }
+    }
+
+    /// <summary>
+    /// Files no pack holds: downloads cut short (<c>.part</c>), and a world's <c>session.lock</c>, which only says a
+    /// game has the world open (and which that game locks, so it can't even be read then).
+    /// </summary>
+    public static bool IsNeverExported(string fileName) =>
+        fileName.EndsWith(".part", StringComparison.OrdinalIgnoreCase) || fileName.Equals("session.lock", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Opens a file to copy into the pack even while the game has it open: a running game keeps its world's region
+    /// files open for writing, which an ordinary read refuses.
+    /// </summary>
+    private static FileStream OpenShared(string path) => new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+
+    /// <summary>What <c>CreateEntryFromFile</c> does, reading the file through <see cref="OpenShared"/>.</summary>
+    private static void AddFile(ZipArchive zip, string path, string entryName)
+    {
+        var entry = zip.CreateEntry(entryName, CompressionLevel.Optimal);
+        var written = File.GetLastWriteTime(path);
+        entry.LastWriteTime = written.Year is >= 1980 and <= 2107 ? written : new DateTime(1980, 1, 1, 0, 0, 0, DateTimeKind.Local); // What a zip can hold.
+        using var source = OpenShared(path);
+        using var target = entry.Open();
+        source.CopyTo(target);
     }
 
     private static bool IsContent(string relative) => PackPaths.LocationOf(relative) is not null;
@@ -274,7 +298,7 @@ public sealed class ModpackExporter(ContentService content)
                     });
                     continue;
                 }
-                zip.CreateEntryFromFile(full, "overrides/" + rel, CompressionLevel.Optimal);
+                AddFile(zip, full, "overrides/" + rel);
                 bundled++;
             }
             var index = new JsonObject
@@ -332,7 +356,7 @@ public sealed class ModpackExporter(ContentService content)
                     html.Append("<li>").Append(WebUtility.HtmlEncode(v.Name)).Append("</li>\n");
                     continue;
                 }
-                zip.CreateEntryFromFile(full, "overrides/" + rel, CompressionLevel.Optimal);
+                AddFile(zip, full, "overrides/" + rel);
                 bundled++;
             }
             var manifest = new JsonObject
@@ -406,9 +430,9 @@ public sealed class ModpackExporter(ContentService content)
             WriteText(zip, "instance.cfg", cfg.ToString());
             WriteJson(zip, "mmc-pack.json", new JsonObject { ["components"] = components, ["formatVersion"] = 1 });
             if (iconFile is not null)
-                zip.CreateEntryFromFile(iconFile, iconKey + Path.GetExtension(iconFile).ToLowerInvariant(), CompressionLevel.Optimal);
+                AddFile(zip, iconFile, iconKey + Path.GetExtension(iconFile).ToLowerInvariant());
             foreach (var (rel, full) in files)
-                zip.CreateEntryFromFile(full, "minecraft/" + rel, CompressionLevel.Optimal);
+                AddFile(zip, full, "minecraft/" + rel);
         }
         return new PackExportResult(output, 0, files.Count, warnings);
     }
@@ -448,7 +472,10 @@ public sealed class ModpackExporter(ContentService content)
                 written = rel;
                 var target = PackPaths.Resolve(outputDir, rel);
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                File.Copy(full, target, overwrite: true);
+                using (var source = OpenShared(full))
+                using (var copy = File.Create(target))
+                    source.CopyTo(copy);
+                File.SetLastWriteTimeUtc(target, File.GetLastWriteTimeUtc(full));
                 bundled++;
             }
             var hash = await ModpackInstaller.HashAsync(PackPaths.Resolve(outputDir, written), "sha256", ct).ConfigureAwait(false);

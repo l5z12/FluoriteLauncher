@@ -465,6 +465,41 @@ public class ModpackInstallTests
     }
 
     [Fact]
+    public async Task Export_TakesAWorldTheGameHasOpen()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Running",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }],
+        }, Ct);
+        var world = System.IO.Path.Combine(source.GameDirectory, "saves", "Mine");
+        Directory.CreateDirectory(System.IO.Path.Combine(world, "region"));
+        File.WriteAllText(System.IO.Path.Combine(world, "level.dat"), "l");
+        File.WriteAllText(System.IO.Path.Combine(world, "session.lock"), "\u2603");
+        File.WriteAllText(System.IO.Path.Combine(world, "region", "r.0.0.mca"), "r");
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+
+        // As the game holds them: the region file open for writing, session.lock locked.
+        using var region = new FileStream(System.IO.Path.Combine(world, "region", "r.0.0.mca"), FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+        using var sessionLock = new FileStream(System.IO.Path.Combine(world, "session.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+        if (OperatingSystem.IsWindows()) // What the game does there; elsewhere the lock doesn't stop reading.
+            sessionLock.Lock(0, sessionLock.Length);
+        foreach (var format in new[] { PackFormat.Modrinth, PackFormat.MultiMC })
+        {
+            var output = System.IO.Path.Combine(tmp.Path, $"running-{format}.zip");
+            await exporter.ExportAsync(source, new PackExportOptions { Format = format, Name = "Running", Include = ["saves"] }, output, Ct);
+            Assert.Equal(["saves/Mine/level.dat", "saves/Mine/region/r.0.0.mca"], ModpackReader.Read(output).Overrides.Select(o => o.Path).Order(StringComparer.Ordinal));
+        }
+        var wiz = System.IO.Path.Combine(tmp.Path, "running-wiz");
+        await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.Packwiz, Name = "Running", Include = ["saves"] }, wiz, Ct);
+        Assert.Equal("r", File.ReadAllText(System.IO.Path.Combine(wiz, "saves", "Mine", "region", "r.0.0.mca")));
+        Assert.False(File.Exists(System.IO.Path.Combine(wiz, "saves", "Mine", "session.lock")));
+    }
+
+    [Fact]
     public async Task Export_Packwiz_EscapesWhatTomlCantHoldAsIs()
     {
         using var tmp = new TempFolder();

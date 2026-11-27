@@ -428,7 +428,7 @@ public sealed partial class ExportPanel : UserControl
         }
         var children = entries
             .Select(p => (Name: Path.GetFileName(p), IsDir: Directory.Exists(p)))
-            .Where(e => e.IsDir || !e.Name.EndsWith(".part", StringComparison.OrdinalIgnoreCase)) // Never exported.
+            .Where(e => e.IsDir || !ModpackExporter.IsNeverExported(e.Name))
             .OrderByDescending(e => e.IsDir).ThenBy(e => ExportNode.Readable(e.Name), StringComparer.CurrentCultureIgnoreCase); // As they read.
         foreach (var (name, isDir) in children)
         {
@@ -614,7 +614,7 @@ public sealed partial class ExportPanel : UserControl
                 {
                     if (++count % 256 == 0)
                         ct.ThrowIfCancellationRequested();
-                    if (file.Name.EndsWith(".part", StringComparison.OrdinalIgnoreCase))
+                    if (ModpackExporter.IsNeverExported(file.Name))
                         continue;
                     var tally = OfFile(file);
                     var path = root + "/" + Path.GetRelativePath(full, file.FullName).Replace('\\', '/');
