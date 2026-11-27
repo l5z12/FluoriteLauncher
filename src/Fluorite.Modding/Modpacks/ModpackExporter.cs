@@ -541,8 +541,9 @@ public sealed class ModpackExporter(ContentService content)
     /// <summary>
     /// Moves a finished packwiz export from <paramref name="stage"/> into <paramref name="folder"/> file by file,
     /// <c>index.toml</c> and <c>pack.toml</c> last. File by file, not the folder at once: Windows won't move a folder
-    /// while anything has a file in it open, which an antivirus often does just after the file is written. Files of
-    /// the folder's own (a repository's) stay.
+    /// while anything has a file in it open, which an antivirus often does just after the file is written. Each file
+    /// it replaces is kept aside until all are in, and put back if one can't be moved in (an editor holding it), so
+    /// the folder holds the old pack or the new one, not some of each. Files of the folder's own (a repository's) stay.
     /// </summary>
     private static void MoveInto(string stage, string folder)
     {
@@ -552,11 +553,49 @@ public sealed class ModpackExporter(ContentService content)
             .Where(r => !last.Contains(r, StringComparer.OrdinalIgnoreCase))
             .Concat(last)
             .ToList();
-        foreach (var rel in relative)
+        var aside = stage + "-replaced";
+        var moved = new List<(string Target, string? Replaced)>();
+        var keepAside = false;
+        try
         {
-            var target = Path.Combine(folder, rel);
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            AtomicFile.Move(Path.Combine(stage, rel), target);
+            foreach (var rel in relative)
+            {
+                var target = Path.Combine(folder, rel);
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                string? replaced = null;
+                if (File.Exists(target))
+                {
+                    replaced = Path.Combine(aside, rel);
+                    Directory.CreateDirectory(Path.GetDirectoryName(replaced)!);
+                    AtomicFile.Move(target, replaced);
+                }
+                moved.Add((target, replaced));
+                AtomicFile.Move(Path.Combine(stage, rel), target);
+            }
+        }
+        catch
+        {
+            for (var i = moved.Count - 1; i >= 0; i--)
+            {
+                var (target, replaced) = moved[i];
+                try
+                {
+                    if (replaced is not null)
+                        AtomicFile.Move(replaced, target);
+                    else
+                        File.Delete(target);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    keepAside |= replaced is not null; // Not put back: the file stays where it was kept, not lost.
+                }
+            }
+            throw;
+        }
+        finally
+        {
+            if (!keepAside)
+                TryDeleteDirectory(aside);
         }
     }
 

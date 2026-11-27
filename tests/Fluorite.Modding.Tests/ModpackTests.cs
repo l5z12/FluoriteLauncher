@@ -541,6 +541,40 @@ public class ModpackInstallTests
     }
 
     [Fact]
+    public async Task Export_Packwiz_AgainIntoItsFolder_PutsBackWhatItReplacedWhenAFileWontMove()
+    {
+        if (!OperatingSystem.IsWindows())
+            Assert.Skip("Needs a file another program holds open, which only Windows keeps from being moved.");
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Wiz",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }],
+        }, Ct);
+        var config = System.IO.Path.Combine(source.GameDirectory, "config");
+        Directory.CreateDirectory(config);
+        File.WriteAllText(System.IO.Path.Combine(config, "a.toml"), "a1");
+        File.WriteAllText(System.IO.Path.Combine(config, "b.toml"), "b1");
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+        var wiz = System.IO.Path.Combine(tmp.Path, "wiz");
+        var options = new PackExportOptions { Format = PackFormat.Packwiz, Name = "Wiz", Include = ["config"] };
+        await exporter.ExportAsync(source, options, wiz, Ct);
+        var index = File.ReadAllText(System.IO.Path.Combine(wiz, "index.toml"));
+
+        File.WriteAllText(System.IO.Path.Combine(config, "a.toml"), "a2");
+        File.WriteAllText(System.IO.Path.Combine(config, "b.toml"), "b2");
+        // An editor has the pack's b.toml open: a.toml is replaced first, then b.toml can't be.
+        using (new FileStream(System.IO.Path.Combine(wiz, "config", "b.toml"), FileMode.Open, FileAccess.Read, FileShare.Read))
+            Assert.True(await Record.ExceptionAsync(() => exporter.ExportAsync(source, options, wiz, Ct)) is IOException or UnauthorizedAccessException);
+        Assert.Equal("a1", File.ReadAllText(System.IO.Path.Combine(wiz, "config", "a.toml")));
+        Assert.Equal("b1", File.ReadAllText(System.IO.Path.Combine(wiz, "config", "b.toml")));
+        Assert.Equal(index, File.ReadAllText(System.IO.Path.Combine(wiz, "index.toml")));
+        Assert.Equal(["config", "index.toml", "pack.toml"], Directory.EnumerateFileSystemEntries(wiz).Select(System.IO.Path.GetFileName).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public async Task Export_Packwiz_AgainIntoItsFolder_RemovesWhatItNoLongerHas()
     {
         using var tmp = new TempFolder();
