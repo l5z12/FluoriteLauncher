@@ -21,7 +21,10 @@ public sealed class PackExportOptions
     public string? Author { get; init; }
     public string? Summary { get; init; }
 
-    /// <summary>Top-level files/folders of the game directory to include (see <see cref="ModpackExporter.DefaultSelection"/>).</summary>
+    /// <summary>
+    /// Files and folders of the game directory to include, relative with <c>/</c>: top-level entries (see
+    /// <see cref="ModpackExporter.DefaultSelection"/>) or ones deeper down (<c>saves/My World</c>).
+    /// </summary>
     public required IReadOnlyCollection<string> Include { get; init; }
 }
 
@@ -64,9 +67,51 @@ public sealed class ModpackExporter(ContentService content)
             .ToList();
     }
 
+    /// <summary>
+    /// What <paramref name="format"/> calls the loader <paramref name="loaderUid"/>, or null when it can't express it
+    /// (a pack made that way installs without it). Prism takes any component.
+    /// </summary>
+    public static string? LoaderKey(PackFormat format, string loaderUid) => format switch
+    {
+        PackFormat.Modrinth => loaderUid switch
+        {
+            ComponentUids.FabricLoader => "fabric-loader",
+            ComponentUids.QuiltLoader => "quilt-loader",
+            ComponentUids.Forge => "forge",
+            ComponentUids.NeoForge => "neoforge",
+            _ => null,
+        },
+        PackFormat.CurseForge => loaderUid switch
+        {
+            ComponentUids.Forge => "forge",
+            ComponentUids.NeoForge => "neoforge",
+            ComponentUids.FabricLoader => "fabric",
+            ComponentUids.QuiltLoader => "quilt",
+            _ => null,
+        },
+        PackFormat.Packwiz => loaderUid switch
+        {
+            ComponentUids.FabricLoader => "fabric",
+            ComponentUids.QuiltLoader => "quilt",
+            ComponentUids.Forge => "forge",
+            ComponentUids.NeoForge => "neoforge",
+            ComponentUids.LiteLoader => "liteloader",
+            _ => null,
+        },
+        PackFormat.MultiMC => loaderUid,
+        _ => null,
+    };
+
+    /// <summary>The instance's loader when <paramref name="format"/> can't hold it; null when it can (or there's none).</summary>
+    public static string? UnsupportedLoader(InstanceManifest manifest, PackFormat format) =>
+        ComponentResolver.PrimaryLoader(manifest) is { } loader && LoaderKey(format, loader.Uid) is null ? loader.Uid : null;
+
+    /// <summary>Whether <paramref name="format"/> leaves turned-off content (<c>.disabled</c> files) out of the pack.</summary>
+    public static bool DropsDisabled(PackFormat format) => format != PackFormat.MultiMC;
+
     public async Task<PackExportResult> ExportAsync(GameInstance instance, PackExportOptions options, string outputPath, CancellationToken ct = default)
     {
-        var files = Collect(instance.GameDirectory, options.Include, keepDisabled: options.Format == PackFormat.MultiMC);
+        var files = Collect(instance.GameDirectory, options.Include, keepDisabled: !DropsDisabled(options.Format));
         return options.Format switch
         {
             PackFormat.Modrinth => await ExportMrpackAsync(instance, options, files, outputPath, ct).ConfigureAwait(false),
@@ -77,23 +122,33 @@ public sealed class ModpackExporter(ContentService content)
         };
     }
 
-    /// <summary>Relative path (<c>/</c>) → full path of every file under the selected entries.</summary>
+    /// <summary>
+    /// Relative path (<c>/</c>) → full path of every file under the selected entries, each once (a folder and something
+    /// inside it may both be listed). Entries that would point outside the game directory are refused.
+    /// </summary>
     private static List<(string Relative, string Full)> Collect(string gameDir, IReadOnlyCollection<string> include, bool keepDisabled)
     {
-        var result = new List<(string, string)>();
+        var result = new List<(string Relative, string Full)>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        void Add(string full)
+        {
+            var relative = Path.GetRelativePath(gameDir, full).Replace('\\', '/');
+            if (seen.Add(relative))
+                result.Add((relative, full));
+        }
         foreach (var name in include)
         {
-            var full = Path.Combine(gameDir, name);
+            var full = PackPaths.Resolve(gameDir, name.Trim('/', '\\'));
             if (File.Exists(full))
-                result.Add((name, full));
+                Add(full);
             else if (Directory.Exists(full))
             {
                 foreach (var f in Directory.EnumerateFiles(full, "*", SearchOption.AllDirectories))
-                    result.Add((Path.GetRelativePath(gameDir, f).Replace('\\', '/'), f));
+                    Add(f);
             }
         }
-        return result.Where(f => (keepDisabled || !f.Item1.EndsWith(ContentLocation.DisabledSuffix, StringComparison.OrdinalIgnoreCase))
-                && !f.Item1.EndsWith(".part", StringComparison.OrdinalIgnoreCase))
+        return result.Where(f => (keepDisabled || !f.Relative.EndsWith(ContentLocation.DisabledSuffix, StringComparison.OrdinalIgnoreCase))
+                && !f.Relative.EndsWith(".part", StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
 
@@ -131,14 +186,7 @@ public sealed class ModpackExporter(ContentService content)
         var warnings = new List<string>();
         if (ComponentResolver.PrimaryLoader(m) is { } loader)
         {
-            var key = loader.Uid switch
-            {
-                ComponentUids.FabricLoader => "fabric-loader",
-                ComponentUids.QuiltLoader => "quilt-loader",
-                ComponentUids.Forge => "forge",
-                ComponentUids.NeoForge => "neoforge",
-                _ => null,
-            };
+            var key = LoaderKey(PackFormat.Modrinth, loader.Uid);
             if (key is null)
                 warnings.Add($"Modrinth packs can't express {loader.Uid}; installers will get vanilla {m.MinecraftVersion}.");
             else
@@ -172,10 +220,11 @@ public sealed class ModpackExporter(ContentService content)
                 ["game"] = "minecraft",
                 ["versionId"] = o.Version,
                 ["name"] = o.Name,
-                ["summary"] = o.Summary,
-                ["files"] = entries,
-                ["dependencies"] = deps,
             };
+            if (!string.IsNullOrWhiteSpace(o.Summary))
+                index["summary"] = o.Summary;
+            index["files"] = entries;
+            index["dependencies"] = deps;
             WriteJson(zip, "modrinth.index.json", index);
         }
         return new PackExportResult(output, entries.Count, bundled, warnings);
@@ -191,14 +240,7 @@ public sealed class ModpackExporter(ContentService content)
         var loaders = new JsonArray();
         if (ComponentResolver.PrimaryLoader(m) is { } loader)
         {
-            var prefix = loader.Uid switch
-            {
-                ComponentUids.Forge => "forge",
-                ComponentUids.NeoForge => "neoforge",
-                ComponentUids.FabricLoader => "fabric",
-                ComponentUids.QuiltLoader => "quilt",
-                _ => null,
-            };
+            var prefix = LoaderKey(PackFormat.CurseForge, loader.Uid);
             if (prefix is null)
                 warnings.Add($"CurseForge packs can't express {loader.Uid}.");
             else
@@ -349,27 +391,27 @@ public sealed class ModpackExporter(ContentService content)
         var indexPath = Path.Combine(outputDir, "index.toml");
         await File.WriteAllTextAsync(indexPath, index.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
         var m = instance.Manifest;
+        var warnings = new List<string>();
         var versions = new StringBuilder("[versions]\nminecraft = ").Append(Toml(m.MinecraftVersion ?? "")).Append('\n');
-        if (ComponentResolver.PrimaryLoader(m) is { } loader && loader.Uid switch
+        if (ComponentResolver.PrimaryLoader(m) is { } loader)
         {
-            ComponentUids.FabricLoader => "fabric",
-            ComponentUids.QuiltLoader => "quilt",
-            ComponentUids.Forge => "forge",
-            ComponentUids.NeoForge => "neoforge",
-            ComponentUids.LiteLoader => "liteloader",
-            _ => null,
-        } is { } key)
-            versions.Append(key).Append(" = ").Append(Toml(loader.Version)).Append('\n');
+            if (LoaderKey(PackFormat.Packwiz, loader.Uid) is { } key)
+                versions.Append(key).Append(" = ").Append(Toml(loader.Version)).Append('\n');
+            else
+                warnings.Add($"packwiz packs can't express {loader.Uid}; installers will get vanilla {m.MinecraftVersion}.");
+        }
         var pack = new StringBuilder()
             .Append("name = ").Append(Toml(o.Name)).Append('\n')
             .Append("author = ").Append(Toml(o.Author ?? "")).Append('\n')
-            .Append("version = ").Append(Toml(o.Version)).Append('\n')
-            .Append("pack-format = \"packwiz:1.1.0\"\n\n")
+            .Append("version = ").Append(Toml(o.Version)).Append('\n');
+        if (!string.IsNullOrWhiteSpace(o.Summary))
+            pack.Append("description = ").Append(Toml(o.Summary)).Append('\n');
+        pack.Append("pack-format = \"packwiz:1.1.0\"\n\n")
             .Append("[index]\nfile = \"index.toml\"\nhash-format = \"sha256\"\nhash = ")
             .Append(Toml(await ModpackInstaller.HashAsync(indexPath, "sha256", ct).ConfigureAwait(false))).Append("\n\n")
             .Append(versions);
         await File.WriteAllTextAsync(Path.Combine(outputDir, "pack.toml"), pack.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
-        return new PackExportResult(outputDir, referenced, bundled, []);
+        return new PackExportResult(outputDir, referenced, bundled, warnings);
     }
 
     /// <summary>Writes <c>&lt;folder&gt;/&lt;name&gt;.pw.toml</c> next to where the file would go; returns its relative path.</summary>

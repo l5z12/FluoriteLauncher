@@ -107,9 +107,11 @@ internal static class PackCommands
 
         var formatOption = new Option<string>("--format") { Description = "mrpack|curseforge|prism|packwiz", Required = true };
         var outOption = new Option<string>("--out") { Required = true };
-        var includeOption = new Option<string?>("--include") { Description = "Comma-separated top-level entries (default: everything except worlds and personal settings)" };
+        var includeOption = new Option<string?>("--include") { Description = "Comma-separated entries, top-level or deeper (saves/My World) (default: everything except worlds and personal settings)" };
         var versionOption = new Option<string>("--pack-version") { DefaultValueFactory = _ => "1.0.0" };
-        var export = new Command("export", "Export an instance as a modpack") { instanceArg, formatOption, outOption, includeOption, nameOption, versionOption };
+        var authorOption = new Option<string?>("--author") { Description = "Pack author (CurseForge, packwiz)" };
+        var summaryOption = new Option<string?>("--summary") { Description = "Short description (Modrinth, Prism notes, packwiz)" };
+        var export = new Command("export", "Export an instance as a modpack") { instanceArg, formatOption, outOption, includeOption, nameOption, versionOption, authorOption, summaryOption };
         export.SetAction(async (pr, ct) =>
         {
             using var s = services(pr);
@@ -130,6 +132,8 @@ internal static class PackCommands
                 Format = format,
                 Name = pr.GetValue(nameOption) ?? instance.Name,
                 Version = pr.GetValue(versionOption)!,
+                Author = pr.GetValue(authorOption),
+                Summary = pr.GetValue(summaryOption),
                 Include = include,
             }, Path.GetFullPath(pr.GetValue(outOption)!), ct);
             foreach (var w in result.Warnings)
