@@ -18,7 +18,7 @@ internal static class VersionJsonWriter
         var id = node["id"]?.GetValue<string>() ?? throw new InvalidDataException("Loader profile has no id.");
         var path = dirs.VersionJson(id);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllTextAsync(path, node.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), ct).ConfigureAwait(false);
+        await AtomicFile.WriteAllTextAsync(path, node.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), ct: ct).ConfigureAwait(false);
         return id;
     }
 
@@ -26,7 +26,7 @@ internal static class VersionJsonWriter
     {
         var path = dirs.VersionJson(version.Id);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(version, FluoriteJsonContext.Default.VersionJson), ct).ConfigureAwait(false);
+        await AtomicFile.WriteAllTextAsync(path, JsonSerializer.Serialize(version, FluoriteJsonContext.Default.VersionJson), ct: ct).ConfigureAwait(false);
         return version.Id;
     }
 }
