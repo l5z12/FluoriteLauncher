@@ -254,6 +254,9 @@ public sealed partial class ExportPanel : UserControl
 
     // ── Advanced ──────────────────────────────────────────────────────────
 
+    /// <summary>Turned-off files stay out of this export: the format leaves them out and they aren't to be kept.</summary>
+    private bool DropsTurnedOff => ModpackExporter.DropsDisabled(Format) && !_keepDisabled;
+
     /// <summary>Prism packs always hold every file, and so do CurseForge packs when CurseForge is off in this build.</summary>
     private bool CopiesAll => Format == PackFormat.MultiMC || (Format == PackFormat.CurseForge && !_curseForge);
 
@@ -569,8 +572,9 @@ public sealed partial class ExportPanel : UserControl
         // Hidden and system files are exported too, so they count.
         var options = new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = 0 };
 
-        static ExportTally OfFile(FileInfo f) =>
-            new(f.Length, 1, f.Name.EndsWith(ContentLocation.DisabledSuffix, StringComparison.OrdinalIgnoreCase) ? 1 : 0);
+        static ExportTally OfFile(FileInfo f) => f.Name.EndsWith(ContentLocation.DisabledSuffix, StringComparison.OrdinalIgnoreCase)
+            ? new(f.Length, 1, 1, f.Length)
+            : new(f.Length, 1, 0, 0);
 
         ExportTally Folder(DirectoryInfo dir, string relative)
         {
@@ -616,7 +620,7 @@ public sealed partial class ExportPanel : UserControl
         var chosen = _roots.Count(r => r.State != false);
         var tally = _tallies is null ? (ExportTally?)null : Sum(_roots);
         CountText.Text = tally is { } t
-            ? Loc.Format("Export_ChosenSize", chosen, _roots.Count, Formats.Size(t.Bytes))
+            ? Loc.Format("Export_ChosenSize", chosen, _roots.Count, Formats.Size(t.Bytes - (DropsTurnedOff ? t.DisabledBytes : 0)))
             : Loc.Format("Export_SelectedCount", chosen, _roots.Count);
         // Linked mods don't add to the pack; with nothing linked, the size is about what it takes before compression.
         ToolTipService.SetToolTip(CountText, tally is null ? null : Loc.Get(CopiesAll || _localOnly ? "Export_SizeHintLocal" : "Export_SizeHint"));

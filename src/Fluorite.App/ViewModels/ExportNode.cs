@@ -5,10 +5,14 @@ using Fluorite.Modding.Metadata;
 
 namespace Fluorite.App.ViewModels;
 
-/// <summary>Size on disk, file count and turned-off (<c>.disabled</c>) files of a file or everything in a folder.</summary>
-public readonly record struct ExportTally(long Bytes, int Files, int Disabled)
+/// <summary>
+/// Size on disk and file count of a file or everything in a folder, and how many of them are turned off
+/// (<c>.disabled</c>) and their size, which most formats leave out.
+/// </summary>
+public readonly record struct ExportTally(long Bytes, int Files, int Disabled, long DisabledBytes)
 {
-    public static ExportTally operator +(ExportTally a, ExportTally b) => new(a.Bytes + b.Bytes, a.Files + b.Files, a.Disabled + b.Disabled);
+    public static ExportTally operator +(ExportTally a, ExportTally b) =>
+        new(a.Bytes + b.Bytes, a.Files + b.Files, a.Disabled + b.Disabled, a.DisabledBytes + b.DisabledBytes);
 }
 
 /// <summary>
