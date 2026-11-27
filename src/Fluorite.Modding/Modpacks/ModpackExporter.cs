@@ -459,11 +459,15 @@ public sealed class ModpackExporter(ContentService content)
         var now = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var warnings = new List<string>();
 
-        // Written into a folder beside the pack and moved in once whole: an export that fails leaves the pack as it was.
-        var stage = AtomicFile.TempPath(Path.TrimEndingDirectorySeparator(Path.GetFullPath(outputDir)));
+        // Written into a folder of its own inside the pack's and moved in once whole: an export that fails leaves the pack
+        // as it was. Inside rather than beside it, as the folder above may not be the user's to write (a share's root).
+        var created = !Directory.Exists(outputDir);
+        Directory.CreateDirectory(outputDir);
+        var stage = Path.Combine(outputDir, ".fluorite-export-" + Guid.NewGuid().ToString("N")[..8]);
+        var exported = false;
         try
         {
-            Directory.CreateDirectory(stage);
+            Directory.CreateDirectory(stage).Attributes |= FileAttributes.Hidden;
             foreach (var (rel, full) in files)
             {
                 ct.ThrowIfCancellationRequested();
@@ -524,27 +528,24 @@ public sealed class ModpackExporter(ContentService content)
                 .Append(versions);
             await File.WriteAllTextAsync(Path.Combine(stage, "pack.toml"), pack.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
             MoveInto(stage, outputDir);
+            exported = true;
         }
         finally
         {
-            TryDeleteDirectory(stage);
+            TryDeleteDirectory(created && !exported ? outputDir : stage); // A folder made for an export that failed goes too.
         }
         RemoveLeftovers(outputDir, before.Where(f => !now.Contains(f)));
         return new PackExportResult(outputDir, referenced, bundled, warnings);
     }
 
     /// <summary>
-    /// Moves a finished packwiz export from <paramref name="stage"/> into <paramref name="folder"/>: the whole folder
-    /// when there's none yet, else file by file with <c>index.toml</c> and <c>pack.toml</c> last, so what's there reads
-    /// as the old pack until it's the new one. Files of the folder's own (a repository's) stay.
+    /// Moves a finished packwiz export from <paramref name="stage"/> into <paramref name="folder"/> file by file,
+    /// <c>index.toml</c> and <c>pack.toml</c> last. File by file, not the folder at once: Windows won't move a folder
+    /// while anything has a file in it open, which an antivirus often does just after the file is written. Files of
+    /// the folder's own (a repository's) stay.
     /// </summary>
     private static void MoveInto(string stage, string folder)
     {
-        if (!Directory.Exists(folder))
-        {
-            Directory.Move(stage, folder);
-            return;
-        }
         string[] last = ["index.toml", "pack.toml"];
         var relative = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories)
             .Select(f => Path.GetRelativePath(stage, f))
@@ -555,7 +556,7 @@ public sealed class ModpackExporter(ContentService content)
         {
             var target = Path.Combine(folder, rel);
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.Move(Path.Combine(stage, rel), target, overwrite: true);
+            AtomicFile.Move(Path.Combine(stage, rel), target);
         }
     }
 

@@ -532,6 +532,7 @@ public class ModpackInstallTests
         {
             await Assert.ThrowsAnyAsync<IOException>(() => exporter.ExportAsync(source, asZip, zip, Ct));
             await Assert.ThrowsAnyAsync<IOException>(() => exporter.ExportAsync(source, asWiz, wiz, Ct));
+            await Assert.ThrowsAnyAsync<IOException>(() => exporter.ExportAsync(source, asWiz, System.IO.Path.Combine(output, "new-wiz"), Ct));
         }
         Assert.Equal(packed, File.ReadAllBytes(zip));
         Assert.Equal(packToml, File.ReadAllText(System.IO.Path.Combine(wiz, "pack.toml")));
