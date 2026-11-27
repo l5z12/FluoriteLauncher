@@ -92,6 +92,7 @@ public sealed class ContentIndex
         {
             await using var fs = File.Create(tmp);
             await JsonSerializer.SerializeAsync(fs, this, ContentIndexJsonContext.Default.ContentIndex, ct).ConfigureAwait(false);
+            fs.Flush(flushToDisk: true); // As AtomicFile.WriteAllBytes does: kept through a power cut.
         }).ConfigureAwait(false);
     }
 }

@@ -46,18 +46,47 @@ public static class AtomicFile
         }
     }
 
-    public static void WriteAllBytes(string path, byte[] bytes) => Write(path, tmp => File.WriteAllBytes(tmp, bytes));
+    /// <summary>
+    /// Writes <paramref name="bytes"/>, flushed to the disk before the move: the move is kept through a power cut, the
+    /// data it points at only once it's on the disk, so without the flush a file saved just before one (settings,
+    /// accounts, a manifest) could come back the right size and all zeros. Meant for small files, where the flush
+    /// costs nothing anyone notices.
+    /// </summary>
+    public static void WriteAllBytes(string path, byte[] bytes) => Write(path, tmp => WriteToDisk(tmp, bytes));
 
+    /// <inheritdoc cref="WriteAllBytes"/>
     public static Task WriteAllBytesAsync(string path, byte[] bytes, CancellationToken ct = default) =>
-        WriteAsync(path, tmp => File.WriteAllBytesAsync(tmp, bytes, ct));
+        WriteAsync(path, tmp => WriteToDiskAsync(tmp, bytes, ct));
 
-    /// <summary>UTF-8 without a byte order mark unless <paramref name="encoding"/> says otherwise, as <see cref="File.WriteAllText(string, string?)"/>.</summary>
-    public static void WriteAllText(string path, string text, Encoding? encoding = null) =>
-        Write(path, tmp => File.WriteAllText(tmp, text, encoding ?? s_utf8));
+    /// <summary>
+    /// As <see cref="WriteAllBytes"/>; in UTF-8 without a byte order mark unless <paramref name="encoding"/> says
+    /// otherwise, as <see cref="File.WriteAllText(string, string?)"/>.
+    /// </summary>
+    public static void WriteAllText(string path, string text, Encoding? encoding = null) => WriteAllBytes(path, Encode(text, encoding));
 
     /// <inheritdoc cref="WriteAllText"/>
     public static Task WriteAllTextAsync(string path, string text, Encoding? encoding = null, CancellationToken ct = default) =>
-        WriteAsync(path, tmp => File.WriteAllTextAsync(tmp, text, encoding ?? s_utf8, ct));
+        WriteAllBytesAsync(path, Encode(text, encoding), ct);
+
+    private static byte[] Encode(string text, Encoding? encoding)
+    {
+        encoding ??= s_utf8;
+        return [.. encoding.GetPreamble(), .. encoding.GetBytes(text)];
+    }
+
+    private static void WriteToDisk(string path, byte[] bytes)
+    {
+        using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        file.Write(bytes);
+        file.Flush(flushToDisk: true);
+    }
+
+    private static async Task WriteToDiskAsync(string path, byte[] bytes, CancellationToken ct)
+    {
+        await using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+        await file.WriteAsync(bytes, ct).ConfigureAwait(false);
+        file.Flush(flushToDisk: true);
+    }
 
     /// <summary>Copies <paramref name="source"/> to <paramref name="target"/>, replacing it if it's there.</summary>
     public static void Copy(string source, string target) => Write(target, tmp => File.Copy(source, tmp));

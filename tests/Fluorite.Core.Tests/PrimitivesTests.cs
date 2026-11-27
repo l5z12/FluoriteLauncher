@@ -1,3 +1,4 @@
+using System.Text;
 using Fluorite.Core.Java;
 using Fluorite.Core.Launch;
 using Fluorite.Core.Net;
@@ -218,6 +219,26 @@ public class AtomicFileTests
     [InlineData("backup.2024.tmp", false)]
     [InlineData("sodium.jar", false)]
     public void IsTempFile(string name, bool temp) => Assert.Equal(temp, AtomicFile.IsTempFile(name));
+
+    [Fact]
+    public void WriteAllText_WritesTheEncodingAsFileDoes()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var plain = Path.Combine(dir, "plain.txt");
+            var marked = Path.Combine(dir, "marked.url");
+            AtomicFile.WriteAllText(plain, "é");
+            AtomicFile.WriteAllText(marked, "é", Encoding.UTF8);
+            Assert.Equal([0xC3, 0xA9], File.ReadAllBytes(plain));
+            Assert.Equal([0xEF, 0xBB, 0xBF, 0xC3, 0xA9], File.ReadAllBytes(marked));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
 
     [Fact]
     public void TempPath_IsATempFile() => Assert.True(AtomicFile.IsTempFile(Path.GetFileName(AtomicFile.TempPath(@"C:\mods\sodium.jar"))));

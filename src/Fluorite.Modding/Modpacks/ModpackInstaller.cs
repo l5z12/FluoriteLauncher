@@ -63,6 +63,7 @@ public sealed class PackState
         {
             await using var fs = File.Create(tmp);
             await JsonSerializer.SerializeAsync(fs, this, PackStateJsonContext.Default.PackState, ct).ConfigureAwait(false);
+            fs.Flush(flushToDisk: true); // As AtomicFile.WriteAllBytes does: kept through a power cut.
         }).ConfigureAwait(false);
     }
 
