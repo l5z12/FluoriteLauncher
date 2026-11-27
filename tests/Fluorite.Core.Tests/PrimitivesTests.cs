@@ -212,6 +212,24 @@ public class AtomicFileTests
     }
 
     [Fact]
+    public void Write_OfAFileWithTheLongestNameThereIs()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, new string('m', 251) + ".jar"); // 255 characters: no room for a suffix.
+            AtomicFile.WriteAllText(path, "jar");
+            Assert.Equal("jar", File.ReadAllText(path));
+            Assert.Single(Directory.EnumerateFiles(dir));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Copy_OfAReadOnlyFile_ThatCantBePutInPlace_LeavesNoTempFile()
     {
         if (!OperatingSystem.IsWindows())

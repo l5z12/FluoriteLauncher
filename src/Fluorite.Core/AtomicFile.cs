@@ -109,8 +109,19 @@ public static class AtomicFile
     private static bool MayPass(Exception ex) =>
         ex is UnauthorizedAccessException or (IOException and not FileNotFoundException and not DirectoryNotFoundException and not PathTooLongException);
 
-    /// <summary>A temp path beside <paramref name="path"/> that no other write shares.</summary>
-    public static string TempPath(string path) => $"{path}.{Guid.NewGuid():N}.tmp";
+    /// <summary>
+    /// A temp path beside <paramref name="path"/> that no other write shares: <c>&lt;name&gt;.&lt;8 hex&gt;.tmp</c>, or
+    /// <c>fluorite.&lt;8 hex&gt;.tmp</c> when the name is too long to take more (a name has 255 characters at most).
+    /// </summary>
+    public static string TempPath(string path)
+    {
+        var suffix = "." + Guid.NewGuid().ToString("N")[..8] + ".tmp";
+        return Path.GetFileName(path).Length + suffix.Length <= MaxNameLength
+            ? path + suffix
+            : Path.Combine(Path.GetDirectoryName(path) ?? "", "fluorite" + suffix);
+    }
+
+    private const int MaxNameLength = 255;
 
     private static string Target(string path)
     {
