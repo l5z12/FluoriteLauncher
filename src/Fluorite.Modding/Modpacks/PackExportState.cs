@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fluorite.Core;
 
 namespace Fluorite.Modding.Modpacks;
 
@@ -60,16 +61,7 @@ public sealed class PackExportState
         var path = Path.Combine(metadataDirectory, FileName);
         // Through a temp file no other save shares (one export's last save can overlap the next's first).
         var json = JsonSerializer.SerializeToUtf8Bytes(this, PackExportStateJsonContext.Default.PackExportState);
-        var tmp = $"{path}.{Guid.NewGuid():N}.tmp";
-        try
-        {
-            await File.WriteAllBytesAsync(tmp, json, ct).ConfigureAwait(false);
-            File.Move(tmp, path, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(tmp); // Only there when the write or move failed.
-        }
+        await AtomicFile.WriteAllBytesAsync(path, json, ct).ConfigureAwait(false);
     }
 
     /// <summary>
