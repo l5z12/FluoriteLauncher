@@ -37,6 +37,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         OnGameStartIndex = (int)s.OnGameStart;
         HomeLoadingIndex = (int)s.HomeLoading;
         VersionCardClickIndex = (int)s.VersionCardClick;
+        ConfirmPermanentDeleteIndex = (int)s.ConfirmPermanentDelete;
         LauncherWindowIndex = (int)s.LauncherWindow;
         LauncherWidth = s.LauncherWidth == DefaultLauncherWidth ? double.NaN : s.LauncherWidth;
         LauncherHeight = s.LauncherHeight == DefaultLauncherHeight ? double.NaN : s.LauncherHeight;
@@ -129,6 +130,12 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     partial void OnVersionCardClickIndexChanged(int value) =>
         Persist(s => s.VersionCardClick = (Core.Settings.VersionCardAction)Math.Clamp(value, 0, 2));
+
+    /// <summary>Settings › Deleting instances for good, in <see cref="Core.Settings.PermanentDeleteConfirm"/>'s order.</summary>
+    [ObservableProperty] public partial int ConfirmPermanentDeleteIndex { get; set; }
+
+    partial void OnConfirmPermanentDeleteIndexChanged(int value) =>
+        Persist(s => s.ConfirmPermanentDelete = (Core.Settings.PermanentDeleteConfirm)Math.Clamp(value, 0, 2));
 
     // ── Launcher window ──────────────────────────────────────────────────
 

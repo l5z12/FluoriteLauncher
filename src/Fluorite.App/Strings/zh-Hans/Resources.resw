@@ -304,6 +304,8 @@
   <data name="Delete_PermanentTitle" xml:space="preserve"><value>永久删除“{0}”？</value></data>
   <data name="Delete_PermanentBody" xml:space="preserve"><value>该实例及其存档、模组和设置将被永久删除，不会移到回收站，且无法撤销。</value></data>
   <data name="Delete_Permanently" xml:space="preserve"><value>永久删除</value></data>
+  <data name="Delete_ConfirmPrompt" xml:space="preserve"><value>请在下方输入 {0} 以确认。</value></data>
+  <data name="Delete_ConfirmSentence" xml:space="preserve"><value>我要永久删除</value></data>
   <data name="Duplicate_Suffix" xml:space="preserve"><value>{0}（副本）</value></data>
   <data name="Shortcut_Created" xml:space="preserve"><value>已为“{0}”创建桌面快捷方式。</value></data>
   <!-- 实例 -->
@@ -1211,6 +1213,11 @@
   <data name="Snapshot_BeforeVersion" xml:space="preserve"><value>更改版本前</value></data>
   <data name="Settings_SnapshotBeforeUpdates.Header" xml:space="preserve"><value>更新前创建快照</value></data>
   <data name="Settings_SnapshotBeforeUpdates.Description" xml:space="preserve"><value>更新实例的模组、整合包或版本前保存快照，以便恢复（每个实例保留最新 5 个）。</value></data>
+  <data name="Settings_ConfirmPermanentDelete.Header" xml:space="preserve"><value>永久删除实例</value></data>
+  <data name="Settings_ConfirmPermanentDelete.Description" xml:space="preserve"><value>在实例上按 Shift+Del 会跳过回收站。删除前需要输入：无、实例名称或一句话。一次删除多个实例时需输入这句话。</value></data>
+  <data name="Settings_ConfirmDeleteNone.Content" xml:space="preserve"><value>无需输入，确认即可</value></data>
+  <data name="Settings_ConfirmDeleteName.Content" xml:space="preserve"><value>输入实例名称</value></data>
+  <data name="Settings_ConfirmDeleteSentence.Content" xml:space="preserve"><value>输入一句话</value></data>
   <data name="Content_Checking" xml:space="preserve"><value>正在检查新版本能否与其他模组一起使用…</value></data>
   <data name="Content_InstalledSkipped" xml:space="preserve"><value>已安装 · 跳过 {0} 项无法使用的内容</value></data>
   <data name="Content_LoaderChanged" xml:space="preserve"><value>{0} 已更新到 {1}</value></data>

@@ -259,15 +259,65 @@ public sealed partial class LibraryPage : Page
         DeleteDialog.Title = Loc.Format(permanent ? "Library_DeletePermanentManyTitle" : "Library_DeleteManyTitle", items.Count);
         DeleteText.Text = string.Join("\n", items.Take(8).Select(i => "• " + i.Name)) + (items.Count > 8 ? "\n…" : "") + "\n\n"
             + Loc.Get(permanent ? "Library_DeletePermanentManyBody" : "Library_DeleteManyBody");
-        if (await ShowDeleteDialogAsync(permanent))
+        if (await ShowDeleteDialogAsync(permanent, name: null))
             await ViewModel.DeleteAsync(items, permanent);
     }
 
-    /// <summary>The delete question, its button saying where they go: the Recycle Bin, or nowhere.</summary>
-    private async Task<bool> ShowDeleteDialogAsync(bool permanent)
+    /// <summary>What the delete question asks to be typed before its button works; null when nothing.</summary>
+    private string? _deleteConfirmText;
+
+    /// <summary>
+    /// The delete question, its button saying where they go: the Recycle Bin, or nowhere. Deleting for good can first
+    /// ask for the instance's <paramref name="name"/> or a sentence to be typed (Settings › Deleting instances for
+    /// good); several instances have no one name, so they get the sentence.
+    /// </summary>
+    private async Task<bool> ShowDeleteDialogAsync(bool permanent, string? name)
     {
         DeleteDialog.PrimaryButtonText = Loc.Get(permanent ? "Delete_Permanently" : "DeleteDialog/PrimaryButtonText");
+        var confirm = permanent ? App.Get<SettingsService>().Current.ConfirmPermanentDelete : Core.Settings.PermanentDeleteConfirm.None;
+        _deleteConfirmText = confirm switch
+        {
+            Core.Settings.PermanentDeleteConfirm.TypeName when name is not null => name,
+            Core.Settings.PermanentDeleteConfirm.TypeName or Core.Settings.PermanentDeleteConfirm.TypeSentence => Loc.Get("Delete_ConfirmSentence"),
+            _ => null,
+        };
+        DeleteConfirm.Visibility = _deleteConfirmText is null ? Visibility.Collapsed : Visibility.Visible;
+        DeleteConfirmBox.Text = "";
+        if (_deleteConfirmText is { } expected)
+        {
+            // "To confirm, type **Survival 1.21** below."
+            var parts = Loc.Get("Delete_ConfirmPrompt").Split("{0}");
+            DeleteConfirmPrompt.Inlines.Clear();
+            DeleteConfirmPrompt.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = parts[0] });
+            var bold = new Microsoft.UI.Xaml.Documents.Bold();
+            bold.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = expected });
+            DeleteConfirmPrompt.Inlines.Add(bold);
+            if (parts.Length > 1)
+                DeleteConfirmPrompt.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = parts[1] });
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(DeleteConfirmBox, Loc.Format("Delete_ConfirmPrompt", expected));
+        }
+        // Typing first: the button waits for a match, and then Enter in the box presses it. Otherwise Enter is Cancel.
+        DeleteDialog.IsPrimaryButtonEnabled = _deleteConfirmText is null;
+        DeleteDialog.DefaultButton = _deleteConfirmText is null ? ContentDialogButton.Close : ContentDialogButton.Primary;
         return await DeleteDialog.ShowAsync() == ContentDialogResult.Primary;
+    }
+
+    private void DeleteDialog_Opened(ContentDialog sender, ContentDialogOpenedEventArgs args)
+    {
+        if (_deleteConfirmText is not null)
+            DeleteConfirmBox.Focus(FocusState.Programmatic);
+    }
+
+    private void DeleteConfirmBox_TextChanged(object sender, TextChangedEventArgs e) =>
+        DeleteDialog.IsPrimaryButtonEnabled = _deleteConfirmText is null || ConfirmMatches(DeleteConfirmBox.Text, _deleteConfirmText);
+
+    /// <summary>Typed as asked. Case, spaces around and between words, and a full stop at the end don't count.</summary>
+    private static bool ConfirmMatches(string typed, string expected)
+    {
+        static string Normalize(string text) =>
+            string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).TrimEnd('.', '。');
+        var normalized = Normalize(typed);
+        return normalized.Length > 0 && string.Equals(normalized, Normalize(expected), StringComparison.OrdinalIgnoreCase);
     }
 
     // ── Drag to a group ───────────────────────────────────────────────────
@@ -550,7 +600,7 @@ public sealed partial class LibraryPage : Page
         var permanent = ShiftDelete.ForGood(sender);
         DeleteDialog.Title = Loc.Format(permanent ? "Delete_PermanentTitle" : "Delete_Title", item.Name);
         DeleteText.Text = Loc.Get(permanent ? "Delete_PermanentBody" : "Delete_Body");
-        if (await ShowDeleteDialogAsync(permanent))
+        if (await ShowDeleteDialogAsync(permanent, item.Name))
             await ViewModel.DeleteAsync(item, permanent);
     }
 

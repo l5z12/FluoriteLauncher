@@ -49,6 +49,22 @@ public enum LauncherWindowMode
     Maximized,
 }
 
+/// <summary>
+/// What deleting an instance for good (Shift+Del, past the Recycle Bin) asks to be typed before it goes
+/// (Settings › Deleting instances for good). Mods, worlds and screenshots have a few seconds of Undo instead.
+/// </summary>
+public enum PermanentDeleteConfirm
+{
+    /// <summary>Nothing: the question's button is enough.</summary>
+    None,
+
+    /// <summary>The instance's name. Deleting several at once has no one name, so the sentence is asked instead.</summary>
+    TypeName,
+
+    /// <summary>A set sentence ("I want to delete this permanently").</summary>
+    TypeSentence,
+}
+
 public enum LibrarySort
 {
     LastPlayed,
@@ -150,6 +166,9 @@ public sealed class LauncherSettings
 
     /// <summary>Automatic backups kept per world; older ones are deleted. Backups made by hand are never deleted.</summary>
     public int AutoBackupsToKeep { get; set; } = 5;
+
+    /// <summary>What deleting an instance for good asks to be typed first.</summary>
+    public PermanentDeleteConfirm ConfirmPermanentDelete { get; set; } = PermanentDeleteConfirm.None;
 
     public const int DefaultLogRetentionDays = 14;
 
