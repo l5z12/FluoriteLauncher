@@ -323,7 +323,7 @@ public sealed class LaunchPipeline(
         if (dst.Exists && dst.Length == src.Length && dst.LastWriteTimeUtc >= src.LastWriteTimeUtc)
             return;
         Directory.CreateDirectory(dst.DirectoryName!);
-        File.Copy(source, target, overwrite: true);
+        AtomicFile.Copy(source, target);
     }
 }
 
