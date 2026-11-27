@@ -181,8 +181,11 @@ public sealed partial class ScreenshotsViewModel : ObservableObject
     /// <summary>"Removed … Undo" after the last removal.</summary>
     [ObservableProperty] public partial UndoOffer? PendingUndo { get; set; }
 
-    /// <summary>Removed at once: Undo for a few seconds, then the Recycle Bin. False when nothing was removed.</summary>
-    public async Task<bool> DeleteAsync(IReadOnlyList<ScreenshotItemViewModel> items)
+    /// <summary>
+    /// Removed at once: Undo for a few seconds, then the Recycle Bin (<paramref name="permanent"/>: deleted for good).
+    /// False when nothing was removed.
+    /// </summary>
+    public async Task<bool> DeleteAsync(IReadOnlyList<ScreenshotItemViewModel> items, bool permanent = false)
     {
         if (items.Count == 0 || Instance is not { } instance)
             return false;
@@ -190,7 +193,7 @@ public sealed partial class ScreenshotsViewModel : ObservableObject
         RemovalStash stash;
         try
         {
-            stash = await Task.Run(() => RemovalStash.Create(instance.GameDirectory, shots.Select(s => s.Shot.Path)));
+            stash = await Task.Run(() => RemovalStash.Create(instance.GameDirectory, shots.Select(s => s.Shot.Path), permanent));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -203,11 +206,13 @@ public sealed partial class ScreenshotsViewModel : ObservableObject
             item.ReleaseThumbnail();
         }
         UpdateSummary();
-        var message = shots.Count == 1 ? Loc.Format("Undo_RemovedOne", shots[0].FileName) : Loc.Format("Undo_RemovedMany", shots.Count);
+        var message = UndoOffer.RemovedText(shots.Select(s => s.FileName).ToList(), permanent);
         var offer = new UndoOffer(message, async () =>
         {
-            await Task.Run(stash.Restore);
+            var allBack = await Task.Run(stash.Restore);
             await RefreshAsync();
+            if (!allBack)
+                Error = Loc.Get("Undo_NotAllBack"); // After the reload, which clears it.
         }, stash.Commit);
         _ = PendingUndo?.CommitAsync();
         offer.Finished += (_, _) =>

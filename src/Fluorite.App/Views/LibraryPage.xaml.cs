@@ -49,7 +49,7 @@ public sealed partial class LibraryPage : Page
             case ItemKeys.Select:
                 ViewModel.ToggleSelected(item);
                 break;
-            case ItemKeys.Delete when item.IsSelected && ViewModel.SelectionCount > 1:
+            case ItemKeys.Delete or ItemKeys.DeletePermanently when item.IsSelected && ViewModel.SelectionCount > 1:
                 DeleteSelection_Click(sender, e);
                 break;
             case ItemKeys.Hide when item.IsSelected && ViewModel.SelectionCount > 1:
@@ -70,7 +70,7 @@ public sealed partial class LibraryPage : Page
             case ItemKeys.ShowInFolder:
                 OpenFolder_Click(sender, e);
                 break;
-            case ItemKeys.Delete when !item.IsExternal:
+            case ItemKeys.Delete or ItemKeys.DeletePermanently when !item.IsExternal:
                 Delete_Click(sender, e);
                 break;
             default:
@@ -249,15 +249,75 @@ public sealed partial class LibraryPage : Page
 
     private void MenuShowHidden_Click(object sender, RoutedEventArgs e) => ViewModel.ShowHidden = MenuShowHidden.IsChecked;
 
+    /// <summary>With Shift (Shift+Del, or Shift held while clicking): asked as, and done as, deleting for good.</summary>
     private async void DeleteSelection_Click(object sender, RoutedEventArgs e)
     {
         var items = ViewModel.Selection;
         if (items.Count == 0)
             return;
-        DeleteDialog.Title = Loc.Format("Library_DeleteManyTitle", items.Count);
-        DeleteText.Text = string.Join("\n", items.Take(8).Select(i => "• " + i.Name)) + (items.Count > 8 ? "\n…" : "") + "\n\n" + Loc.Get("Library_DeleteManyBody");
-        if (await DeleteDialog.ShowAsync() == ContentDialogResult.Primary)
-            await ViewModel.DeleteAsync(items);
+        var permanent = ShiftDelete.ForGood(sender);
+        DeleteDialog.Title = Loc.Format(permanent ? "Library_DeletePermanentManyTitle" : "Library_DeleteManyTitle", items.Count);
+        DeleteText.Text = string.Join("\n", items.Take(8).Select(i => "• " + i.Name)) + (items.Count > 8 ? "\n…" : "") + "\n\n"
+            + Loc.Get(permanent ? "Library_DeletePermanentManyBody" : "Library_DeleteManyBody");
+        if (await ShowDeleteDialogAsync(permanent, name: null))
+            await ViewModel.DeleteAsync(items, permanent);
+    }
+
+    /// <summary>What the delete question asks to be typed before its button works; null when nothing.</summary>
+    private string? _deleteConfirmText;
+
+    /// <summary>
+    /// The delete question, its button saying where they go: the Recycle Bin, or nowhere. Deleting for good can first
+    /// ask for the instance's <paramref name="name"/> or a sentence to be typed (Settings › Deleting instances for
+    /// good); several instances have no one name, so they get the sentence.
+    /// </summary>
+    private async Task<bool> ShowDeleteDialogAsync(bool permanent, string? name)
+    {
+        DeleteDialog.PrimaryButtonText = Loc.Get(permanent ? "Delete_Permanently" : "DeleteDialog/PrimaryButtonText");
+        var confirm = permanent ? App.Get<SettingsService>().Current.ConfirmPermanentDelete : Core.Settings.PermanentDeleteConfirm.None;
+        _deleteConfirmText = confirm switch
+        {
+            Core.Settings.PermanentDeleteConfirm.TypeName when name is not null => name,
+            Core.Settings.PermanentDeleteConfirm.TypeName or Core.Settings.PermanentDeleteConfirm.TypeSentence => Loc.Get("Delete_ConfirmSentence"),
+            _ => null,
+        };
+        DeleteConfirm.Visibility = _deleteConfirmText is null ? Visibility.Collapsed : Visibility.Visible;
+        DeleteConfirmBox.Text = "";
+        if (_deleteConfirmText is { } expected)
+        {
+            // "To confirm, type **Survival 1.21** below."
+            var parts = Loc.Get("Delete_ConfirmPrompt").Split("{0}");
+            DeleteConfirmPrompt.Inlines.Clear();
+            DeleteConfirmPrompt.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = parts[0] });
+            var bold = new Microsoft.UI.Xaml.Documents.Bold();
+            bold.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = expected });
+            DeleteConfirmPrompt.Inlines.Add(bold);
+            if (parts.Length > 1)
+                DeleteConfirmPrompt.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = parts[1] });
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(DeleteConfirmBox, Loc.Format("Delete_ConfirmPrompt", expected));
+        }
+        // Typing first: the button waits for a match, and then Enter in the box presses it. Otherwise Enter is Cancel.
+        DeleteDialog.IsPrimaryButtonEnabled = _deleteConfirmText is null;
+        DeleteDialog.DefaultButton = _deleteConfirmText is null ? ContentDialogButton.Close : ContentDialogButton.Primary;
+        return await DeleteDialog.ShowAsync() == ContentDialogResult.Primary;
+    }
+
+    private void DeleteDialog_Opened(ContentDialog sender, ContentDialogOpenedEventArgs args)
+    {
+        if (_deleteConfirmText is not null)
+            DeleteConfirmBox.Focus(FocusState.Programmatic);
+    }
+
+    private void DeleteConfirmBox_TextChanged(object sender, TextChangedEventArgs e) =>
+        DeleteDialog.IsPrimaryButtonEnabled = _deleteConfirmText is null || ConfirmMatches(DeleteConfirmBox.Text, _deleteConfirmText);
+
+    /// <summary>Typed as asked. Case, spaces around and between words, and a full stop at the end don't count.</summary>
+    private static bool ConfirmMatches(string typed, string expected)
+    {
+        static string Normalize(string text) =>
+            string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).TrimEnd('.', '。');
+        var normalized = Normalize(typed);
+        return normalized.Length > 0 && string.Equals(normalized, Normalize(expected), StringComparison.OrdinalIgnoreCase);
     }
 
     // ── Drag to a group ───────────────────────────────────────────────────
@@ -396,7 +456,7 @@ public sealed partial class LibraryPage : Page
             case ItemKeys.Hide:
                 HideGroup_Click(sender, e);
                 break;
-            case ItemKeys.Delete:
+            case ItemKeys.Delete or ItemKeys.DeletePermanently: // The instances stay: nothing goes to the Recycle Bin.
                 Ungroup_Click(sender, e);
                 break;
             default:
@@ -532,14 +592,16 @@ public sealed partial class LibraryPage : Page
             ViewModel.CreateShortcut(item);
     }
 
+    /// <summary>With Shift (Shift+Del, or Shift held while clicking): asked as, and done as, deleting for good.</summary>
     private async void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (Bind.ItemOf<InstanceItem>(sender) is not { } item)
             return;
-        DeleteDialog.Title = Loc.Format("Delete_Title", item.Name);
-        DeleteText.Text = Loc.Get("Delete_Body");
-        if (await DeleteDialog.ShowAsync() == ContentDialogResult.Primary)
-            await ViewModel.DeleteAsync(item);
+        var permanent = ShiftDelete.ForGood(sender);
+        DeleteDialog.Title = Loc.Format(permanent ? "Delete_PermanentTitle" : "Delete_Title", item.Name);
+        DeleteText.Text = Loc.Get(permanent ? "Delete_PermanentBody" : "Delete_Body");
+        if (await ShowDeleteDialogAsync(permanent, item.Name))
+            await ViewModel.DeleteAsync(item, permanent);
     }
 
     private async void NewInstance_Click(object sender, RoutedEventArgs e) => await OpenNewInstanceAsync(null);

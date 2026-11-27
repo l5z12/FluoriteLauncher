@@ -104,7 +104,7 @@
                     <MenuFlyoutItem x:Name="MenuRestoreIssues" x:Uid="Content_RestoreIssues" Click="RestoreSelectedIssues_Click">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE890;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
-                    <MenuFlyoutItem x:Name="MenuDelete" x:Uid="Content_DeleteSelected" Click="DeleteSelected_Click" KeyboardAcceleratorTextOverride="Del">
+                    <MenuFlyoutItem x:Name="MenuDelete" x:Uid="Content_DeleteSelected" Click="DeleteSelected_Click" local:ShiftDelete.IsEnabled="True" KeyboardAcceleratorTextOverride="Del">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
                     <MenuFlyoutSeparator x:Name="MenuSelectionSeparator" />
@@ -204,7 +204,7 @@
                                             <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutSeparator />
-                                        <MenuFlyoutItem x:Uid="Content_Delete" Tag="{x:Bind}" Click="Delete_Click" KeyboardAcceleratorTextOverride="Del">
+                                        <MenuFlyoutItem x:Uid="Content_Delete" Tag="{x:Bind}" Click="Delete_Click" local:ShiftDelete.IsEnabled="True" KeyboardAcceleratorTextOverride="Del">
                                             <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                     </MenuFlyout>

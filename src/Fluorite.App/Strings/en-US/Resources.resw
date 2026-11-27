@@ -301,6 +301,11 @@
   <data name="Delete_Title" xml:space="preserve"><value>Delete "{0}"?</value></data>
   <data name="Delete_Body" xml:space="preserve"><value>The instance, including its worlds, mods and settings, will be moved to the Recycle Bin.</value></data>
   <data name="Delete_Running" xml:space="preserve"><value>Stop the game before deleting this instance.</value></data>
+  <data name="Delete_PermanentTitle" xml:space="preserve"><value>Permanently delete "{0}"?</value></data>
+  <data name="Delete_PermanentBody" xml:space="preserve"><value>The instance, including its worlds, mods and settings, will be deleted for good. It won't go to the Recycle Bin, and this can't be undone.</value></data>
+  <data name="Delete_Permanently" xml:space="preserve"><value>Delete permanently</value></data>
+  <data name="Delete_ConfirmPrompt" xml:space="preserve"><value>To confirm, type {0} below.</value></data>
+  <data name="Delete_ConfirmSentence" xml:space="preserve"><value>I want to delete this permanently</value></data>
   <data name="Duplicate_Suffix" xml:space="preserve"><value>{0} (copy)</value></data>
   <data name="Shortcut_Created" xml:space="preserve"><value>Created a desktop shortcut for "{0}".</value></data>
   <!-- Instance -->
@@ -1141,6 +1146,9 @@
   <data name="Common_UndoTip" xml:space="preserve"><value>Undo (Ctrl+Z)</value></data>
   <data name="Undo_RemovedOne" xml:space="preserve"><value>Removed “{0}”.</value></data>
   <data name="Undo_RemovedMany" xml:space="preserve"><value>Removed {0} items.</value></data>
+  <data name="Undo_DeletingOne" xml:space="preserve"><value>Deleting “{0}” permanently.</value></data>
+  <data name="Undo_DeletingMany" xml:space="preserve"><value>Deleting {0} items permanently.</value></data>
+  <data name="Undo_NotAllBack" xml:space="preserve"><value>Couldn't put everything back. What's missing goes to the Recycle Bin.</value></data>
   <data name="Undo_DismissedOne" xml:space="preserve"><value>Dismissed 1 issue.</value></data>
   <data name="Undo_DismissedMany" xml:space="preserve"><value>Dismissed {0} issues.</value></data>
   <data name="Undo_RestoredOne" xml:space="preserve"><value>Showing 1 issue again.</value></data>
@@ -1165,7 +1173,10 @@
   <data name="Library_SelectionClear.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Clear selection (Esc)</value></data>
   <data name="Library_DeleteManyTitle" xml:space="preserve"><value>Delete {0} instances?</value></data>
   <data name="Library_DeleteManyBody" xml:space="preserve"><value>They will be moved to the Recycle Bin, with their worlds, mods and settings.</value></data>
+  <data name="Library_DeletePermanentManyTitle" xml:space="preserve"><value>Permanently delete {0} instances?</value></data>
+  <data name="Library_DeletePermanentManyBody" xml:space="preserve"><value>They will be deleted for good, with their worlds, mods and settings. They won't go to the Recycle Bin, and this can't be undone.</value></data>
   <data name="Library_DeleteKept" xml:space="preserve"><value>{0} not deleted: a game is running, or they belong to another launcher.</value></data>
+  <data name="Library_DeleteFailed" xml:space="preserve"><value>{0} couldn't be deleted: {1}</value></data>
   <data name="Library_DropToGroup" xml:space="preserve"><value>Move to “{0}”</value></data>
   <data name="Library_UpdateOne" xml:space="preserve"><value>1 update</value></data>
   <data name="Library_Updates" xml:space="preserve"><value>{0} updates</value></data>
@@ -1202,6 +1213,11 @@
   <data name="Snapshot_BeforeVersion" xml:space="preserve"><value>Before changing the version</value></data>
   <data name="Settings_SnapshotBeforeUpdates.Header" xml:space="preserve"><value>Snapshot before updates</value></data>
   <data name="Settings_SnapshotBeforeUpdates.Description" xml:space="preserve"><value>Before updating an instance&apos;s mods, modpack or version, keep a snapshot to go back to (the newest 5 per instance are kept).</value></data>
+  <data name="Settings_ConfirmPermanentDelete.Header" xml:space="preserve"><value>Deleting instances for good</value></data>
+  <data name="Settings_ConfirmPermanentDelete.Description" xml:space="preserve"><value>Shift+Del on an instance skips the Recycle Bin. What to type before it goes: nothing, its name, or a sentence. Deleting several at once asks for the sentence.</value></data>
+  <data name="Settings_ConfirmDeleteNone.Content" xml:space="preserve"><value>Nothing, just confirm</value></data>
+  <data name="Settings_ConfirmDeleteName.Content" xml:space="preserve"><value>Type the instance's name</value></data>
+  <data name="Settings_ConfirmDeleteSentence.Content" xml:space="preserve"><value>Type a sentence</value></data>
   <data name="Content_Checking" xml:space="preserve"><value>Checking the new versions work with your other mods…</value></data>
   <data name="Content_InstalledSkipped" xml:space="preserve"><value>Installed · skipped {0} that wouldn&apos;t work</value></data>
   <data name="Content_LoaderChanged" xml:space="preserve"><value>{0} updated to {1}</value></data>

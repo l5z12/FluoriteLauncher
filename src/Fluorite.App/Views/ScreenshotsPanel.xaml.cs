@@ -56,11 +56,12 @@ public sealed partial class ScreenshotsPanel : UserControl
         if (ViewModel is not { } vm)
             return;
         var selected = Gallery.SelectedItems.OfType<ScreenshotItemViewModel>().ToList();
-        switch (ItemKeys.Chord(e))
+        var chord = ItemKeys.Chord(e);
+        switch (chord)
         {
-            case ItemKeys.Delete when selected.Count > 0:
+            case ItemKeys.Delete or ItemKeys.DeletePermanently when selected.Count > 0:
                 e.Handled = true;
-                await vm.DeleteAsync(selected);
+                await vm.DeleteAsync(selected, permanent: chord == ItemKeys.DeletePermanently);
                 break;
             case ItemKeys.Copy when selected.Count > 0:
                 e.Handled = true;
@@ -100,7 +101,7 @@ public sealed partial class ScreenshotsPanel : UserControl
     private async void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel is { } vm)
-            await vm.DeleteAsync(Targets(sender));
+            await vm.DeleteAsync(Targets(sender), permanent: ShiftDelete.ForGood(sender));
     }
 
     /// <summary>A large view with previous/next and the same actions.</summary>
@@ -168,8 +169,9 @@ public sealed partial class ScreenshotsPanel : UserControl
         open.Click += (_, _) => ScreenshotsViewModel.Open(current);
         delete.Click += async (_, _) =>
         {
+            var permanent = ItemKeys.IsShiftDown;
             dialog.Hide();
-            await vm.DeleteAsync([current]);
+            await vm.DeleteAsync([current], permanent);
         };
         dialog.KeyDown += async (_, e) =>
         {

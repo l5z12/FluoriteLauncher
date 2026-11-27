@@ -209,6 +209,15 @@
                     </toolkit:SettingsCard>
                 </toolkit:SettingsExpander.Items>
             </toolkit:SettingsExpander>
+            <toolkit:SettingsCard x:Uid="Settings_ConfirmPermanentDelete">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE74D;" /></toolkit:SettingsCard.HeaderIcon>
+                <!-- In PermanentDeleteConfirm's order. -->
+                <ComboBox SelectedIndex="{x:Bind ViewModel.ConfirmPermanentDeleteIndex, Mode=TwoWay}" MinWidth="220">
+                    <ComboBoxItem x:Uid="Settings_ConfirmDeleteNone" />
+                    <ComboBoxItem x:Uid="Settings_ConfirmDeleteName" />
+                    <ComboBoxItem x:Uid="Settings_ConfirmDeleteSentence" />
+                </ComboBox>
+            </toolkit:SettingsCard>
 
             <TextBlock x:Uid="Settings_GroupApp" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
             <toolkit:SettingsCard x:Uid="Settings_Language">

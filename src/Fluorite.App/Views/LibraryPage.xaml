@@ -66,7 +66,7 @@
                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
             </MenuFlyoutItem>
             <MenuFlyoutSeparator AutomationProperties.AutomationId="DeleteSeparator" />
-            <MenuFlyoutItem x:Uid="Menu_Delete" AutomationProperties.AutomationId="Delete" Click="Delete_Click" KeyboardAcceleratorTextOverride="Del">
+            <MenuFlyoutItem x:Uid="Menu_Delete" AutomationProperties.AutomationId="Delete" Click="Delete_Click" local:ShiftDelete.IsEnabled="True" KeyboardAcceleratorTextOverride="Del">
                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
             </MenuFlyoutItem>
         </MenuFlyout>
@@ -532,8 +532,15 @@
             <TextBox x:Name="RenameText" x:Uid="RenameText" MinWidth="360" TextChanged="RenameText_TextChanged" />
         </ContentDialog>
 
-        <ContentDialog x:Name="DeleteDialog" x:Uid="DeleteDialog" DefaultButton="Close">
-            <TextBlock x:Name="DeleteText" TextWrapping="Wrap" MaxWidth="420" />
+        <ContentDialog x:Name="DeleteDialog" x:Uid="DeleteDialog" DefaultButton="Close" Opened="DeleteDialog_Opened">
+            <StackPanel Spacing="12" MaxWidth="420">
+                <TextBlock x:Name="DeleteText" TextWrapping="Wrap" />
+                <!-- Deleting for good, when Settings asks for the name or a sentence to be typed first. -->
+                <StackPanel x:Name="DeleteConfirm" Spacing="6" Visibility="Collapsed">
+                    <TextBlock x:Name="DeleteConfirmPrompt" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                    <TextBox x:Name="DeleteConfirmBox" TextChanged="DeleteConfirmBox_TextChanged" IsSpellCheckEnabled="False" />
+                </StackPanel>
+            </StackPanel>
         </ContentDialog>
     </Grid>
 </Page>

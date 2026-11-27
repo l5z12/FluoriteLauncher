@@ -139,7 +139,7 @@
                                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
                                             <MenuFlyoutSeparator />
-                                            <MenuFlyoutItem x:Uid="Content_Delete" Tag="{x:Bind}" Click="Delete_Click" KeyboardAcceleratorTextOverride="Del">
+                                            <MenuFlyoutItem x:Uid="Content_Delete" Tag="{x:Bind}" Click="Delete_Click" local:ShiftDelete.IsEnabled="True" KeyboardAcceleratorTextOverride="Del">
                                                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
                                         </MenuFlyout>
@@ -196,7 +196,7 @@
                                                 <MenuFlyoutItem x:Uid="Content_ShowInFolder" Tag="{x:Bind}" Click="BackupShowInFolder_Click" KeyboardAcceleratorTextOverride="Ctrl+Shift+O">
                                                     <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
                                                 </MenuFlyoutItem>
-                                                <MenuFlyoutItem x:Uid="Content_Delete" Tag="{x:Bind}" Click="BackupDelete_Click" KeyboardAcceleratorTextOverride="Del">
+                                                <MenuFlyoutItem x:Uid="Content_Delete" Tag="{x:Bind}" Click="BackupDelete_Click" local:ShiftDelete.IsEnabled="True" KeyboardAcceleratorTextOverride="Del">
                                                     <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
                                                 </MenuFlyoutItem>
                                             </MenuFlyout>

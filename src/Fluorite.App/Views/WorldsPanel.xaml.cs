@@ -52,7 +52,7 @@ public sealed partial class WorldsPanel : UserControl
             case ItemKeys.ShowInFolder:
                 ShowInFolder_Click(row, e);
                 break;
-            case ItemKeys.Delete:
+            case ItemKeys.Delete or ItemKeys.DeletePermanently:
                 Delete_Click(row, e);
                 break;
             default:
@@ -70,7 +70,7 @@ public sealed partial class WorldsPanel : UserControl
             case ItemKeys.ShowInFolder:
                 BackupShowInFolder_Click(row, e);
                 break;
-            case ItemKeys.Delete:
+            case ItemKeys.Delete or ItemKeys.DeletePermanently:
                 BackupDelete_Click(row, e);
                 break;
             default:
@@ -156,10 +156,11 @@ public sealed partial class WorldsPanel : UserControl
             WorldsViewModel.ShowInFolder(world);
     }
 
+    /// <summary>With Shift (Shift+Del, or Shift held while clicking): deleted for good.</summary>
     private async void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel is { } vm && Bind.ItemOf<WorldItemViewModel>(sender) is { } world)
-            await vm.DeleteAsync(world);
+            await vm.DeleteAsync(world, permanent: ShiftDelete.ForGood(sender));
     }
 
     private async void Restore_Click(object sender, RoutedEventArgs e)
@@ -177,7 +178,7 @@ public sealed partial class WorldsPanel : UserControl
     private async void BackupDelete_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel is { } vm && Bind.ItemOf<WorldBackupItem>(sender) is { } backup)
-            await vm.DeleteBackupAsync(backup);
+            await vm.DeleteBackupAsync(backup, permanent: ShiftDelete.ForGood(sender));
     }
 
     private async void Import_Click(object sender, RoutedEventArgs e)
