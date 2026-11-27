@@ -125,6 +125,12 @@ public sealed partial class HomePage : Page
             _ = Windows.System.Launcher.LaunchUriAsync(link);
     }
 
+    private void OpenWiki_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<NewsCard>(sender) is { WikiLink: { } link })
+            _ = Windows.System.Launcher.LaunchUriAsync(link);
+    }
+
     private void CopyLink_Click(object sender, RoutedEventArgs e)
     {
         if (Bind.ItemOf<NewsCard>(sender) is { Link: { } link } card)

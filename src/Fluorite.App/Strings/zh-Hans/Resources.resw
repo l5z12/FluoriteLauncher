@@ -257,6 +257,7 @@
   <data name="Home_News.Text" xml:space="preserve"><value>新闻</value></data>
   <data name="Home_NewsOpen.Text" xml:space="preserve"><value>在浏览器中打开</value></data>
   <data name="Home_NewsCopyLink.Text" xml:space="preserve"><value>复制链接</value></data>
+  <data name="Home_PatchNoteOpenWiki.Text" xml:space="preserve"><value>打开 Wiki 页面</value></data>
   <data name="Home_PatchNoteCopyWikiLink.Text" xml:space="preserve"><value>复制 Wiki 链接</value></data>
   <data name="News_Release" xml:space="preserve"><value>正式版</value></data>
   <data name="News_Snapshot" xml:space="preserve"><value>快照</value></data>

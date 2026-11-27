@@ -175,11 +175,15 @@
                                     <MenuFlyoutItem x:Uid="Home_NewsOpen" Tag="{x:Bind}" Click="OpenInBrowser_Click" IsEnabled="{x:Bind HasLink}">
                                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A7;" /></MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
+                                    <MenuFlyoutItem x:Uid="Home_PatchNoteOpenWiki" Tag="{x:Bind}" Click="OpenWiki_Click" IsEnabled="{x:Bind HasWikiLink}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE82D;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutSeparator />
                                     <MenuFlyoutItem x:Uid="Home_NewsCopyLink" Tag="{x:Bind}" Click="CopyLink_Click" KeyboardAcceleratorTextOverride="Ctrl+C" IsEnabled="{x:Bind HasLink}">
                                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE71B;" /></MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
                                     <MenuFlyoutItem x:Uid="Home_PatchNoteCopyWikiLink" Tag="{x:Bind}" Click="CopyWikiLink_Click" IsEnabled="{x:Bind HasWikiLink}">
-                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE82D;" /></MenuFlyoutItem.Icon>
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE71B;" /></MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
                                 </MenuFlyout>
                             </Button.ContextFlyout>

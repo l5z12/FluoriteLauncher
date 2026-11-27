@@ -27,7 +27,7 @@ public sealed class NewsCard
     public Uri? Link { get; init; }
     public bool HasLink => Link is not null;
 
-    /// <summary>A patch note's version on the Minecraft Wiki: Copy wiki link.</summary>
+    /// <summary>A patch note's version on the Minecraft Wiki: Open wiki page, Copy wiki link.</summary>
     public Uri? WikiLink { get; init; }
     public bool HasWikiLink => WikiLink is not null;
 }

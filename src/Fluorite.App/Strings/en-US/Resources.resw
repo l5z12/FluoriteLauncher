@@ -257,6 +257,7 @@
   <data name="Home_News.Text" xml:space="preserve"><value>News</value></data>
   <data name="Home_NewsOpen.Text" xml:space="preserve"><value>Open in browser</value></data>
   <data name="Home_NewsCopyLink.Text" xml:space="preserve"><value>Copy link</value></data>
+  <data name="Home_PatchNoteOpenWiki.Text" xml:space="preserve"><value>Open wiki page</value></data>
   <data name="Home_PatchNoteCopyWikiLink.Text" xml:space="preserve"><value>Copy wiki link</value></data>
   <data name="News_Release" xml:space="preserve"><value>Release</value></data>
   <data name="News_Snapshot" xml:space="preserve"><value>Snapshot</value></data>
