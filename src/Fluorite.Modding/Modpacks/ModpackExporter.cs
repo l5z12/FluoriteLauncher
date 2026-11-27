@@ -156,13 +156,63 @@ public sealed class ModpackExporter(ContentService content)
                 Add(full);
             else if (Directory.Exists(full))
             {
-                foreach (var f in Directory.EnumerateFiles(full, "*", SearchOption.AllDirectories))
-                    Add(f);
+                foreach (var f in FilesUnder(gameDir, full))
+                    Add(f.FullName);
             }
         }
         return result.Where(f => (keepDisabled || !f.Relative.EndsWith(ContentLocation.DisabledSuffix, StringComparison.OrdinalIgnoreCase))
                 && !f.Relative.EndsWith(".part", StringComparison.OrdinalIgnoreCase))
             .ToList();
+    }
+
+    /// <summary>
+    /// Every file in <paramref name="directory"/> and below, as an export takes them and the Export dialog measures
+    /// them. Folders linked in from elsewhere are followed (a world or a shared resource pack folder linked into the
+    /// instance is part of it), each real folder once so links can't loop, and never a link to the game folder or a
+    /// folder it's in. Folders that can't be read are passed over.
+    /// </summary>
+    public static IEnumerable<FileInfo> FilesUnder(string gameDirectory, string directory)
+    {
+        var game = Path.TrimEndingDirectorySeparator(Path.GetFullPath(gameDirectory)) + Path.DirectorySeparatorChar;
+        var options = new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = 0 }; // Hidden files are the instance's too.
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var pending = new Stack<DirectoryInfo>();
+        pending.Push(new DirectoryInfo(directory));
+        while (pending.TryPop(out var dir))
+        {
+            var real = RealPath(dir);
+            if (!seen.Add(real) || (dir.LinkTarget is not null && game.StartsWith(real + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            List<FileSystemInfo> entries;
+            try
+            {
+                entries = dir.EnumerateFileSystemInfos("*", options).ToList();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+            foreach (var entry in entries)
+            {
+                if (entry is DirectoryInfo sub)
+                    pending.Push(sub);
+                else if (entry is FileInfo file)
+                    yield return file;
+            }
+        }
+    }
+
+    /// <summary>Where a folder really is: a link's final target, else the folder itself.</summary>
+    private static string RealPath(DirectoryInfo dir)
+    {
+        try
+        {
+            return Path.TrimEndingDirectorySeparator((dir.ResolveLinkTarget(returnFinalTarget: true) ?? dir).FullName);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Path.TrimEndingDirectorySeparator(dir.FullName);
+        }
     }
 
     private static bool IsContent(string relative) => PackPaths.LocationOf(relative) is not null;

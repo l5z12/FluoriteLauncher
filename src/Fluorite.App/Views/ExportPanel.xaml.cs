@@ -584,47 +584,49 @@ public sealed partial class ExportPanel : UserControl
         UpdateCount();
     }
 
-    /// <summary>Relative path → tally, for every file and folder under <paramref name="roots"/>.</summary>
+    /// <summary>
+    /// Relative path → tally, for every file and folder under <paramref name="roots"/>: the files an export takes
+    /// (<see cref="ModpackExporter.FilesUnder"/>, links followed the same way), each counted in every folder it's in.
+    /// </summary>
     private static Dictionary<string, ExportTally> Measure(string gameDir, IReadOnlyList<string> roots, CancellationToken ct)
     {
         var map = new Dictionary<string, ExportTally>(StringComparer.OrdinalIgnoreCase);
-        // Hidden and system files are exported too, so they count.
-        var options = new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = 0 };
 
         static ExportTally OfFile(FileInfo f) => f.Name.EndsWith(ContentLocation.DisabledSuffix, StringComparison.OrdinalIgnoreCase)
             ? new(f.Length, 1, 1, f.Length)
             : new(f.Length, 1, 0, 0);
-
-        ExportTally Folder(DirectoryInfo dir, string relative)
-        {
-            ct.ThrowIfCancellationRequested();
-            var total = default(ExportTally);
-            foreach (var entry in dir.EnumerateFileSystemInfos("*", options))
-            {
-                var path = relative + "/" + entry.Name;
-                ExportTally tally;
-                if (entry is DirectoryInfo sub)
-                    tally = sub.Attributes.HasFlag(FileAttributes.ReparsePoint) ? default : Folder(sub, path); // A link could loop.
-                else if (entry.Name.EndsWith(".part", StringComparison.OrdinalIgnoreCase))
-                    continue;
-                else
-                    tally = OfFile((FileInfo)entry);
-                map[path] = tally;
-                total += tally;
-            }
-            map[relative] = total;
-            return total;
-        }
 
         foreach (var root in roots)
         {
             var full = Path.Combine(gameDir, root);
             try
             {
-                if (Directory.Exists(full))
-                    Folder(new DirectoryInfo(full), root);
-                else if (File.Exists(full))
+                if (File.Exists(full))
+                {
                     map[root] = OfFile(new FileInfo(full));
+                    continue;
+                }
+                if (!Directory.Exists(full))
+                    continue;
+                map[root] = default;
+                var count = 0;
+                foreach (var file in ModpackExporter.FilesUnder(gameDir, full))
+                {
+                    if (++count % 256 == 0)
+                        ct.ThrowIfCancellationRequested();
+                    if (file.Name.EndsWith(".part", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    var tally = OfFile(file);
+                    var path = root + "/" + Path.GetRelativePath(full, file.FullName).Replace('\\', '/');
+                    map[path] = tally;
+                    for (var cut = path.LastIndexOf('/'); cut >= root.Length; cut = path.LastIndexOf('/', cut - 1))
+                    {
+                        var folder = path[..cut];
+                        map[folder] = map.GetValueOrDefault(folder) + tally;
+                        if (cut == root.Length)
+                            break;
+                    }
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {

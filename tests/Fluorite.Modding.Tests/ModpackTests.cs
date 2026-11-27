@@ -439,6 +439,32 @@ public class ModpackInstallTests
     }
 
     [Fact]
+    public void FilesUnder_FollowsLinksOnce_AndNeverBackIntoTheInstance()
+    {
+        using var tmp = new TempFolder();
+        var game = System.IO.Path.Combine(tmp.Path, "game");
+        var outside = System.IO.Path.Combine(tmp.Path, "outside");
+        Directory.CreateDirectory(System.IO.Path.Combine(game, "saves", "Mine"));
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(System.IO.Path.Combine(game, "saves", "Mine", "level.dat"), "m");
+        File.WriteAllText(System.IO.Path.Combine(outside, "level.dat"), "o");
+        try
+        {
+            Directory.CreateSymbolicLink(System.IO.Path.Combine(game, "saves", "Shared"), outside); // A world kept elsewhere: followed.
+            Directory.CreateSymbolicLink(System.IO.Path.Combine(game, "saves", "Up"), tmp.Path); // A folder the game folder is in: not.
+            Directory.CreateSymbolicLink(System.IO.Path.Combine(outside, "Loop"), outside); // Back into itself: once.
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Assert.Skip("Making symbolic links needs Developer Mode or an administrator.");
+        }
+
+        var files = ModpackExporter.FilesUnder(game, System.IO.Path.Combine(game, "saves"))
+            .Select(f => System.IO.Path.GetRelativePath(game, f.FullName).Replace('\\', '/')).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(["saves/Mine/level.dat", "saves/Shared/level.dat"], files);
+    }
+
+    [Fact]
     public async Task Export_Packwiz_EscapesWhatTomlCantHoldAsIs()
     {
         using var tmp = new TempFolder();
