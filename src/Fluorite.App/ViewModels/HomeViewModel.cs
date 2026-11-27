@@ -97,6 +97,16 @@ public sealed partial class HomeViewModel(
 
     [ObservableProperty] public partial bool NeedsAccount { get; set; }
 
+    /// <summary>"Steve's sign-in has expired…": the selected account needs signing in again (null: it doesn't).</summary>
+    [ObservableProperty] public partial string? SignInExpired { get; set; }
+
+    /// <summary>The selected account, as Home last read it.</summary>
+    private Account? _account;
+
+    private readonly Microsoft.UI.Dispatching.DispatcherQueue _ui = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+
+    private bool _followingSignIns;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowNewsHeaders), nameof(ShowNewsLoading))]
     public partial bool HasNews { get; set; }
@@ -176,8 +186,20 @@ public sealed partial class HomeViewModel(
         try
         {
             var account = await accounts.GetSelectedAsync();
+            _account = account;
             NeedsAccount = account is null;
             Greeting = account is null ? Loc.Get("Home_GreetingAnonymous") : Loc.Format("Home_Greeting", account.PlayerName);
+            ShowSignInState();
+            if (!_followingSignIns)
+            {
+                // Home lives as long as the app: once is enough. A launch that finds the sign-in expired shows here.
+                accounts.SignInStateChanged += (_, changed) => _ui.TryEnqueue(() =>
+                {
+                    if (changed.Id == _account?.Id)
+                        ShowSignInState();
+                });
+                _followingSignIns = true;
+            }
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -372,6 +394,20 @@ public sealed partial class HomeViewModel(
         {
             return MojangNewsClient.ArticleUri(note);
         }
+    }
+
+    private void ShowSignInState() =>
+        SignInExpired = _account is { NeedsSignIn: true } a ? Loc.Format("Home_SignInExpired", a.PlayerName) : null;
+
+    /// <summary>Signs the selected account in again (it keeps its instances, skin and selection).</summary>
+    public async Task SignInAgainAsync()
+    {
+        if (_account is not { } account)
+            return;
+        var name = account.PlayerName;
+        if (await App.Get<AccountSignIn>().SignInAgainAsync(account, forLaunch: false) == SignInAgainResult.SignedIn && account.PlayerName != name)
+            Greeting = Loc.Format("Home_Greeting", account.PlayerName); // Renamed since.
+        ShowSignInState();
     }
 
     [RelayCommand]

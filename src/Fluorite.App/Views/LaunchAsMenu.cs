@@ -25,7 +25,9 @@ internal static class LaunchAsMenu
         {
             var item = new MenuFlyoutItem
             {
-                Text = $"{account.PlayerName}  ·  {AccountItem.KindOf(account)}",
+                Text = account.NeedsSignIn
+                    ? $"{account.PlayerName}  ·  {AccountItem.KindOf(account)}  ·  {Loc.Get("LaunchAs_SignInAgain")}"
+                    : $"{account.PlayerName}  ·  {AccountItem.KindOf(account)}",
                 Icon = account.Id == preferred ? new FontIcon { Glyph = "" } : null,
             };
             var accountId = account.Id;

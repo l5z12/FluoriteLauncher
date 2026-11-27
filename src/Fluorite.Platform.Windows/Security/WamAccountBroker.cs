@@ -46,8 +46,9 @@ public sealed class WamAccountBroker : IMicrosoftAccountBroker
     {
         try
         {
+            // Gone when it was removed from Windows, or Fluorite was installed again: only picking it again helps.
             var account = await app.Value.GetAccountAsync(accountId).ConfigureAwait(false)
-                ?? throw new AuthException(AuthFailure.MicrosoftTokenRejected, "Windows no longer has this account. Please sign in again.");
+                ?? throw new AuthException(AuthFailure.SignInAgain, "Windows no longer has this account. Please sign in again.");
             try
             {
                 return ToToken(await app.Value.AcquireTokenSilent(Scopes, account).ExecuteAsync(ct).ConfigureAwait(false));
@@ -57,6 +58,11 @@ public sealed class WamAccountBroker : IMicrosoftAccountBroker
                 // Windows asks only for what it needs (a password, consent), for this same account.
                 return ToToken(await app.Value.AcquireTokenInteractive(Scopes).WithAccount(account).ExecuteAsync(ct).ConfigureAwait(false));
             }
+        }
+        catch (MsalServiceException ex) when (ex is MsalUiRequiredException || ex.ErrorCode == MsalError.InvalidGrantError)
+        {
+            // Even Windows' own prompt couldn't renew it (the grant was revoked, say).
+            throw new AuthException(AuthFailure.SignInAgain, ex.Message, ex);
         }
         catch (Exception ex) when (ex is MsalException or DllNotFoundException or EntryPointNotFoundException or PlatformNotSupportedException)
         {

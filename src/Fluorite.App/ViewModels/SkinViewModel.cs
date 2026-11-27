@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Fluorite.App.Services;
 using Fluorite.Auth.Accounts;
 using Fluorite.Auth.Microsoft;
@@ -243,9 +244,25 @@ public sealed partial class SkinViewModel(AccountSkins skins) : ObservableObject
         }
     }
 
+    /// <summary>The error is one only signing in again fixes: its bar has the button for it.</summary>
+    [ObservableProperty] public partial bool CanSignInAgain { get; set; }
+
+    /// <summary>Signs the account in again, then shows its skin as it is now.</summary>
+    [RelayCommand]
+    private async Task SignInAgainAsync()
+    {
+        if (Account is not { } account)
+            return;
+        if (await App.Get<AccountSignIn>().SignInAgainAsync(account, forLaunch: false) != SignInAgainResult.SignedIn)
+            return;
+        OnPropertyChanged(nameof(Title)); // Renamed since, perhaps.
+        await RunAsync(async () => await Show(await skins.GetAsync(account)));
+    }
+
     private async Task RunAsync(Func<Task> work)
     {
         ErrorMessage = null;
+        CanSignInAgain = false;
         IsBusy = true;
         try
         {
@@ -254,6 +271,7 @@ public sealed partial class SkinViewModel(AccountSkins skins) : ObservableObject
         catch (AuthException ex)
         {
             ErrorMessage = AccountsViewModel.DescribeFailure(ex);
+            CanSignInAgain = ex.Failure == AuthFailure.SignInAgain;
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
         {

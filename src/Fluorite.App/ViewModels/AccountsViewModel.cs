@@ -5,7 +5,6 @@ using Fluorite.App.Services;
 using Fluorite.Auth.Accounts;
 using Fluorite.Auth.Microsoft;
 using Fluorite.Auth.Yggdrasil;
-using Microsoft.Extensions.Logging;
 
 namespace Fluorite.App.ViewModels;
 
@@ -28,18 +27,29 @@ public sealed partial class AccountItem(Account account, bool selected) : Observ
 
     [ObservableProperty] public partial bool IsSelected { get; set; } = selected;
 
+    /// <summary>Only signing in again fixes it (its last refresh said so): the card says so, with the button to do it.</summary>
+    [ObservableProperty] public partial bool NeedsSignIn { get; set; } = account.NeedsSignIn;
+
+    /// <summary>Microsoft and skin-site accounts; offline ones have no sign-in.</summary>
+    public bool CanSignInAgain => Account.Kind != AccountKind.Offline;
+
     /// <summary>The skin's face; until it loads (or for the default skin) the initial shows.</summary>
     [ObservableProperty] public partial Microsoft.UI.Xaml.Media.ImageSource? Avatar { get; set; }
 
     public bool HasAvatar => Avatar is not null;
 
     partial void OnAvatarChanged(Microsoft.UI.Xaml.Media.ImageSource? value) => OnPropertyChanged(nameof(HasAvatar));
+
+    /// <summary>Also the UI Automation name, so screen readers hear "Steve, Microsoft account, sign-in expired".</summary>
+    public override string ToString() => NeedsSignIn ? $"{Name}, {KindText}, {Loc.Get("Accounts_NeedsSignIn/Text")}" : $"{Name}, {KindText}";
 }
 
 public sealed partial class AccountsViewModel(
-    AccountService accounts, MicrosoftOAuthClient oauth, YggdrasilClient yggdrasil, AccountSkins skins, ILogger<AccountsViewModel> logger) : ObservableObject
+    AccountService accounts, AccountSignIn signIn, YggdrasilClient yggdrasil, AccountSkins skins) : ObservableObject
 {
+    private readonly Microsoft.UI.Dispatching.DispatcherQueue _ui = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
     private CancellationTokenSource? _signIn;
+    private bool _following;
 
     public ObservableCollection<AccountItem> Accounts { get; } = [];
 
@@ -160,6 +170,10 @@ public sealed partial class AccountsViewModel(
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial bool OfflineUnlocked { get; set; }
     [ObservableProperty] public partial string? ErrorMessage { get; set; }
+
+    /// <summary>What just worked, when nothing else on the page shows it ("Signed in to Steve again.").</summary>
+    [ObservableProperty] public partial string? StatusMessage { get; set; }
+
     [ObservableProperty] public partial string? DeviceCode { get; set; }
     [ObservableProperty] public partial string? DeviceCodeUrl { get; set; }
     [ObservableProperty]
@@ -190,6 +204,13 @@ public sealed partial class AccountsViewModel(
     [RelayCommand]
     public async Task LoadAsync()
     {
+        if (!_following)
+        {
+            // Lives as long as the app: once is enough, and nothing to let go of.
+            accounts.SignInStateChanged += OnSignInStateChanged;
+            _following = true;
+        }
+        StatusMessage = null; // About the list as it was.
         var selected = await accounts.GetSelectedAsync();
         var list = (await accounts.GetAccountsAsync()).Select(a => new AccountItem(a, a.Id == selected?.Id)).ToList();
         foreach (var old in Accounts)
@@ -206,68 +227,40 @@ public sealed partial class AccountsViewModel(
     /// in for this app, the browser does instead.
     /// </summary>
     [RelayCommand]
-    private Task SignInWithMicrosoftAsync() => RunSignInAsync(async ct =>
-    {
-        try
-        {
-            return await SignInThroughWindowsAsync(ct);
-        }
-        catch (AuthException ex) when (ex.Failure == AuthFailure.BrokerUnavailable)
-        {
-            logger.LogWarning(ex, "Windows sign-in is unavailable; signing in with the browser");
-            return await SignInThroughBrowserAsync(ct);
-        }
-    });
+    private Task SignInWithMicrosoftAsync() => RunSignInAsync(MicrosoftSignInMethod.Default);
 
     // The sign-in button's right-click menu: one method each, no fallback.
 
     [RelayCommand]
-    private Task SignInWithWindowsAsync() => RunSignInAsync(SignInThroughWindowsAsync);
+    private Task SignInWithWindowsAsync() => RunSignInAsync(MicrosoftSignInMethod.Windows);
 
     [RelayCommand]
-    private Task SignInWithBrowserAsync() => RunSignInAsync(SignInThroughBrowserAsync);
-
-    private async Task<(MsaTokenResponse, string?)> SignInThroughWindowsAsync(CancellationToken ct)
-    {
-        var broker = accounts.Broker ?? throw new AuthException(AuthFailure.BrokerUnavailable, "Windows sign-in isn't available.");
-        var token = await broker.SignInAsync(ct);
-        return (new MsaTokenResponse { AccessToken = token.AccessToken }, token.AccountId);
-    }
-
-    private async Task<(MsaTokenResponse, string?)> SignInThroughBrowserAsync(CancellationToken ct) =>
-        (await oauth.SignInWithBrowserAsync(async uri => await Windows.System.Launcher.LaunchUriAsync(uri), ct), null);
+    private Task SignInWithBrowserAsync() => RunSignInAsync(MicrosoftSignInMethod.Browser);
 
     [RelayCommand]
-    private async Task SignInWithCodeAsync() => await RunSignInAsync(async ct =>
-    {
-        var code = await oauth.StartDeviceCodeAsync(ct);
-        DeviceCode = code.UserCode;
-        DeviceCodeUrl = code.VerificationUri;
-        var dp = new Windows.ApplicationModel.DataTransfer.DataPackage();
-        dp.SetText(code.UserCode);
-        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
-        // Opened as given, with the code on the clipboard for a paste. Microsoft's page has an undocumented `?otc=<code>`
-        // pre-fill, but it only accepts codes from some older app registrations (Prism's, MultiMC's, HMCL's). For
-        // Fluorite's app, and even a bare new app made for the test, it fails with "The application is a first party
-        // application…" (HR=0x8004A977). No app registration setting changes this (tested 2026-11).
-        await Windows.System.Launcher.LaunchUriAsync(new Uri(code.VerificationUri));
-        return (await oauth.PollDeviceCodeAsync(code, ct), null);
-    });
+    private Task SignInWithCodeAsync() => RunSignInAsync(MicrosoftSignInMethod.Code);
 
     [RelayCommand]
     private void CancelSignIn() => _signIn?.Cancel();
 
-    /// <param name="provider">Signs in; returns the MSA token and, when Windows' broker signed in, its account ID.</param>
-    private async Task RunSignInAsync(Func<CancellationToken, Task<(MsaTokenResponse Token, string? BrokerAccountId)>> provider)
+    private async Task RunSignInAsync(MicrosoftSignInMethod method)
     {
         if (IsBusy)
             return; // One sign-in at a time (Cancel ends the current one).
         ErrorMessage = null;
+        StatusMessage = null;
         IsBusy = true;
         _signIn = new CancellationTokenSource(TimeSpan.FromMinutes(10));
         try
         {
-            var (msa, brokerAccountId) = await provider(_signIn.Token);
+            var (msa, brokerAccountId) = await signIn.GetTokenAsync(method, (_, code) =>
+            {
+                if (code is not null)
+                {
+                    DeviceCode = code.UserCode;
+                    DeviceCodeUrl = code.VerificationUri;
+                }
+            }, _signIn.Token);
             await accounts.AddMicrosoftAsync(msa, brokerAccountId, _signIn.Token);
             await LoadAsync();
         }
@@ -307,8 +300,42 @@ public sealed partial class AccountsViewModel(
         AuthFailure.NoMinecraftProfile => Loc.Get("Auth_NoProfile"),
         AuthFailure.AppNotApprovedForMinecraft => Loc.Get("Auth_AppNotApproved"),
         AuthFailure.BrokerUnavailable => Loc.Format("Auth_BrokerUnavailable", ex.Message),
+        AuthFailure.DifferentPlayer => Loc.Get("Auth_DifferentPlayer"),
         _ => ex.Message,
     };
+
+    /// <summary>
+    /// Signs the account in again, in place (a Microsoft sign-in, or the skin site's password): its instances, skin
+    /// and selection stay. Offline accounts have nothing to sign in.
+    /// </summary>
+    [RelayCommand]
+    private async Task SignInAgainAsync(AccountItem item)
+    {
+        if (!item.CanSignInAgain)
+            return;
+        ErrorMessage = null;
+        StatusMessage = null;
+        var name = item.Account.PlayerName;
+        switch (await signIn.SignInAgainAsync(item.Account, forLaunch: false))
+        {
+            case SignInAgainResult.SignedIn:
+                item.NeedsSignIn = false;
+                if (item.Account.PlayerName != name)
+                    await LoadAsync(); // Renamed since it was listed.
+                StatusMessage = Loc.Format("Accounts_SignedInAgain", item.Account.PlayerName);
+                break;
+            case SignInAgainResult.AddedOther:
+                await LoadAsync();
+                break;
+        }
+    }
+
+    /// <summary>A launch (or the Skin page) found an account's sign-in expired, or a sign-in fixed it: the card follows.</summary>
+    private void OnSignInStateChanged(object? sender, Account account) => _ui.TryEnqueue(() =>
+    {
+        if (Accounts.FirstOrDefault(i => i.Account.Id == account.Id) is { } item)
+            item.NeedsSignIn = account.NeedsSignIn;
+    });
 
     [RelayCommand(CanExecute = nameof(CanAddOffline))]
     private async Task AddOfflineAsync()

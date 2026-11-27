@@ -99,6 +99,17 @@ public sealed partial class AccountsPage : Page
             App.Window?.NavigateToSkin(item.Account);
     }
 
+    private async void SignInAgain_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<AccountItem>(sender) is { } item)
+        {
+            var hadButton = item.NeedsSignIn;
+            await ViewModel.SignInAgainCommand.ExecuteAsync(item);
+            if (hadButton && !item.NeedsSignIn && ViewModel.Accounts.Contains(item))
+                ItemKeys.FocusRow(AccountList, item); // Its button is gone once it worked: focus goes to the card, not lost.
+        }
+    }
+
     private void Remove_Click(object sender, RoutedEventArgs e)
     {
         if (Bind.ItemOf<AccountItem>(sender) is { } item)

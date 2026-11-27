@@ -145,8 +145,16 @@ public sealed class MicrosoftOAuthClient(HttpClient http, MicrosoftAuthOptions o
         }, ct).ConfigureAwait(false);
         return token.AccessToken is not null
             ? token
-            : throw new AuthException(AuthFailure.MicrosoftTokenRejected, token.ErrorDescription ?? "Your Microsoft sign-in expired. Please sign in again.");
+            : throw new AuthException(NeedsNewSignIn(token.Error) ? AuthFailure.SignInAgain : AuthFailure.MicrosoftTokenRejected,
+                token.ErrorDescription ?? "Your Microsoft sign-in expired. Please sign in again.");
     }
+
+    /// <summary>
+    /// Refresh errors only a new sign-in fixes: the refresh token expired or was revoked (a password change, consent
+    /// withdrawn…), or Microsoft wants the user back. Others (the service is down, say) may pass by themselves.
+    /// </summary>
+    internal static bool NeedsNewSignIn(string? error) =>
+        error is "invalid_grant" or "interaction_required" or "consent_required" or "login_required";
 
     private async Task<MsaTokenResponse> TokenRequestAsync(Dictionary<string, string> form, CancellationToken ct)
     {

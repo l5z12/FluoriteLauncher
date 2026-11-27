@@ -96,6 +96,7 @@ public static class AppHost
                 () => App.Window is { } window ? WinRT.Interop.WindowNative.GetWindowHandle(window) : 0),
         });
 
+        s.AddSingleton<AccountSignIn>();
         s.AddSingleton<MinecraftProfileClient>();
         s.AddSingleton(sp => new AccountSkins(
             sp.GetRequiredService<AccountService>(), sp.GetRequiredService<MinecraftAuthChain>(), sp.GetRequiredService<MinecraftProfileClient>(),

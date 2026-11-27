@@ -30,6 +30,10 @@
   <data name="Home_NeedsAccountBar.Title" xml:space="preserve"><value>Add an account to play</value></data>
   <data name="Home_NeedsAccountBar.Message" xml:space="preserve"><value>Sign in with the Microsoft account that owns Minecraft: Java Edition.</value></data>
   <data name="Home_GoAccounts.Content" xml:space="preserve"><value>Go to Accounts</value></data>
+  <data name="Home_SignInExpired" xml:space="preserve"><value>{0}'s sign-in has expired. Sign in again to play as {0}.</value></data>
+  <data name="Home_SignInAgain.Content" xml:space="preserve"><value>Sign in again</value></data>
+  <data name="Skin_SignInAgain.Content" xml:space="preserve"><value>Sign in again</value></data>
+  <data name="LaunchAs_SignInAgain" xml:space="preserve"><value>sign in again</value></data>
   <data name="Home_ContinuePlaying.Text" xml:space="preserve"><value>Continue playing</value></data>
   <data name="Home_Empty.Text" xml:space="preserve"><value>You don't have any instances yet. An instance is a separate copy of the game with its own version, mods, worlds and settings.</value></data>
   <data name="Home_CreateFirst.Content" xml:space="preserve"><value>Create your first instance</value></data>
@@ -142,12 +146,30 @@
   <data name="Accounts_PickProfileTitle" xml:space="preserve"><value>Choose a character</value></data>
   <data name="Accounts_PickProfileHint" xml:space="preserve"><value>This account has several characters. Pick the one to play as; sign in again to add another.</value></data>
   <data name="Accounts_PickProfileButton" xml:space="preserve"><value>Add</value></data>
-  <data name="Launch_PasswordTitle" xml:space="preserve"><value>Sign in to {0}</value></data>
-  <data name="Launch_PasswordHint" xml:space="preserve"><value>The sign-in for {0} has expired. Enter the password for {1} to launch.</value></data>
-  <data name="Launch_PasswordButton" xml:space="preserve"><value>Sign in and play</value></data>
   <data name="Accounts_Skin.Content" xml:space="preserve"><value>Skin</value></data>
   <data name="Accounts_MoveUp.Text" xml:space="preserve"><value>Move up</value></data>
   <data name="Accounts_MoveDown.Text" xml:space="preserve"><value>Move down</value></data>
+  <data name="Accounts_SignInAgainMenu.Text" xml:space="preserve"><value>Sign in again</value></data>
+  <data name="Accounts_SignInAgainButton.Content" xml:space="preserve"><value>Sign in again</value></data>
+  <data name="Accounts_NeedsSignIn.Text" xml:space="preserve"><value>Sign-in expired</value></data>
+  <data name="Accounts_SignedInAgain" xml:space="preserve"><value>Signed in to {0} again.</value></data>
+  <data name="SignInAgain_Title" xml:space="preserve"><value>Sign in to {0} again</value></data>
+  <data name="SignInAgain_Expired" xml:space="preserve"><value>The sign-in for {0} has expired.</value></data>
+  <data name="SignInAgain_MicrosoftHint" xml:space="preserve"><value>Sign in with the Microsoft account that owns {0}.</value></data>
+  <data name="SignInAgain_YggdrasilHint" xml:space="preserve"><value>Enter the password for {0} on {1}.</value></data>
+  <data name="SignInAgain_Kept" xml:space="preserve"><value>Only the sign-in is renewed: the account and the instances that use it stay as they are.</value></data>
+  <data name="SignInAgain_SignIn" xml:space="preserve"><value>Sign in</value></data>
+  <data name="SignInAgain_SignInAndPlay" xml:space="preserve"><value>Sign in and play</value></data>
+  <data name="SignInAgain_TryAgain" xml:space="preserve"><value>Try again</value></data>
+  <data name="SignInAgain_Working" xml:space="preserve"><value>Signing in…</value></data>
+  <data name="SignInAgain_Checking" xml:space="preserve"><value>Checking the account…</value></data>
+  <data name="SignInAgain_WaitingWindows" xml:space="preserve"><value>Continue in the Windows sign-in window.</value></data>
+  <data name="SignInAgain_WaitingBrowser" xml:space="preserve"><value>Continue in your browser.</value></data>
+  <data name="SignInAgain_WaitingCode" xml:space="preserve"><value>Waiting for the code to be entered…</value></data>
+  <data name="SignInAgain_DifferentPlayer" xml:space="preserve"><value>You signed in as {0}, but this account is {1}.</value></data>
+  <data name="SignInAgain_PlayerGone" xml:space="preserve"><value>{0} is no longer on this account.</value></data>
+  <data name="SignInAgain_AddOther" xml:space="preserve"><value>Add {0}</value></data>
+  <data name="Auth_DifferentPlayer" xml:space="preserve"><value>That sign-in is for another player.</value></data>
   <data name="Instance_LogCopySelected.Text" xml:space="preserve"><value>Copy selected lines</value></data>
   <data name="Instance_LogSelectAll.Text" xml:space="preserve"><value>Select all</value></data>
   <data name="Instance_LogCopyAll.Text" xml:space="preserve"><value>Copy whole log</value></data>
