@@ -118,37 +118,51 @@ public sealed partial class HomePage : Page
         CopiedFeedback.Show(CardOf(sender));
     }
 
-    private void News_Click(object sender, RoutedEventArgs e)
+    /// <summary>A news card's click, and Open in browser on any article card: its minecraft.net article.</summary>
+    private void OpenInBrowser_Click(object sender, RoutedEventArgs e)
     {
         if (Bind.ItemOf<NewsCard>(sender) is { Link: { } link })
             _ = Windows.System.Launcher.LaunchUriAsync(link);
     }
 
-    private void NewsCopyLink_Click(object sender, RoutedEventArgs e) => CopyLink(Bind.ItemOf<NewsCard>(sender));
-
-    /// <summary>Ctrl+C copies the focused news card's link (Enter is its own click: Open in browser).</summary>
-    private void NewsCard_PreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    private void CopyLink_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is UIElement card && ItemKeys.HasFocus(card) && Bind.ItemOf<NewsCard>(sender) is { HasLink: true } news
+        if (Bind.ItemOf<NewsCard>(sender) is { Link: { } link } card)
+            CopyLink(card, link);
+    }
+
+    private void CopyWikiLink_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<NewsCard>(sender) is { WikiLink: { } link } card)
+            CopyLink(card, link);
+    }
+
+    /// <summary>
+    /// Ctrl+C copies the focused patch-notes or news card's link. Enter is the card's own click: the patch notes, or
+    /// the news article in the browser.
+    /// </summary>
+    private void ArticleCard_PreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (sender is UIElement element && ItemKeys.HasFocus(element) && Bind.ItemOf<NewsCard>(sender) is { Link: { } link } card
             && ItemKeys.Chord(e) == ItemKeys.Copy)
         {
             e.Handled = true;
-            CopyLink(news);
+            CopyLink(card, link);
         }
     }
 
-    /// <summary>The article's address to the clipboard (as text and as a link), with "Copied" under its card.</summary>
-    private void CopyLink(NewsCard? card)
+    /// <summary>An address to the clipboard (as text and as a link), with "Copied" under the card it's from.</summary>
+    private void CopyLink(NewsCard card, Uri link)
     {
-        if (card?.Link is not { } link)
-            return;
         var dp = new Windows.ApplicationModel.DataTransfer.DataPackage();
         dp.SetText(link.AbsoluteUri);
         dp.SetWebLink(link);
         Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
         // Under the card, also when it came from the menu (which has closed); not when F5 has replaced it meanwhile.
-        if (ViewModel.News.IndexOf(card) is >= 0 and var index)
-            CopiedFeedback.Show(NewsRepeater.TryGetElement(index));
+        var element = ViewModel.PatchNotes.IndexOf(card) is >= 0 and var note ? PatchNotesRepeater.TryGetElement(note)
+            : ViewModel.News.IndexOf(card) is >= 0 and var news ? NewsRepeater.TryGetElement(news)
+            : null;
+        CopiedFeedback.Show(element);
     }
 
     private void GoAccounts_Click(object sender, RoutedEventArgs e) => App.Window?.NavigateTo("Accounts");

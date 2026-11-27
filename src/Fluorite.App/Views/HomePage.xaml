@@ -158,14 +158,31 @@
             <TextBlock x:Uid="Home_PatchNotes" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" Visibility="{x:Bind local:Bind.Visible(ViewModel.ShowNewsHeaders), Mode=OneWay}" />
             <ProgressRing x:Uid="Home_LoadingNews" IsActive="{x:Bind ViewModel.ShowNewsLoading, Mode=OneWay}" Visibility="{x:Bind local:Bind.Visible(ViewModel.ShowNewsLoading), Mode=OneWay}"
                           Width="24" Height="24" HorizontalAlignment="Left" />
-            <ItemsRepeater ItemsSource="{x:Bind ViewModel.PatchNotes}" TabFocusNavigation="Once" XYFocusKeyboardNavigation="Enabled">
+            <ItemsRepeater x:Name="PatchNotesRepeater" ItemsSource="{x:Bind ViewModel.PatchNotes}" TabFocusNavigation="Once" XYFocusKeyboardNavigation="Enabled">
                 <ItemsRepeater.Layout>
                     <local:FillGridLayout MinItemWidth="240" MinItemHeight="300" MaxColumns="6" />
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:NewsCard">
                         <Button Padding="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Top"
-                                Tag="{x:Bind}" Click="PatchNote_Click" CornerRadius="8" AutomationProperties.Name="{x:Bind Title}">
+                                Tag="{x:Bind}" Click="PatchNote_Click" CornerRadius="8" AutomationProperties.Name="{x:Bind Title}"
+                                PreviewKeyDown="ArticleCard_PreviewKeyDown">
+                            <Button.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem x:Uid="Menu_Open" Tag="{x:Bind}" Click="PatchNote_Click" KeyboardAcceleratorTextOverride="Enter">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A5;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutItem x:Uid="Home_NewsOpen" Tag="{x:Bind}" Click="OpenInBrowser_Click" IsEnabled="{x:Bind HasLink}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A7;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutItem x:Uid="Home_NewsCopyLink" Tag="{x:Bind}" Click="CopyLink_Click" KeyboardAcceleratorTextOverride="Ctrl+C" IsEnabled="{x:Bind HasLink}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE71B;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutItem x:Uid="Home_PatchNoteCopyWikiLink" Tag="{x:Bind}" Click="CopyWikiLink_Click" IsEnabled="{x:Bind HasWikiLink}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE82D;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                </MenuFlyout>
+                            </Button.ContextFlyout>
                             <StackPanel>
                                 <Image Source="{x:Bind Image}" Height="140" Stretch="UniformToFill" />
                                 <StackPanel Padding="14,10,14,14" Spacing="4">
@@ -188,14 +205,14 @@
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:NewsCard">
                         <Button Padding="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Top"
-                                Tag="{x:Bind}" Click="News_Click" CornerRadius="8" AutomationProperties.Name="{x:Bind Title}"
-                                PreviewKeyDown="NewsCard_PreviewKeyDown">
+                                Tag="{x:Bind}" Click="OpenInBrowser_Click" CornerRadius="8" AutomationProperties.Name="{x:Bind Title}"
+                                PreviewKeyDown="ArticleCard_PreviewKeyDown">
                             <Button.ContextFlyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem x:Uid="Home_NewsOpen" Tag="{x:Bind}" Click="News_Click" KeyboardAcceleratorTextOverride="Enter" IsEnabled="{x:Bind HasLink}">
+                                    <MenuFlyoutItem x:Uid="Home_NewsOpen" Tag="{x:Bind}" Click="OpenInBrowser_Click" KeyboardAcceleratorTextOverride="Enter" IsEnabled="{x:Bind HasLink}">
                                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A7;" /></MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
-                                    <MenuFlyoutItem x:Uid="Home_NewsCopyLink" Tag="{x:Bind}" Click="NewsCopyLink_Click" KeyboardAcceleratorTextOverride="Ctrl+C" IsEnabled="{x:Bind HasLink}">
+                                    <MenuFlyoutItem x:Uid="Home_NewsCopyLink" Tag="{x:Bind}" Click="CopyLink_Click" KeyboardAcceleratorTextOverride="Ctrl+C" IsEnabled="{x:Bind HasLink}">
                                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE71B;" /></MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
                                 </MenuFlyout>

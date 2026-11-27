@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Fluorite.Core.Json;
 using Fluorite.Core.Logging;
 using Fluorite.Core.Net;
@@ -65,11 +66,56 @@ public sealed class NewsFeed
 /// Reads the official launcher's content feeds (Java patch notes and news). Responses are cached on disk so the
 /// home page has content offline.
 /// </summary>
-public sealed class MojangNewsClient(HttpClient http, string cacheDir, ILogger<MojangNewsClient>? logger = null)
+public sealed partial class MojangNewsClient(HttpClient http, string cacheDir, ILogger<MojangNewsClient>? logger = null)
 {
     public const string BaseUrl = "https://launchercontent.mojang.com";
 
     private readonly ILogger _logger = logger ?? NullLogger<MojangNewsClient>.Instance;
+
+    /// <summary>
+    /// The minecraft.net article about a patch note, worked out from its version: the feed has no address. Every
+    /// recent one follows the version, except a hotfix that has no article of its own (a "b" snapshot, a snapshot that
+    /// only fixed a crash); that address leads to "page not found", which the site gives no way to tell beforehand.
+    /// Older versions (1.20 and before) often have other addresses too. Null for a version it can't make one of.
+    /// </summary>
+    public static Uri? ArticleUri(PatchNoteEntry entry)
+    {
+        var v = entry.Version?.ToLowerInvariant() ?? "";
+        string? slug = null;
+        if (ReleaseVersion().IsMatch(v))
+        {
+            slug = "minecraft-java-edition-" + v.Replace('.', '-');
+        }
+        else if (TestVersion().Match(v) is { Success: true } m)
+        {
+            var kind = m.Groups["kind"].Value switch { "pre" => "pre-release", "rc" => "release-candidate", var k => k };
+            slug = $"minecraft-{m.Groups["release"].Value.Replace('.', '-')}-{kind}-{m.Groups["n"].Value}";
+        }
+        else if (WeeklySnapshot().IsMatch(v))
+        {
+            slug = "minecraft-snapshot-" + v;
+        }
+        // No locale in the address: the site picks the reader's own, as the news feed's links do.
+        return slug is null ? null : new Uri("https://www.minecraft.net/article/" + slug);
+    }
+
+    /// <summary>The version's page on the Minecraft Wiki, or the Chinese one: every version has one, hotfixes too.</summary>
+    public static Uri? WikiUri(PatchNoteEntry entry, bool chinese = false) =>
+        entry.Version is { Length: > 0 } v
+            ? new Uri((chinese ? "https://zh.minecraft.wiki/w/Java%E7%89%88" : "https://minecraft.wiki/w/Java_Edition_")
+                + Uri.EscapeDataString(v.Replace(' ', '_')))
+            : null;
+
+    [GeneratedRegex(@"^\d+(\.\d+)+$")]
+    private static partial Regex ReleaseVersion();
+
+    /// <summary>"26.4-snapshot-9", "26.4-pre-1", "26.3-rc-2"; before 26.1, "1.21.4-pre1", "1.21.4-rc1".</summary>
+    [GeneratedRegex(@"^(?<release>\d+(\.\d+)+)-(?<kind>snapshot|pre|rc)-?(?<n>\d+)$")]
+    private static partial Regex TestVersion();
+
+    /// <summary>"24w44a".</summary>
+    [GeneratedRegex(@"^\d\dw\d\d[a-z]$")]
+    private static partial Regex WeeklySnapshot();
 
     /// <summary>
     /// Null for an entry without a picture (not the site's front page, which isn't one), or with an address that

@@ -22,8 +22,14 @@ public sealed class NewsCard
     /// <summary>Null when the entry has no picture.</summary>
     public BitmapImage? Image { get; init; }
     public PatchNoteEntry? PatchNote { get; init; }
+
+    /// <summary>The article on minecraft.net: Open in browser, Copy link.</summary>
     public Uri? Link { get; init; }
     public bool HasLink => Link is not null;
+
+    /// <summary>A patch note's version on the Minecraft Wiki: Copy wiki link.</summary>
+    public Uri? WikiLink { get; init; }
+    public bool HasWikiLink => WikiLink is not null;
 }
 
 public sealed partial class HomeViewModel(
@@ -269,6 +275,7 @@ public sealed partial class HomeViewModel(
         var newsImage = ImagesOf(News);
 
         // Every card made before any is shown: something failing partway leaves the cards from before, not half a list.
+        var chinese = CultureInfo.CurrentUICulture.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase);
         var noteCards = notes.DistinctBy(n => n.Id).Take(8).Select(n => new NewsCard
         {
             Title = n.Title,
@@ -277,6 +284,8 @@ public sealed partial class HomeViewModel(
             Text = n.ShortText,
             Image = noteImage(MojangNewsClient.ImageUri(n.Image), 280),
             PatchNote = n,
+            Link = MojangNewsClient.ArticleUri(n),
+            WikiLink = MojangNewsClient.WikiUri(n, chinese),
         }).ToList();
         var newsCards = articles.DistinctBy(n => n.Id).Take(6).Select(n => new NewsCard
         {

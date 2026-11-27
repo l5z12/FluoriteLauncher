@@ -123,6 +123,35 @@ public class MojangNewsClientTests
     [InlineData("http://[x")]
     public void AnAddressThatIsntOne_IsNoPicture(string url) =>
         Assert.Null(MojangNewsClient.ImageUri(new NewsImage { Url = url }));
+
+    // Each checked against minecraft.net (2026-11-27).
+    [Theory]
+    [InlineData("26.3", "minecraft-java-edition-26-3")]
+    [InlineData("26.4-snapshot-9", "minecraft-26-4-snapshot-9")]
+    [InlineData("26.4-pre-1", "minecraft-26-4-pre-release-1")]
+    [InlineData("26.3-rc-3", "minecraft-26-3-release-candidate-3")]
+    [InlineData("1.21.4-pre3", "minecraft-1-21-4-pre-release-3")]
+    [InlineData("1.21.8-rc1", "minecraft-1-21-8-release-candidate-1")]
+    [InlineData("24w33a", "minecraft-snapshot-24w33a")]
+    public void PatchNote_Article_IsWorkedOutFromTheVersion(string version, string slug) =>
+        Assert.Equal("https://www.minecraft.net/article/" + slug, MojangNewsClient.ArticleUri(new PatchNoteEntry { Version = version })?.AbsoluteUri);
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("1.14 Pre-Release 5")]
+    [InlineData("combat-test-8c")]
+    public void PatchNote_AnUnknownVersion_HasNoArticle(string? version) =>
+        Assert.Null(MojangNewsClient.ArticleUri(new PatchNoteEntry { Version = version }));
+
+    [Fact]
+    public void PatchNote_WikiPage_IsTheVersionsOwn()
+    {
+        Assert.Equal("https://minecraft.wiki/w/Java_Edition_26.4-snapshot-10", MojangNewsClient.WikiUri(new PatchNoteEntry { Version = "26.4-snapshot-10" })?.AbsoluteUri);
+        Assert.Equal("https://minecraft.wiki/w/Java_Edition_1.14_Pre-Release_5", MojangNewsClient.WikiUri(new PatchNoteEntry { Version = "1.14 Pre-Release 5" })?.AbsoluteUri);
+        Assert.Equal("https://zh.minecraft.wiki/w/Java%E7%89%8826.4-pre-1", MojangNewsClient.WikiUri(new PatchNoteEntry { Version = "26.4-pre-1" }, chinese: true)?.AbsoluteUri);
+        Assert.Null(MojangNewsClient.WikiUri(new PatchNoteEntry()));
+    }
 }
 
 public class FluoriteLayoutTests
