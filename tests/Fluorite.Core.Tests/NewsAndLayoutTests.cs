@@ -154,6 +154,7 @@ public class FluoriteLayoutTests
         await File.WriteAllTextAsync(Path.Combine(original.GameDirectory, "options.txt"), "fov:90", ct);
         Directory.CreateDirectory(original.NativesDirectory);
         await File.WriteAllTextAsync(Path.Combine(original.NativesDirectory, "lwjgl.dll"), "x", ct);
+        await File.WriteAllTextAsync(Path.Combine(original.MetadataDirectory, "export.json"), "{}", ct);
 
         var copy = await layout.DuplicateAsync(original, "Survival (copy)", ct);
 
@@ -163,6 +164,7 @@ public class FluoriteLayoutTests
         Assert.Equal("1.21.4", copy.LaunchVersionId);
         Assert.Equal("fov:90", await File.ReadAllTextAsync(Path.Combine(copy.GameDirectory, "options.txt"), ct));
         Assert.False(Directory.Exists(copy.NativesDirectory)); // natives are re-extracted, never copied
+        Assert.False(File.Exists(Path.Combine(copy.MetadataDirectory, "export.json"))); // the copy hasn't been exported
 
         var all = await layout.GetInstancesAsync(ct);
         Assert.Equal(2, all.Count);
