@@ -687,16 +687,9 @@
   <data name="Modpack_KindAdd" xml:space="preserve"><value>新增</value></data>
   <data name="Modpack_KindReplace" xml:space="preserve"><value>更新</value></data>
   <data name="Modpack_KindRemove" xml:space="preserve"><value>移除</value></data>
-  <data name="Export_Title" xml:space="preserve"><value>导出 {0}</value></data>
-  <data name="Export_Format" xml:space="preserve"><value>格式</value></data>
   <data name="Export_FormatModrinth" xml:space="preserve"><value>Modrinth（.mrpack）</value></data>
   <data name="Export_FormatCurseForge" xml:space="preserve"><value>CurseForge（.zip）</value></data>
   <data name="Export_FormatPrism" xml:space="preserve"><value>Prism Launcher / MultiMC（.zip）</value></data>
-  <data name="Export_FormatPackwiz" xml:space="preserve"><value>packwiz（文件夹）</value></data>
-  <data name="Export_Name" xml:space="preserve"><value>整合包名称</value></data>
-  <data name="Export_Version" xml:space="preserve"><value>整合包版本</value></data>
-  <data name="Export_Include" xml:space="preserve"><value>包含内容</value></data>
-  <data name="Export_Hint" xml:space="preserve"><value>Modrinth 或 CurseForge 上的模组和资源包会以链接形式引用，不会复制；其他文件会打包进整合包。存档和个人设置默认不包含，除非你勾选。</value></data>
   <data name="Export_Button" xml:space="preserve"><value>导出</value></data>
   <data name="Export_JobTitle" xml:space="preserve"><value>导出 {0}</value></data>
   <data name="Export_Exporting" xml:space="preserve"><value>正在导出…</value></data>
@@ -704,6 +697,51 @@
   <data name="Export_FailedTitle" xml:space="preserve"><value>无法导出</value></data>
   <data name="Menu_Export.Text" xml:space="preserve"><value>导出为整合包…</value></data>
   <data name="Palette_Export" xml:space="preserve"><value>将 {0} 导出为整合包</value></data>
+  <data name="Export_DialogTitle" xml:space="preserve"><value>导出为整合包</value></data>
+  <data name="Export_FormatBox.Header" xml:space="preserve"><value>格式</value></data>
+  <data name="Export_FormatModrinthTitle.Text" xml:space="preserve"><value>Modrinth（.mrpack）</value></data>
+  <data name="Export_FormatModrinthCaption.Text" xml:space="preserve"><value>Modrinth App、Prism、Fluorite 等多数启动器</value></data>
+  <data name="Export_FormatCurseForgeTitle.Text" xml:space="preserve"><value>CurseForge（.zip）</value></data>
+  <data name="Export_FormatCurseForgeCaption.Text" xml:space="preserve"><value>CurseForge 应用</value></data>
+  <data name="Export_FormatPrismTitle.Text" xml:space="preserve"><value>Prism Launcher / MultiMC（.zip）</value></data>
+  <data name="Export_FormatPrismCaption.Text" xml:space="preserve"><value>原样打包整个实例，含已停用的模组</value></data>
+  <data name="Export_FormatPackwizTitle.Text" xml:space="preserve"><value>packwiz（文件夹）</value></data>
+  <data name="Export_FormatPackwizCaption.Text" xml:space="preserve"><value>纯文本文件，便于用 git 管理整合包</value></data>
+  <data name="Export_NameBox.Header" xml:space="preserve"><value>整合包名称</value></data>
+  <data name="Export_VersionBox.Header" xml:space="preserve"><value>版本</value></data>
+  <data name="Export_AuthorBox.Header" xml:space="preserve"><value>作者</value></data>
+  <data name="Export_AuthorBox.PlaceholderText" xml:space="preserve"><value>可选</value></data>
+  <data name="Export_SummaryBox.Header" xml:space="preserve"><value>简介</value></data>
+  <data name="Export_SummaryBox.PlaceholderText" xml:space="preserve"><value>可选：一句话介绍这个整合包</value></data>
+  <data name="Export_FieldUnused" xml:space="preserve"><value>{0} 整合包没有此项。</value></data>
+  <data name="Export_LastExport" xml:space="preserve"><value>上次导出：{0} · {1} {2}</value></data>
+  <data name="Export_Running" xml:space="preserve"><value>游戏正在运行：正在使用的存档和设置可能尚未保存完整。先退出游戏可得到完整的副本。</value></data>
+  <data name="Export_LoaderUnsupported" xml:space="preserve"><value>{0} 整合包无法包含 {1}：安装者只会得到不带它的 Minecraft {2}。Prism 整合包可以。</value></data>
+  <data name="Export_IncludeHeader.Text" xml:space="preserve"><value>包含内容</value></data>
+  <data name="Export_SelectAllLink.Content" xml:space="preserve"><value>全选</value></data>
+  <data name="Export_SelectNoneLink.Content" xml:space="preserve"><value>全不选</value></data>
+  <data name="Export_DefaultsLink.Content" xml:space="preserve"><value>恢复默认</value></data>
+  <data name="Export_ChosenSize" xml:space="preserve"><value>已选 {0}/{1} · {2}</value></data>
+  <data name="Export_SizeHint" xml:space="preserve"><value>磁盘占用。以链接引用的 Modrinth 或 CurseForge 模组不计入整合包大小。</value></data>
+  <data name="Export_Expand" xml:space="preserve"><value>展开 {0}</value></data>
+  <data name="Export_Collapse" xml:space="preserve"><value>折叠 {0}</value></data>
+  <data name="Export_FileCount" xml:space="preserve"><value>{0} 个文件</value></data>
+  <data name="Export_DescConfig" xml:space="preserve"><value>模组配置</value></data>
+  <data name="Export_DescDefaultConfigs" xml:space="preserve"><value>新世界的默认配置</value></data>
+  <data name="Export_DescSaves" xml:space="preserve"><value>存档</value></data>
+  <data name="Export_DescOptions" xml:space="preserve"><value>你的游戏设置</value></data>
+  <data name="Export_DescOptiFine" xml:space="preserve"><value>OptiFine 设置</value></data>
+  <data name="Export_DescShaderOptions" xml:space="preserve"><value>光影设置</value></data>
+  <data name="Export_DescServers" xml:space="preserve"><value>服务器列表</value></data>
+  <data name="Export_DescKubeJs" xml:space="preserve"><value>KubeJS 脚本</value></data>
+  <data name="Export_DescResourcePacks" xml:space="preserve"><value>资源包</value></data>
+  <data name="Export_DescShaderPacks" xml:space="preserve"><value>光影包</value></data>
+  <data name="Export_DescMaps" xml:space="preserve"><value>地图数据</value></data>
+  <data name="Export_DescReplays" xml:space="preserve"><value>回放</value></data>
+  <data name="Export_DescSchematics" xml:space="preserve"><value>原理图</value></data>
+  <data name="Export_Empty.Text" xml:space="preserve"><value>暂无可导出的文件：整合包只会包含 Minecraft 和加载器。</value></data>
+  <data name="Export_DoneCopied" xml:space="preserve"><value>已导出：{0} 个文件</value></data>
+  <data name="Export_SizeHintLocal" xml:space="preserve"><value>磁盘占用（压缩前）。</value></data>
   <data name="Instance_UpdatePack.Text" xml:space="preserve"><value>检查更新</value></data>
   <data name="Instance_UpdatePackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>检查整合包更新</value></data>
   <data name="Instance_UpdatePackButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>检查此整合包是否有新版本</value></data>
@@ -1122,8 +1160,6 @@
   <data name="Browse_NoResultsFor" xml:space="preserve"><value>没有找到与“{0}”相关的结果。</value></data>
   <data name="Browse_NoResultsForInstance" xml:space="preserve"><value>只显示适用于 {0} 的内容。要查看全部，请在顶部选择“不选择实例（仅浏览）”。</value></data>
   <data name="Browse_ClearFilters.Content" xml:space="preserve"><value>清除搜索和筛选</value></data>
-  <data name="Export_SelectAll" xml:space="preserve"><value>全选</value></data>
-  <data name="Export_SelectNone" xml:space="preserve"><value>全不选</value></data>
   <data name="Export_SelectedCount" xml:space="preserve"><value>已选 {0}/{1}</value></data>
   <data name="LibraryMenu_New.Text" xml:space="preserve"><value>新建实例…</value></data>
   <data name="LibraryMenu_Import.Text" xml:space="preserve"><value>导入</value></data>

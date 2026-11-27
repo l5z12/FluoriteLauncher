@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Export dialog's body: the instance; then the format and the pack's details on the left, and what goes in
+  it on the right, as tall as the left. In a narrow window the list goes under the rest (FitWindow).
+-->
+<UserControl
+    x:Class="Fluorite.App.Views.ExportPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Fluorite.App.Views"
+    xmlns:vm="using:Fluorite.App.ViewModels">
+
+    <Grid x:Name="Root" Width="920" RowSpacing="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition x:Name="ListColumn" Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Which instance, and what it runs on (some formats can't hold every loader). -->
+        <Grid Grid.ColumnSpan="2" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Width="40" Height="40" CornerRadius="8">
+                <Grid>
+                    <Border x:Name="InitialTile" Background="{ThemeResource FluoriteBrandBrush}">
+                        <TextBlock x:Name="InitialText" FontSize="18" FontWeight="SemiBold" Foreground="{ThemeResource FluoriteOnBrandBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <Image x:Name="IconImage" Stretch="Uniform" />
+                </Grid>
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock x:Name="InstanceName" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="InstanceVersion" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Grid>
+
+        <StackPanel x:Name="DetailsPart" Grid.Row="1" Spacing="14" SizeChanged="DetailsPart_SizeChanged">
+            <!-- In the order of FormatOrder; each says where it goes. -->
+            <RadioButtons x:Name="FormatList" x:Uid="Export_FormatBox" SelectionChanged="Formats_SelectionChanged">
+                <RadioButton>
+                    <StackPanel>
+                        <TextBlock x:Uid="Export_FormatModrinthTitle" />
+                        <TextBlock x:Uid="Export_FormatModrinthCaption" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton>
+                    <StackPanel>
+                        <TextBlock x:Uid="Export_FormatCurseForgeTitle" />
+                        <TextBlock x:Uid="Export_FormatCurseForgeCaption" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton>
+                    <StackPanel>
+                        <TextBlock x:Uid="Export_FormatPrismTitle" />
+                        <TextBlock x:Uid="Export_FormatPrismCaption" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton>
+                    <StackPanel>
+                        <TextBlock x:Uid="Export_FormatPackwizTitle" />
+                        <TextBlock x:Uid="Export_FormatPackwizCaption" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </RadioButton>
+            </RadioButtons>
+
+            <!-- The loader the format can't hold; the game running. -->
+            <InfoBar x:Name="LoaderBar" Severity="Warning" IsClosable="False" />
+            <InfoBar x:Name="RunningBar" Severity="Informational" IsClosable="False" />
+
+            <!-- Fields the chosen format has no place for are turned off, with a tooltip that says so. -->
+            <StackPanel Spacing="8">
+                <TextBox x:Name="NameBox" x:Uid="Export_NameBox" MaxLength="100" />
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1.6*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid x:Name="VersionField" Background="Transparent">
+                        <TextBox x:Name="VersionBox" x:Uid="Export_VersionBox" MaxLength="40" PlaceholderText="1.0.0" />
+                    </Grid>
+                    <Grid x:Name="AuthorField" Grid.Column="1" Background="Transparent">
+                        <TextBox x:Name="AuthorBox" x:Uid="Export_AuthorBox" MaxLength="100" />
+                    </Grid>
+                </Grid>
+                <Grid x:Name="SummaryField" Background="Transparent">
+                    <TextBox x:Name="SummaryBox" x:Uid="Export_SummaryBox" MaxLength="300" />
+                </Grid>
+                <TextBlock x:Name="LastExport" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Visibility="Collapsed" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- What goes in: as tall as the details beside it (FitList). -->
+        <Grid x:Name="ListPart" Grid.Row="1" Grid.Column="1" Margin="28,0,0,0" RowSpacing="6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <!-- "Include" with Select all / none / Defaults beside it; how much is chosen goes under the list. -->
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock x:Uid="Export_IncludeHeader" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <HyperlinkButton x:Uid="Export_SelectAllLink" Click="SelectAll_Click" />
+                <HyperlinkButton x:Uid="Export_SelectNoneLink" Click="SelectNone_Click" />
+                <HyperlinkButton x:Uid="Export_DefaultsLink" Click="Defaults_Click" />
+            </StackPanel>
+            <Border Grid.Row="1" CornerRadius="8" BorderThickness="1"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <Grid>
+                    <ScrollViewer x:Name="TreeScroll" Padding="0,4,0,4">
+                        <!--
+                          Tab enters the list once; Up and Down move, Right opens a folder, Left closes it or goes to its folder.
+                          Filled in code, the rows shown made anew when a folder opens or closes (ShowRows).
+                        -->
+                        <ItemsRepeater x:Name="Tree" TabFocusNavigation="Once" XYFocusKeyboardNavigation="Enabled">
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ExportNode">
+                                    <Grid Height="32" Padding="6,0,14,0" ColumnSpacing="4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="{x:Bind IndentWidth}" />
+                                        <Button Grid.Column="1" Style="{StaticResource SubtleButtonStyle}" Width="28" Height="28" Padding="0" IsTabStop="False"
+                                                Tag="{x:Bind}" Click="Chevron_Click" Visibility="{x:Bind local:Bind.Visible(IsDirectory)}"
+                                                AutomationProperties.Name="{x:Bind ExpandName, Mode=OneWay}">
+                                            <FontIcon Glyph="{x:Bind Chevron, Mode=OneWay}" FontSize="10" />
+                                        </Button>
+                                        <CheckBox Grid.Column="2" MinWidth="0" Tag="{x:Bind}" IsChecked="{x:Bind State, Mode=OneWay}" Click="Check_Click"
+                                                  PreviewKeyDown="Check_PreviewKeyDown" AutomationProperties.Name="{x:Bind DisplayName}">
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <TextBlock Text="{x:Bind DisplayName}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{x:Bind Description}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </CheckBox>
+                                        <TextBlock Grid.Column="3" Text="{x:Bind SizeText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind SizeTooltip, Mode=OneWay}"
+                                                   VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                    </ScrollViewer>
+                    <!-- A game folder with nothing in it to export yet. -->
+                    <TextBlock x:Name="EmptyText" x:Uid="Export_Empty" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="24"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
+                </Grid>
+            </Border>
+            <TextBlock x:Name="CountText" Grid.Row="2" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"
+                       Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Grid>
+    </Grid>
+</UserControl>

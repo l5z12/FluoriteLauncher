@@ -131,6 +131,9 @@ public sealed class LauncherSettings
     /// <summary>The export format picked last time (Modrinth, CurseForge, Prism, packwiz), offered first next time.</summary>
     public int LastExportFormat { get; set; }
 
+    /// <summary>The author given to the last export, offered for instances exported for the first time.</summary>
+    public string? LastExportAuthor { get; set; }
+
     /// <summary>Library groups the user collapsed; "" stands for the ungrouped instances.</summary>
     public List<string> CollapsedGroups { get; set; } = [];
 
