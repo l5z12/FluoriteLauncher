@@ -42,7 +42,8 @@
             </StackPanel>
         </Grid>
 
-        <StackPanel x:Name="DetailsPart" Grid.Row="1" Spacing="14" SizeChanged="DetailsPart_SizeChanged">
+        <!-- Top: its height is its own, which the list copies (stretched, it would take the list's height and keep it). -->
+        <StackPanel x:Name="DetailsPart" Grid.Row="1" Spacing="14" VerticalAlignment="Top" SizeChanged="DetailsPart_SizeChanged">
             <!-- In the order of FormatOrder; each says where it goes. -->
             <RadioButtons x:Name="FormatList" x:Uid="Export_FormatBox" SelectionChanged="Formats_SelectionChanged">
                 <RadioButton>
@@ -127,8 +128,8 @@
             </Expander>
         </StackPanel>
 
-        <!-- What goes in: as tall as the details beside it (FitList). -->
-        <Grid x:Name="ListPart" Grid.Row="1" Grid.Column="1" Margin="28,0,0,0" RowSpacing="6">
+        <!-- What goes in: as tall as the details beside it (FitList); a set height from the start, so its first layout doesn't make every row. -->
+        <Grid x:Name="ListPart" Grid.Row="1" Grid.Column="1" Margin="28,0,0,0" RowSpacing="6" Height="360">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
