@@ -13,6 +13,8 @@
 
             <InfoBar IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.ErrorMessage), Mode=OneWay, FallbackValue=False}" Severity="Error"
                      Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" IsClosable="True" />
+            <InfoBar IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.StatusMessage), Mode=OneWay, FallbackValue=False}" Severity="Success"
+                     Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" IsClosable="True" />
 
             <!-- Drag a card to reorder (or right-click › Move up/down); the order is used everywhere accounts are listed.
                  The page scrolls, not the list. -->
@@ -34,6 +36,11 @@
                               BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
                             <Grid.ContextFlyout>
                                 <MenuFlyout>
+                                    <!-- Any time, for Microsoft and skin-site accounts; the card has a button for it once it's needed. -->
+                                    <MenuFlyoutItem x:Uid="Accounts_SignInAgainMenu" Tag="{x:Bind}" Click="SignInAgain_Click" Visibility="{x:Bind local:Bind.Visible(CanSignInAgain)}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE72C;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutSeparator Visibility="{x:Bind local:Bind.Visible(CanSignInAgain)}" />
                                     <MenuFlyoutItem x:Uid="Accounts_MoveUp" Tag="{x:Bind}" Click="MoveUp_Click" KeyboardAcceleratorTextOverride="Alt+Up">
                                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74A;" /></MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
@@ -61,8 +68,14 @@
                             <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                 <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                 <TextBlock Text="{x:Bind KindText}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0" Visibility="{x:Bind local:Bind.Visible(NeedsSignIn), Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE7BA;" FontSize="12" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                                    <TextBlock x:Uid="Accounts_NeedsSignIn" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                                </StackPanel>
                             </StackPanel>
                             <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button x:Uid="Accounts_SignInAgainButton" Style="{StaticResource AccentButtonStyle}" Tag="{x:Bind}" Click="SignInAgain_Click"
+                                        Visibility="{x:Bind local:Bind.Visible(NeedsSignIn), Mode=OneWay}" />
                                 <FontIcon Glyph="&#xE73E;" Foreground="{ThemeResource FluoriteTealBrush}" Visibility="{x:Bind local:Bind.Visible(IsSelected), Mode=OneWay}" />
                                 <Button x:Uid="Accounts_Use" Tag="{x:Bind}" Click="Select_Click" Visibility="{x:Bind local:Bind.Collapsed(IsSelected), Mode=OneWay}" />
                                 <Button x:Uid="Accounts_Skin" Tag="{x:Bind}" Click="Skin_Click" />

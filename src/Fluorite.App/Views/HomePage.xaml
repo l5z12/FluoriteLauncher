@@ -16,6 +16,12 @@
                     <Button x:Uid="Home_GoAccounts" Click="GoAccounts_Click" />
                 </InfoBar.ActionButton>
             </InfoBar>
+            <InfoBar IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.SignInExpired), Mode=OneWay, FallbackValue=False}" IsClosable="True" Severity="Warning"
+                     Message="{x:Bind ViewModel.SignInExpired, Mode=OneWay}">
+                <InfoBar.ActionButton>
+                    <Button x:Uid="Home_SignInAgain" Click="SignInAgain_Click" />
+                </InfoBar.ActionButton>
+            </InfoBar>
 
             <!-- Continue playing -->
             <TextBlock x:Uid="Home_ContinuePlaying" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" />

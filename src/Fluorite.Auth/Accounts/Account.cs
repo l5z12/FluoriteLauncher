@@ -62,6 +62,12 @@ public sealed class Account
     /// <summary>For offline accounts: whether <see cref="SkinFile"/> uses the slim (Alex) arm model.</summary>
     public bool SkinSlim { get; set; }
 
+    /// <summary>
+    /// The last refresh said only signing in again fixes the account (<see cref="Microsoft.AuthFailure.SignInAgain"/>),
+    /// so the Accounts page can say so before the next launch. Cleared by any sign-in or refresh that works.
+    /// </summary>
+    public bool NeedsSignIn { get; set; }
+
     /// <summary>Whether this Microsoft account was verified to own Java Edition (unlocks offline accounts).</summary>
     public bool OwnsGame { get; set; }
 

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Fluorite.Auth.Accounts;
+using Fluorite.Auth.Microsoft;
 using Fluorite.Core.Instances;
 using Fluorite.Core.Launch;
 using Fluorite.Core.Logging;
@@ -96,7 +97,7 @@ internal sealed class LogArchive
 
 /// <summary>Launches instances, streams their logs to the UI thread in batches and records play statistics.</summary>
 public sealed class GameRunner(
-    LaunchPipeline pipeline, AccountService accounts, SettingsService settings, InstanceRegistry registry,
+    LaunchPipeline pipeline, AccountService accounts, AccountSignIn signIn, SettingsService settings, InstanceRegistry registry,
     Fluorite.Modding.Loaders.LoaderService loaders, Fluorite.Modding.Content.ContentService content, HttpClient http)
 {
     private const int MaxLogLines = 20_000;
@@ -226,13 +227,14 @@ public sealed class GameRunner(
             if (settings.Current.AutoBackupWorlds)
                 _ = BackUpPlayedWorldsAsync(game, sessionStart);
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex is OperationCanceledException or AuthException { Failure: AuthFailure.Cancelled })
         {
+            // Stopped, or a sign-in Windows asked for was cancelled: not a failure.
             game.Status = Loc.Get("Launch_Cancelled");
         }
         catch (Exception ex)
         {
-            var message = ex is Fluorite.Auth.Microsoft.AuthException auth ? ViewModels.AccountsViewModel.DescribeFailure(auth) : ex.Message;
+            var message = ex is AuthException auth ? ViewModels.AccountsViewModel.DescribeFailure(auth) : ex.Message;
             game.Status = Loc.Format("Launch_Failed", message);
             game.ExitCode = -1;
             AppendLocal(game, GameLogLevel.Error, ex.ToString());
@@ -246,46 +248,26 @@ public sealed class GameRunner(
         }
     }
 
-    /// <summary>The launch session; when a skin-site sign-in has expired, asks for the password and signs in again.</summary>
+    /// <summary>
+    /// The launch session. When the account's sign-in stopped working (a skin site's token, or a Microsoft sign-in that
+    /// Windows or Microsoft no longer renews), it's signed in again, in place, and the launch goes on; cancelling that
+    /// cancels the launch.
+    /// </summary>
     private async Task<GameSession> GetSessionAsync(RunningGame game, Account account, CancellationToken ct)
     {
         try
         {
             return await accounts.GetSessionAsync(account, ct);
         }
-        catch (Fluorite.Auth.Microsoft.AuthException ex) when (ex.Failure == Fluorite.Auth.Microsoft.AuthFailure.SignInAgain && account.Kind == AccountKind.Yggdrasil)
+        catch (AuthException ex) when (ex.Failure == AuthFailure.SignInAgain && account.Kind != AccountKind.Offline)
         {
+            AppendLocal(game, GameLogLevel.Warn, ex.Message); // Why, for the log.
             game.Status = Loc.Get("Auth_SignInAgain");
-            string? error = null;
-            while (true)
-            {
-                var password = await AskPasswordAsync(account, error) ?? throw new OperationCanceledException();
-                try
-                {
-                    await accounts.ReauthenticateYggdrasilAsync(account, password, ct);
-                    return await accounts.GetSessionAsync(account, ct);
-                }
-                catch (Fluorite.Auth.Microsoft.AuthException again) when (again.Failure == Fluorite.Auth.Microsoft.AuthFailure.InvalidCredentials)
-                {
-                    error = Loc.Get("Auth_InvalidCredentials");
-                }
-            }
+            if (await signIn.SignInAgainAsync(account, forLaunch: true, ct) != SignInAgainResult.SignedIn)
+                throw new OperationCanceledException();
+            game.Status = Loc.Get("Launch_Preparing");
+            return await accounts.GetSessionAsync(account, ct);
         }
-    }
-
-    private static async Task<string?> AskPasswordAsync(Account account, string? error)
-    {
-        var server = account.YggdrasilServerName ?? account.YggdrasilServer ?? "";
-        var panel = new Microsoft.UI.Xaml.Controls.StackPanel { Spacing = 12 };
-        panel.Children.Add(Dialogs.Text(Loc.Format("Launch_PasswordHint", account.PlayerName, account.LoginName ?? account.PlayerName)));
-        if (error is not null)
-            panel.Children.Add(Dialogs.Bar(error, Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error));
-        var box = new Microsoft.UI.Xaml.Controls.PasswordBox { Header = Loc.Get("Accounts_YggPassword/Header") };
-        panel.Children.Add(box);
-        var dialog = Dialogs.Create(Loc.Format("Launch_PasswordTitle", server), panel, Loc.Get("Launch_PasswordButton"));
-        dialog.Opened += (_, _) => box.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
-        var result = await Dialogs.ShowAsync(dialog);
-        return result == Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary && box.Password.Length > 0 ? box.Password : null;
     }
 
     /// <summary>

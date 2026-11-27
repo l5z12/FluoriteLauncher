@@ -90,11 +90,16 @@ public static class Dialogs
     /// Keyboard focus starts on the dialog's Close button, not on the first thing in its content that takes focus
     /// (a link, say, which Enter or Space would then open).
     /// </summary>
-    public static void FocusCloseOnOpen(ContentDialog dialog) =>
+    public static void FocusCloseOnOpen(ContentDialog dialog) => FocusButtonOnOpen(dialog, "CloseButton");
+
+    /// <summary>Keyboard focus starts on the primary button, for a dialog whose content is links and text.</summary>
+    public static void FocusPrimaryOnOpen(ContentDialog dialog) => FocusButtonOnOpen(dialog, "PrimaryButton");
+
+    private static void FocusButtonOnOpen(ContentDialog dialog, string part) =>
         dialog.Opened += (_, _) =>
         {
-            if (Named(dialog, "CloseButton") is Control close) // The part's name in ContentDialog's template.
-                close.Focus(FocusState.Programmatic);
+            if (Named(dialog, part) is Control button) // The part's name in ContentDialog's template.
+                button.Focus(FocusState.Programmatic);
         };
 
     private static FrameworkElement? Named(DependencyObject root, string name)

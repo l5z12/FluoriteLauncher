@@ -20,6 +20,8 @@ public sealed partial class HomePage : Page
 
     protected override async void OnNavigatedTo(NavigationEventArgs e) => await ViewModel.LoadAsync();
 
+    private async void SignInAgain_Click(object sender, RoutedEventArgs e) => await ViewModel.SignInAgainAsync();
+
     private void Recent_Click(object sender, RoutedEventArgs e)
     {
         if (Bind.ItemOf<InstanceItem>(sender) is { } item)

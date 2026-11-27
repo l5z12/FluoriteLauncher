@@ -30,6 +30,10 @@
   <data name="Home_NeedsAccountBar.Title" xml:space="preserve"><value>添加账户后即可开始游戏</value></data>
   <data name="Home_NeedsAccountBar.Message" xml:space="preserve"><value>请登录拥有《我的世界：Java 版》的 Microsoft 账户。</value></data>
   <data name="Home_GoAccounts.Content" xml:space="preserve"><value>前往账户</value></data>
+  <data name="Home_SignInExpired" xml:space="preserve"><value>{0} 的登录已过期。重新登录后即可以 {0} 的身份游戏。</value></data>
+  <data name="Home_SignInAgain.Content" xml:space="preserve"><value>重新登录</value></data>
+  <data name="Skin_SignInAgain.Content" xml:space="preserve"><value>重新登录</value></data>
+  <data name="LaunchAs_SignInAgain" xml:space="preserve"><value>需重新登录</value></data>
   <data name="Home_ContinuePlaying.Text" xml:space="preserve"><value>继续游戏</value></data>
   <data name="Home_Empty.Text" xml:space="preserve"><value>你还没有任何实例。实例是一份独立的游戏副本，拥有自己的版本、模组、存档和设置。</value></data>
   <data name="Home_CreateFirst.Content" xml:space="preserve"><value>创建第一个实例</value></data>
@@ -142,12 +146,30 @@
   <data name="Accounts_PickProfileTitle" xml:space="preserve"><value>选择角色</value></data>
   <data name="Accounts_PickProfileHint" xml:space="preserve"><value>此账户有多个角色。请选择要使用的角色；如需添加其他角色，请再次登录。</value></data>
   <data name="Accounts_PickProfileButton" xml:space="preserve"><value>添加</value></data>
-  <data name="Launch_PasswordTitle" xml:space="preserve"><value>登录 {0}</value></data>
-  <data name="Launch_PasswordHint" xml:space="preserve"><value>{0} 的登录已过期。请输入 {1} 的密码以启动游戏。</value></data>
-  <data name="Launch_PasswordButton" xml:space="preserve"><value>登录并启动</value></data>
   <data name="Accounts_Skin.Content" xml:space="preserve"><value>皮肤</value></data>
   <data name="Accounts_MoveUp.Text" xml:space="preserve"><value>上移</value></data>
   <data name="Accounts_MoveDown.Text" xml:space="preserve"><value>下移</value></data>
+  <data name="Accounts_SignInAgainMenu.Text" xml:space="preserve"><value>重新登录</value></data>
+  <data name="Accounts_SignInAgainButton.Content" xml:space="preserve"><value>重新登录</value></data>
+  <data name="Accounts_NeedsSignIn.Text" xml:space="preserve"><value>登录已过期</value></data>
+  <data name="Accounts_SignedInAgain" xml:space="preserve"><value>已重新登录 {0}。</value></data>
+  <data name="SignInAgain_Title" xml:space="preserve"><value>重新登录 {0}</value></data>
+  <data name="SignInAgain_Expired" xml:space="preserve"><value>{0} 的登录已过期。</value></data>
+  <data name="SignInAgain_MicrosoftHint" xml:space="preserve"><value>请使用拥有 {0} 的 Microsoft 账户登录。</value></data>
+  <data name="SignInAgain_YggdrasilHint" xml:space="preserve"><value>请输入 {1} 账户 {0} 的密码。</value></data>
+  <data name="SignInAgain_Kept" xml:space="preserve"><value>只会更新登录状态，账户本身及使用它的实例都保持不变。</value></data>
+  <data name="SignInAgain_SignIn" xml:space="preserve"><value>登录</value></data>
+  <data name="SignInAgain_SignInAndPlay" xml:space="preserve"><value>登录并启动</value></data>
+  <data name="SignInAgain_TryAgain" xml:space="preserve"><value>重试</value></data>
+  <data name="SignInAgain_Working" xml:space="preserve"><value>正在登录…</value></data>
+  <data name="SignInAgain_Checking" xml:space="preserve"><value>正在检查账户…</value></data>
+  <data name="SignInAgain_WaitingWindows" xml:space="preserve"><value>请在 Windows 登录窗口中继续。</value></data>
+  <data name="SignInAgain_WaitingBrowser" xml:space="preserve"><value>请在浏览器中继续。</value></data>
+  <data name="SignInAgain_WaitingCode" xml:space="preserve"><value>正在等待输入代码…</value></data>
+  <data name="SignInAgain_DifferentPlayer" xml:space="preserve"><value>你登录的是 {0}，但此账户是 {1}。</value></data>
+  <data name="SignInAgain_PlayerGone" xml:space="preserve"><value>此账户下已没有 {0}。</value></data>
+  <data name="SignInAgain_AddOther" xml:space="preserve"><value>添加 {0}</value></data>
+  <data name="Auth_DifferentPlayer" xml:space="preserve"><value>该登录属于其他玩家。</value></data>
   <data name="Instance_LogCopySelected.Text" xml:space="preserve"><value>复制选中的行</value></data>
   <data name="Instance_LogSelectAll.Text" xml:space="preserve"><value>全选</value></data>
   <data name="Instance_LogCopyAll.Text" xml:space="preserve"><value>复制全部日志</value></data>

@@ -18,7 +18,13 @@
             </Grid>
 
             <InfoBar IsOpen="{x:Bind local:Bind.IsNotNull(ViewModel.ErrorMessage), Mode=OneWay, FallbackValue=False}" Severity="Error"
-                     Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" IsClosable="True" />
+                     Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" IsClosable="True">
+                <!-- When only signing in again fixes it: right here, and the skin shows once it worked. -->
+                <InfoBar.ActionButton>
+                    <Button x:Uid="Skin_SignInAgain" Command="{x:Bind ViewModel.SignInAgainCommand}"
+                            Visibility="{x:Bind local:Bind.Visible(ViewModel.CanSignInAgain), Mode=OneWay}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
 
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
