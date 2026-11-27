@@ -466,9 +466,14 @@ public class ModpackInstallTests
     {
         using var tmp = new TempFolder();
         var at = new DateTimeOffset(2026, 11, 20, 10, 0, 0, TimeSpan.Zero);
-        await new PackExportState { Format = PackFormat.Packwiz, Name = "N", Version = "2.0", Author = "A", ExportedAt = at, Included = ["mods"], Excluded = ["saves"] }.SaveAsync(tmp.Path, Ct);
+        await new PackExportState
+        {
+            Format = PackFormat.Packwiz, Name = "N", Version = "2.0", Author = "A", ExportedAt = at, ExportedFormat = PackFormat.Modrinth, ExportedVersion = "1.0",
+            Included = ["mods"], Excluded = ["saves"],
+        }.SaveAsync(tmp.Path, Ct);
         var back = PackExportState.Load(tmp.Path)!;
         Assert.Equal((PackFormat.Packwiz, "N", "2.0", "A", at), (back.Format, back.Name, back.Version, back.Author, back.ExportedAt));
+        Assert.Equal((PackFormat.Modrinth, "1.0"), (back.ExportedFormat, back.ExportedVersion)); // What last finished, apart from the choices.
         Assert.Equal(["mods"], back.Included);
         Assert.Equal(["saves"], back.Excluded);
         File.WriteAllText(System.IO.Path.Combine(tmp.Path, PackExportState.FileName), "{ not json");

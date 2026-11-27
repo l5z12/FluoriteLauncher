@@ -66,8 +66,9 @@ public sealed partial class ExportPanel : UserControl
         SummaryBox.Text = saved?.Summary ?? "";
         if (saved is { ExportedAt: var at } && at != default)
         {
-            var format = Array.IndexOf(FormatOrder, saved.Format);
-            LastExport.Text = Loc.Format("Export_LastExport", Formats.Ago(at), format >= 0 ? s_shortNames[format] : saved.Format.ToString(), saved.Version ?? "");
+            var exported = saved.ExportedFormat ?? saved.Format;
+            var format = Array.IndexOf(FormatOrder, exported);
+            LastExport.Text = Loc.Format("Export_LastExport", Formats.Ago(at), format >= 0 ? s_shortNames[format] : exported.ToString(), saved.ExportedVersion ?? saved.Version ?? "");
             ToolTipService.SetToolTip(LastExport, Formats.When(at));
             LastExport.Visibility = Visibility.Visible;
         }
@@ -179,7 +180,10 @@ public sealed partial class ExportPanel : UserControl
             // Kept even where this format has no place for them: the next export may be one that does.
             Author = string.IsNullOrWhiteSpace(AuthorBox.Text) ? null : AuthorBox.Text.Trim(),
             Summary = string.IsNullOrWhiteSpace(SummaryBox.Text) ? null : SummaryBox.Text.Trim(),
+            // What was last exported stays until an export finishes.
             ExportedAt = _saved?.ExportedAt ?? default,
+            ExportedFormat = _saved?.ExportedFormat,
+            ExportedVersion = _saved?.ExportedVersion,
             LocalOnly = _localOnly == _localOnlyDefault ? null : _localOnly, // Kept only when it differs: Settings stays in charge otherwise.
             KeepDisabled = _keepDisabled,
         };

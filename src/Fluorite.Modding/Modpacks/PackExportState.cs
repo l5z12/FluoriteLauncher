@@ -16,7 +16,15 @@ public sealed class PackExportState
     public string? Version { get; set; }
     public string? Author { get; set; }
     public string? Summary { get; set; }
+
+    /// <summary>
+    /// When the last export finished, and as what. The choices above are kept as soon as Export is pressed (a cancelled
+    /// save keeps them too), so they may be newer than what was last exported.
+    /// </summary>
     public DateTimeOffset ExportedAt { get; set; }
+
+    public PackFormat? ExportedFormat { get; set; }
+    public string? ExportedVersion { get; set; }
 
     /// <summary>Copy every file in (see <see cref="PackExportOptions.LocalOnly"/>); null: as Settings says.</summary>
     public bool? LocalOnly { get; set; }

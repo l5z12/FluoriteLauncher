@@ -331,6 +331,8 @@ public sealed class ModpackInstallService(
                 ? Loc.Format("Export_DoneCopied", result.Bundled)
                 : Loc.Format("Export_Done", result.Referenced, result.Bundled));
             state.ExportedAt = DateTimeOffset.Now;
+            state.ExportedFormat = format;
+            state.ExportedVersion = options.Version;
             await TrySaveAsync(state, instance);
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", format == PackFormat.Packwiz ? $"\"{output}\"" : $"/select,\"{output}\"") { UseShellExecute = true });
         }
