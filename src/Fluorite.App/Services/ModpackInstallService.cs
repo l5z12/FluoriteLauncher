@@ -377,12 +377,15 @@ public sealed class ModpackInstallService(
         return folder;
     }
 
-    /// <summary>The name as a file name: any language, with only what Windows refuses replaced; "modpack" when nothing's left.</summary>
+    /// <summary>
+    /// The name as a file or folder name: any language, with only what Windows refuses replaced, and a "_" before a
+    /// name it keeps for a device ("con" → "_con"); "modpack" when nothing's left.
+    /// </summary>
     private static string SafeFileName(string name)
     {
         var invalid = Path.GetInvalidFileNameChars();
         var safe = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray()).Trim().TrimEnd('.');
-        return safe.Length == 0 ? "modpack" : safe;
+        return safe.Length == 0 ? "modpack" : PackPaths.IsReservedName(safe) ? "_" + safe : safe;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

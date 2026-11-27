@@ -127,13 +127,21 @@ public static class PackPaths
             return null;
         foreach (var part in parts)
         {
-            if (part is "." or ".." || part.EndsWith('.') || part.EndsWith(' ') || part.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-                return null;
-            var stem = part.Split('.')[0].ToUpperInvariant();
-            if (stem is "CON" or "PRN" or "AUX" or "NUL" || (stem.Length == 4 && (stem.StartsWith("COM", StringComparison.Ordinal) || stem.StartsWith("LPT", StringComparison.Ordinal)) && char.IsAsciiDigit(stem[3])))
+            if (part is "." or ".." || part.EndsWith('.') || part.EndsWith(' ') || part.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || IsReservedName(part))
                 return null;
         }
         return string.Join('/', parts);
+    }
+
+    /// <summary>
+    /// A name Windows takes for a device, not a file or folder: CON, PRN, AUX, NUL, COM1–9 and LPT1–9, with any
+    /// extension ("con.txt").
+    /// </summary>
+    public static bool IsReservedName(string name)
+    {
+        var stem = name.Split('.')[0].ToUpperInvariant();
+        return stem is "CON" or "PRN" or "AUX" or "NUL"
+            || (stem.Length == 4 && (stem.StartsWith("COM", StringComparison.Ordinal) || stem.StartsWith("LPT", StringComparison.Ordinal)) && char.IsAsciiDigit(stem[3]));
     }
 
     /// <summary>Full path under <paramref name="root"/>; throws if it would land outside.</summary>

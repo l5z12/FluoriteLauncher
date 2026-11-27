@@ -48,6 +48,16 @@ public class PackPathTests
     [InlineData("", null)]
     public void Sanitize(string input, string? expected) => Assert.Equal(expected, PackPaths.Sanitize(input));
 
+    [Theory]
+    [InlineData("con", true)]
+    [InlineData("NUL.txt", true)]
+    [InlineData("com1", true)]
+    [InlineData("LPT9.zip", true)]
+    [InlineData("Console", false)]
+    [InlineData("con 1.0.0", false)]
+    [InlineData("COM", false)]
+    public void IsReservedName(string name, bool reserved) => Assert.Equal(reserved, PackPaths.IsReservedName(name));
+
     [Fact]
     public void Resolve_RejectsEscapes()
     {
