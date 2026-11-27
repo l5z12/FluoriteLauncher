@@ -344,8 +344,6 @@ public sealed class MultiMCLayout(string root, ExternalLayoutContext context) : 
         foreach (var (uid, version) in wanted)
             list.Add((JsonNode)new JsonObject { ["uid"] = uid, ["version"] = version, ["important"] = uid == ComponentUids.Minecraft });
 
-        var tmp = path + ".fluorite-tmp";
-        File.WriteAllText(tmp, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true, IndentSize = 4 }));
-        File.Move(tmp, path, overwrite: true);
+        AtomicFile.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true, IndentSize = 4 }));
     }
 }

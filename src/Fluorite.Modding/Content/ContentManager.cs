@@ -1,3 +1,4 @@
+using Fluorite.Core;
 using Fluorite.Core.Text;
 using Fluorite.Modding.Metadata;
 using Fluorite.Modding.Util;
@@ -293,9 +294,7 @@ public sealed class ContentManager : IDisposable
     {
         if (OriginalOf(file) is not { } original)
             throw new FileNotFoundException("The original file isn't kept any more.");
-        var temp = file.Path + ".fluorite-restore";
-        File.Copy(original, temp, overwrite: true);
-        File.Move(temp, file.Path, overwrite: true);
+        AtomicFile.Copy(original, file.Path);
         await RecordRewriteAsync(file, null, ct).ConfigureAwait(false);
         File.Delete(original);
     }

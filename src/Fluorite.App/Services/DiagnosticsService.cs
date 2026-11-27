@@ -34,6 +34,8 @@ public sealed record CrashFindingItem(string Title, string Advice, string? Detai
 /// <summary>Sharing a crash: the log on mclo.gs, or everything that helps in a zip.</summary>
 public sealed class DiagnosticsService(MclogsClient mclogs)
 {
+    private static readonly string[] s_gameLogs = ["latest.log", "debug.log"];
+
     /// <summary>Uploads the session's log (redacted) after the user agrees, then offers the link.</summary>
     public async Task UploadLogAsync(RunningGame game)
     {
@@ -119,21 +121,20 @@ public sealed class DiagnosticsService(MclogsClient mclogs)
     {
         var secrets = game.Secrets;
         var since = game.StartedAt?.UtcDateTime.AddSeconds(-5);
-        var temp = path + ".tmp";
-        using (var zip = ZipFile.Open(temp, ZipArchiveMode.Create))
+        AtomicFile.Write(path, temp =>
         {
+            using var zip = ZipFile.Open(temp, ZipArchiveMode.Create);
             Add(zip, "session.log", game.Archive.ToText());
             Add(zip, "system.txt", SystemSummary(game));
             if (game.Launched?.Prepared.Command is { } command)
                 Add(zip, "launch-command.txt", command.ToDisplayString(secrets));
 
             var gameDir = game.Instance.GameDirectory;
-            foreach (var log in new[] { "latest.log", "debug.log" })
+            foreach (var log in s_gameLogs)
                 AddFile(zip, "logs/" + log, Path.Combine(gameDir, "logs", log), since, 16 * 1024 * 1024);
             AddFile(zip, "crash-report.txt", game.Diagnosis?.CrashReportFile, null, 4 * 1024 * 1024);
             AddFile(zip, Path.GetFileName(game.Diagnosis?.JvmCrashFile ?? "hs_err.log"), game.Diagnosis?.JvmCrashFile, null, 4 * 1024 * 1024);
-        }
-        File.Move(temp, path, overwrite: true);
+        });
 
         void Add(ZipArchive zip, string name, string text)
         {

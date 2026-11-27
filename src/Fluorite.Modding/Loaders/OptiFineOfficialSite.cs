@@ -102,18 +102,15 @@ internal static partial class OptiFineOfficialSite
         response.EnsureSuccessStatusCode();
 
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-        var tmp = target + ".part";
-        await using (var src = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
-        await using (var dst = File.Create(tmp))
-            await src.CopyToAsync(dst, ct).ConfigureAwait(false);
-
-        // An expired/invalid key returns a tiny text page ("Request not found.") with 200 OK.
-        if (!IsZip(tmp))
+        await AtomicFile.WriteAsync(target, async tmp =>
         {
-            File.Delete(tmp);
-            throw new HttpRequestException($"optifine.net did not return a jar for {fileName}.");
-        }
-        File.Move(tmp, target, overwrite: true);
+            await using (var src = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
+            await using (var dst = File.Create(tmp))
+                await src.CopyToAsync(dst, ct).ConfigureAwait(false);
+            // An expired/invalid key returns a tiny text page ("Request not found.") with 200 OK.
+            if (!IsZip(tmp))
+                throw new HttpRequestException($"optifine.net did not return a jar for {fileName}.");
+        }).ConfigureAwait(false);
     }
 
     private static bool IsZip(string path)

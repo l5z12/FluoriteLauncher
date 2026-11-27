@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fluorite.Core;
 using Fluorite.Modding.Platforms;
 
 namespace Fluorite.Modding.Content;
@@ -87,10 +88,11 @@ public sealed class ContentIndex
     public async Task SaveAsync(string path, CancellationToken ct = default)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var tmp = path + ".tmp";
-        await using (var fs = File.Create(tmp))
+        await AtomicFile.WriteAsync(path, async tmp =>
+        {
+            await using var fs = File.Create(tmp);
             await JsonSerializer.SerializeAsync(fs, this, ContentIndexJsonContext.Default.ContentIndex, ct).ConfigureAwait(false);
-        File.Move(tmp, path, overwrite: true);
+        }).ConfigureAwait(false);
     }
 }
 

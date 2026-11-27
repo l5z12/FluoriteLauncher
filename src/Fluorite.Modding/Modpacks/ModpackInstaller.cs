@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fluorite.Core;
 using Fluorite.Core.Instances;
 using Fluorite.Core.Net;
 using Fluorite.Core.Text;
@@ -58,10 +59,11 @@ public sealed class PackState
     {
         Directory.CreateDirectory(metadataDirectory);
         var path = Path.Combine(metadataDirectory, FileName);
-        var tmp = path + ".tmp";
-        await using (var fs = File.Create(tmp))
+        await AtomicFile.WriteAsync(path, async tmp =>
+        {
+            await using var fs = File.Create(tmp);
             await JsonSerializer.SerializeAsync(fs, this, PackStateJsonContext.Default.PackState, ct).ConfigureAwait(false);
-        File.Move(tmp, path, overwrite: true);
+        }).ConfigureAwait(false);
     }
 
     public PackSource ToSource() => new(Format, ProjectId, VersionId, Version) { Url = Url };

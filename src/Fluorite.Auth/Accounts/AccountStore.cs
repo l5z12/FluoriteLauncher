@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Fluorite.Auth.Microsoft;
+using Fluorite.Core;
 using Fluorite.Core.Security;
 
 namespace Fluorite.Auth.Accounts;
@@ -62,9 +63,7 @@ public sealed class AccountStore(string path, ISecretProtector protector) : IDis
             var plain = JsonSerializer.SerializeToUtf8Bytes(_data, AuthJsonContext.Default.AccountStoreData);
             var cipher = protector.Protect(plain);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-            var tmp = path + ".tmp";
-            await File.WriteAllBytesAsync(tmp, cipher, ct).ConfigureAwait(false);
-            File.Move(tmp, path, overwrite: true);
+            await AtomicFile.WriteAllBytesAsync(path, cipher, ct).ConfigureAwait(false);
         }
         finally
         {
