@@ -243,7 +243,10 @@ public sealed class ModpackExporter(ContentService content)
 
     private async Task<PackExportResult> ExportCurseForgeAsync(GameInstance instance, PackExportOptions o, List<(string Relative, string Full)> files, string output, CancellationToken ct)
     {
-        var known = await IdentifyAsync(ContentPlatform.CurseForge, files, o.LocalOnly, ct).ConfigureAwait(false);
+        // A CurseForge manifest names a file by project and file id only, so installers save it under its own name:
+        // a turned-off mod linked there would install turned on. Kept ones go in the pack, at their own path.
+        var linkable = files.Where(f => !f.Relative.EndsWith(ContentLocation.DisabledSuffix, StringComparison.OrdinalIgnoreCase)).ToList();
+        var known = await IdentifyAsync(ContentPlatform.CurseForge, linkable, o.LocalOnly, ct).ConfigureAwait(false);
         var m = instance.Manifest;
         var warnings = new List<string>();
         var loaders = new JsonArray();

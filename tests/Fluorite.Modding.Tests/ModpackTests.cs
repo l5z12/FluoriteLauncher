@@ -5,6 +5,7 @@ using Fluorite.Core.Net;
 using Fluorite.Modding.Content;
 using Fluorite.Modding.Modpacks;
 using Fluorite.Modding.Platforms;
+using Fluorite.Modding.Util;
 
 namespace Fluorite.Modding.Tests;
 
@@ -357,6 +358,56 @@ public class ModpackInstallTests
             await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.Modrinth, Name = "Off", Include = ["mods"], KeepDisabled = keep, LocalOnly = true }, packed, Ct);
             Assert.Equal(keep ? ["mods/off.jar.disabled"] : [], ModpackReader.Read(packed).Overrides.Select(o => o.Path));
         }
+    }
+
+    [Fact]
+    public async Task Export_CurseForge_KeepsTurnedOffModsTurnedOff()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Off",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }, new ComponentRef { Uid = ComponentUids.Forge, Version = "52.0.1" }],
+        }, Ct);
+        var mods = System.IO.Path.Combine(source.GameDirectory, "mods");
+        Directory.CreateDirectory(mods);
+        File.WriteAllText(System.IO.Path.Combine(mods, "on.jar"), "on");
+        File.WriteAllText(System.IO.Path.Combine(mods, "off.jar.disabled"), "off");
+
+        // CurseForge knows both files; the turned-off one must still not be linked (it would install as off.jar).
+        using var content = new ContentService([new KnowsEverything(ContentPlatform.CurseForge)], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+        var output = System.IO.Path.Combine(tmp.Path, "cf.zip");
+        var result = await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.CurseForge, Name = "Off", Include = ["mods"], KeepDisabled = true }, output, Ct);
+        Assert.Equal((1, 1), (result.Referenced, result.Bundled));
+        Assert.Equal(["mods/off.jar.disabled"], ModpackReader.Read(output).Overrides.Select(o => o.Path));
+
+        // Copying every file in links nothing.
+        result = await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.CurseForge, Name = "Off", Include = ["mods"], LocalOnly = true }, output, Ct);
+        Assert.Equal((0, 1), (result.Referenced, result.Bundled));
+    }
+
+    /// <summary>A platform that hosts every file it's asked about.</summary>
+    private sealed class KnowsEverything(ContentPlatform platform) : IContentPlatform
+    {
+        public ContentPlatform Platform => platform;
+        public TextFormat TextFormat => default;
+
+        public Task<IReadOnlyList<IdentifiedFile>> IdentifyAsync(IReadOnlyCollection<ContentHashes> files, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<IdentifiedFile>>(files.Select((h, i) => new IdentifiedFile(h.Sha1, h.Murmur2,
+                new RemoteVersion(platform, (100 + i).ToString(System.Globalization.CultureInfo.InvariantCulture), (200 + i).ToString(System.Globalization.CultureInfo.InvariantCulture), "v", "1"))).ToList());
+
+        public Task<ContentSearchResult> SearchAsync(ContentSearchQuery query, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<RemoteProject> GetProjectAsync(string projectId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<RemoteProject>> GetProjectsAsync(IReadOnlyCollection<string> projectIds, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<string?> GetDescriptionAsync(RemoteProject project, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<RemoteVersion>> GetVersionsAsync(string projectId, ContentTarget? target, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<RemoteVersion> GetVersionAsync(string projectId, string versionId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<string?> GetChangelogAsync(RemoteVersion version, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<RemoteCategory>> GetCategoriesAsync(ContentKind kind, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyDictionary<string, RemoteVersion>> GetUpdatesAsync(IReadOnlyCollection<InstalledRef> installed, ContentTarget target, CancellationToken ct = default) =>
+            throw new NotSupportedException();
     }
 
     [Theory]
