@@ -702,6 +702,8 @@
   <data name="Export_Exporting" xml:space="preserve"><value>Exporting…</value></data>
   <data name="Export_Done" xml:space="preserve"><value>Exported: {0} linked, {1} included</value></data>
   <data name="Export_FailedTitle" xml:space="preserve"><value>Couldn't export</value></data>
+  <data name="Menu_Export.Text" xml:space="preserve"><value>Export as modpack…</value></data>
+  <data name="Palette_Export" xml:space="preserve"><value>Export {0} as a modpack</value></data>
   <data name="Instance_UpdatePack.Text" xml:space="preserve"><value>Check for update</value></data>
   <data name="Instance_UpdatePackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Check for a modpack update</value></data>
   <data name="Instance_UpdatePackButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Check for a newer version of this modpack</value></data>

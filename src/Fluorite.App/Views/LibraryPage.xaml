@@ -59,6 +59,9 @@
             <MenuFlyoutItem x:Uid="Menu_CopyToFluorite" AutomationProperties.AutomationId="CopyToFluorite" Click="Duplicate_Click" KeyboardAcceleratorTextOverride="Ctrl+D">
                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
             </MenuFlyoutItem>
+            <MenuFlyoutItem x:Uid="Menu_Export" AutomationProperties.AutomationId="Export" Click="Export_Click">
+                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xEDE1;" /></MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
             <MenuFlyoutItem x:Uid="Menu_Shortcut" Click="Shortcut_Click">
                 <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE71B;" /></MenuFlyoutItem.Icon>
             </MenuFlyoutItem>

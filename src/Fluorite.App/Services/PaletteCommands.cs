@@ -74,6 +74,8 @@ internal static class PaletteCommands
                 OpenFolder(instance.GameDirectory);
                 return Task.CompletedTask;
             }) { Keywords = instance.Name });
+            list.Add(new PaletteCommand("", Loc.Format("Palette_Export", instance.Name), version,
+                () => App.Get<ModpackInstallService>().ExportAsync(instance)) { Keywords = instance.Name });
         }
 
         // Actions.
