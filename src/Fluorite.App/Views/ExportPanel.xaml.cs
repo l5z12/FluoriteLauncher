@@ -32,7 +32,7 @@ public sealed partial class ExportPanel : UserControl
     private readonly List<ExportNode> _roots = [];
     private ObservableCollection<ExportNode> _rows = [];
     private readonly List<ExportNode> _all = [];
-    private readonly CancellationTokenSource _measuring = new();
+    private CancellationTokenSource _measuring = new();
     private Dictionary<string, ExportTally>? _tallies;
 
     /// <param name="saved">What it was last exported as, to start from.</param>
@@ -82,19 +82,35 @@ public sealed partial class ExportPanel : UserControl
         UpdateFormat();
         UpdateCount();
 
-        Loaded += (_, _) =>
-        {
-            FitWindow();
-            if (XamlRoot is { } root)
-                root.Changed += XamlRoot_Changed;
-        };
-        Unloaded += (_, _) =>
-        {
-            _measuring.Cancel(); // The dialog closed: stop measuring.
-            if (XamlRoot is { } root)
-                root.Changed -= XamlRoot_Changed;
-        };
+        Loaded += Panel_Loaded;
+        Unloaded += Panel_Unloaded;
         _ = MeasureAsync();
+    }
+
+    /// <summary>The window's root this panel follows the size of; let go of it, and not whatever XamlRoot says then, when unloaded.</summary>
+    private XamlRoot? _watched;
+
+    private void Panel_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (_watched is not null)
+            _watched.Changed -= XamlRoot_Changed;
+        _watched = XamlRoot;
+        if (_watched is not null)
+            _watched.Changed += XamlRoot_Changed;
+        FitWindow();
+        if (_tallies is null && _measuring.IsCancellationRequested) // Shown again before measuring was done.
+        {
+            _measuring = new CancellationTokenSource();
+            _ = MeasureAsync();
+        }
+    }
+
+    private void Panel_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _measuring.Cancel(); // The dialog closed: stop measuring.
+        if (_watched is not null)
+            _watched.Changed -= XamlRoot_Changed;
+        _watched = null;
     }
 
     // ── Layout ────────────────────────────────────────────────────────────
