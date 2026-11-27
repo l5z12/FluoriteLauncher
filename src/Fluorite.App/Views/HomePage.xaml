@@ -181,14 +181,25 @@
 
             <!-- News -->
             <TextBlock x:Uid="Home_News" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" Visibility="{x:Bind local:Bind.Visible(ViewModel.HasNews), Mode=OneWay}" />
-            <ItemsRepeater ItemsSource="{x:Bind ViewModel.News}" TabFocusNavigation="Once" XYFocusKeyboardNavigation="Enabled">
+            <ItemsRepeater x:Name="NewsRepeater" ItemsSource="{x:Bind ViewModel.News}" TabFocusNavigation="Once" XYFocusKeyboardNavigation="Enabled">
                 <ItemsRepeater.Layout>
                     <local:FillGridLayout MinItemWidth="320" MinItemHeight="250" MaxColumns="4" />
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:NewsCard">
                         <Button Padding="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Top"
-                                Tag="{x:Bind}" Click="News_Click" CornerRadius="8" AutomationProperties.Name="{x:Bind Title}">
+                                Tag="{x:Bind}" Click="News_Click" CornerRadius="8" AutomationProperties.Name="{x:Bind Title}"
+                                PreviewKeyDown="NewsCard_PreviewKeyDown">
+                            <Button.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem x:Uid="Home_NewsOpen" Tag="{x:Bind}" Click="News_Click" KeyboardAcceleratorTextOverride="Enter" IsEnabled="{x:Bind HasLink}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A7;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutItem x:Uid="Home_NewsCopyLink" Tag="{x:Bind}" Click="NewsCopyLink_Click" KeyboardAcceleratorTextOverride="Ctrl+C" IsEnabled="{x:Bind HasLink}">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE71B;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                </MenuFlyout>
+                            </Button.ContextFlyout>
                             <StackPanel>
                                 <Image Source="{x:Bind Image}" Height="150" Stretch="UniformToFill" />
                                 <StackPanel Padding="14,10,14,14" Spacing="4">

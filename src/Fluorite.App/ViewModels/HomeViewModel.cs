@@ -23,6 +23,7 @@ public sealed class NewsCard
     public BitmapImage? Image { get; init; }
     public PatchNoteEntry? PatchNote { get; init; }
     public Uri? Link { get; init; }
+    public bool HasLink => Link is not null;
 }
 
 public sealed partial class HomeViewModel(

@@ -255,6 +255,8 @@
   <data name="Common_OpenFolderButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Open folder</value></data>
   <data name="Home_PatchNotes.Text" xml:space="preserve"><value>Patch notes</value></data>
   <data name="Home_News.Text" xml:space="preserve"><value>News</value></data>
+  <data name="Home_NewsOpen.Text" xml:space="preserve"><value>Open in browser</value></data>
+  <data name="Home_NewsCopyLink.Text" xml:space="preserve"><value>Copy link</value></data>
   <data name="News_Release" xml:space="preserve"><value>Release</value></data>
   <data name="News_Snapshot" xml:space="preserve"><value>Snapshot</value></data>
   <data name="Activity_Title.Text" xml:space="preserve"><value>Activity</value></data>
