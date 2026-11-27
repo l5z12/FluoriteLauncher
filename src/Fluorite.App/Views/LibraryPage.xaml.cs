@@ -586,6 +586,13 @@ public sealed partial class LibraryPage : Page
             await ViewModel.DuplicateAsync(item);
     }
 
+    /// <summary>"Export as modpack…": the same dialog as the instance page's Export button.</summary>
+    private async void Export_Click(object sender, RoutedEventArgs e)
+    {
+        if (Bind.ItemOf<InstanceItem>(sender) is { } item)
+            await Packs.ExportAsync(item.Instance);
+    }
+
     private void Shortcut_Click(object sender, RoutedEventArgs e)
     {
         if (Bind.ItemOf<InstanceItem>(sender) is { } item)

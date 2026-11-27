@@ -98,6 +98,7 @@ public static class Formats
 
     public static string Size(long bytes) => bytes switch
     {
+        >= 1 << 30 => (bytes / (double)(1 << 30)).ToString("0.0", CultureInfo.CurrentCulture) + " GB",
         >= 1 << 20 => (bytes / (double)(1 << 20)).ToString("0.0", CultureInfo.CurrentCulture) + " MB",
         >= 1 << 10 => (bytes / (double)(1 << 10)).ToString("0", CultureInfo.CurrentCulture) + " KB",
         _ => bytes.ToString(CultureInfo.CurrentCulture) + " B",

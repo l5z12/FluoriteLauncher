@@ -47,6 +47,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         CheckModsBeforeLaunch = s.CheckModsBeforeLaunch;
         FixModProblems = s.FixModProblems;
         SnapshotBeforeUpdates = s.SnapshotBeforeUpdates;
+        ExportLocalOnly = s.ExportLocalOnly;
         ShowLoaderAvailability = s.ShowLoaderAvailability;
         AutoBackupWorlds = s.AutoBackupWorlds;
         AutoBackupsToKeep = s.AutoBackupsToKeep;
@@ -111,6 +112,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial bool CheckModsBeforeLaunch { get; set; }
     [ObservableProperty] public partial bool FixModProblems { get; set; }
     [ObservableProperty] public partial bool SnapshotBeforeUpdates { get; set; }
+
+    /// <summary>Exported modpacks copy every file in instead of linking (each export can change it under Advanced).</summary>
+    [ObservableProperty] public partial bool ExportLocalOnly { get; set; }
     [ObservableProperty] public partial bool ShowLoaderAvailability { get; set; }
 
     /// <summary>Raised when a setting affecting the tray icon changes.</summary>
@@ -233,6 +237,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnCheckModsBeforeLaunchChanged(bool value) => Persist(s => s.CheckModsBeforeLaunch = value);
     partial void OnFixModProblemsChanged(bool value) => Persist(s => s.FixModProblems = value);
     partial void OnSnapshotBeforeUpdatesChanged(bool value) => Persist(s => s.SnapshotBeforeUpdates = value);
+
+    partial void OnExportLocalOnlyChanged(bool value) => Persist(s => s.ExportLocalOnly = value);
     partial void OnShowLoaderAvailabilityChanged(bool value) => Persist(s => s.ShowLoaderAvailability = value);
 
     [ObservableProperty] public partial bool ShowDownloadDetails { get; set; }

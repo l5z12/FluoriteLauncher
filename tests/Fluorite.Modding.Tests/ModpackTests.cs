@@ -5,6 +5,7 @@ using Fluorite.Core.Net;
 using Fluorite.Modding.Content;
 using Fluorite.Modding.Modpacks;
 using Fluorite.Modding.Platforms;
+using Fluorite.Modding.Util;
 
 namespace Fluorite.Modding.Tests;
 
@@ -46,6 +47,16 @@ public class PackPathTests
     [InlineData("mods/trailingdot.", null)]
     [InlineData("", null)]
     public void Sanitize(string input, string? expected) => Assert.Equal(expected, PackPaths.Sanitize(input));
+
+    [Theory]
+    [InlineData("con", true)]
+    [InlineData("NUL.txt", true)]
+    [InlineData("com1", true)]
+    [InlineData("LPT9.zip", true)]
+    [InlineData("Console", false)]
+    [InlineData("con 1.0.0", false)]
+    [InlineData("COM", false)]
+    public void IsReservedName(string name, bool reserved) => Assert.Equal(reserved, PackPaths.IsReservedName(name));
 
     [Fact]
     public void Resolve_RejectsEscapes()
@@ -307,6 +318,285 @@ public class ModpackInstallTests
         var target = await ModpackInstaller.CreateInstanceAsync(layout, read, ct: Ct);
         await Installer().InstallAsync(read, target, null, ct: Ct);
         Assert.Equal("{}", File.ReadAllText(System.IO.Path.Combine(target.GameDirectory, "config", "deep", "c.json")));
+    }
+
+    [Fact]
+    public async Task Export_TakesPathsInsideFolders_EachFileOnce_AndNothingOutside()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Picked",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }, new ComponentRef { Uid = ComponentUids.LiteLoader, Version = "1.12.2" }],
+        }, Ct);
+        var game = source.GameDirectory;
+        Directory.CreateDirectory(System.IO.Path.Combine(game, "saves", "Keep", "region"));
+        Directory.CreateDirectory(System.IO.Path.Combine(game, "saves", "Skip"));
+        File.WriteAllText(System.IO.Path.Combine(game, "saves", "Keep", "level.dat"), "k");
+        File.WriteAllText(System.IO.Path.Combine(game, "saves", "Keep", "region", "r.0.0.mca"), "r");
+        File.WriteAllText(System.IO.Path.Combine(game, "saves", "Skip", "level.dat"), "s");
+
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+        var output = System.IO.Path.Combine(tmp.Path, "picked.mrpack");
+        // A world on its own, and a file inside it listed again.
+        var result = await exporter.ExportAsync(source, new PackExportOptions
+        {
+            Format = PackFormat.Modrinth, Name = "Picked", Summary = "", Include = ["saves/Keep", "saves/Keep/level.dat"],
+        }, output, Ct);
+        Assert.Equal(["saves/Keep/level.dat", "saves/Keep/region/r.0.0.mca"], ModpackReader.Read(output).Overrides.Select(o => o.Path).Order());
+        Assert.Equal(2, result.Bundled);
+        Assert.Single(result.Warnings); // LiteLoader: Modrinth packs can't say so.
+        using (var zip = ZipFile.OpenRead(output))
+        {
+            using var reader = new StreamReader(zip.GetEntry("modrinth.index.json")!.Open());
+            Assert.DoesNotContain("summary", reader.ReadToEnd(), StringComparison.Ordinal); // Empty: left out, not null.
+        }
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => exporter.ExportAsync(source, new PackExportOptions
+        {
+            Format = PackFormat.MultiMC, Name = "Escape", Include = ["../.."],
+        }, System.IO.Path.Combine(tmp.Path, "escape.zip"), Ct));
+
+        // Turned-off mods: left out of a Modrinth pack unless asked to keep them.
+        Directory.CreateDirectory(System.IO.Path.Combine(game, "mods"));
+        File.WriteAllText(System.IO.Path.Combine(game, "mods", "off.jar.disabled"), "x");
+        foreach (var keep in new[] { false, true })
+        {
+            var packed = System.IO.Path.Combine(tmp.Path, $"keep-{keep}.mrpack");
+            await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.Modrinth, Name = "Off", Include = ["mods"], KeepDisabled = keep, LocalOnly = true }, packed, Ct);
+            Assert.Equal(keep ? ["mods/off.jar.disabled"] : [], ModpackReader.Read(packed).Overrides.Select(o => o.Path));
+        }
+    }
+
+    [Fact]
+    public async Task Export_CurseForge_KeepsTurnedOffModsTurnedOff()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Off",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }, new ComponentRef { Uid = ComponentUids.Forge, Version = "52.0.1" }],
+        }, Ct);
+        var mods = System.IO.Path.Combine(source.GameDirectory, "mods");
+        Directory.CreateDirectory(mods);
+        File.WriteAllText(System.IO.Path.Combine(mods, "on.jar"), "on");
+        File.WriteAllText(System.IO.Path.Combine(mods, "off.jar.disabled"), "off");
+
+        // CurseForge knows both files; the turned-off one must still not be linked (it would install as off.jar).
+        using var content = new ContentService([new KnowsEverything(ContentPlatform.CurseForge)], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+        var output = System.IO.Path.Combine(tmp.Path, "cf.zip");
+        var result = await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.CurseForge, Name = "Off", Include = ["mods"], KeepDisabled = true }, output, Ct);
+        Assert.Equal((1, 1), (result.Referenced, result.Bundled));
+        Assert.Equal(["mods/off.jar.disabled"], ModpackReader.Read(output).Overrides.Select(o => o.Path));
+
+        // Copying every file in links nothing.
+        result = await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.CurseForge, Name = "Off", Include = ["mods"], LocalOnly = true }, output, Ct);
+        Assert.Equal((0, 1), (result.Referenced, result.Bundled));
+    }
+
+    /// <summary>A platform that hosts every file it's asked about.</summary>
+    private sealed class KnowsEverything(ContentPlatform platform) : IContentPlatform
+    {
+        public ContentPlatform Platform => platform;
+        public TextFormat TextFormat => default;
+
+        public Task<IReadOnlyList<IdentifiedFile>> IdentifyAsync(IReadOnlyCollection<ContentHashes> files, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<IdentifiedFile>>(files.Select((h, i) => new IdentifiedFile(h.Sha1, h.Murmur2,
+                new RemoteVersion(platform, (100 + i).ToString(System.Globalization.CultureInfo.InvariantCulture), (200 + i).ToString(System.Globalization.CultureInfo.InvariantCulture), "v", "1"))).ToList());
+
+        public Task<ContentSearchResult> SearchAsync(ContentSearchQuery query, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<RemoteProject> GetProjectAsync(string projectId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<RemoteProject>> GetProjectsAsync(IReadOnlyCollection<string> projectIds, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<string?> GetDescriptionAsync(RemoteProject project, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<RemoteVersion>> GetVersionsAsync(string projectId, ContentTarget? target, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<RemoteVersion> GetVersionAsync(string projectId, string versionId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<string?> GetChangelogAsync(RemoteVersion version, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<RemoteCategory>> GetCategoriesAsync(ContentKind kind, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyDictionary<string, RemoteVersion>> GetUpdatesAsync(IReadOnlyCollection<InstalledRef> installed, ContentTarget target, CancellationToken ct = default) =>
+            throw new NotSupportedException();
+    }
+
+    [Theory]
+    [InlineData(PackFormat.Modrinth, ComponentUids.LiteLoader, true)]
+    [InlineData(PackFormat.Modrinth, ComponentUids.NeoForge, false)]
+    [InlineData(PackFormat.CurseForge, ComponentUids.LegacyFabric, true)]
+    [InlineData(PackFormat.Packwiz, ComponentUids.LiteLoader, false)]
+    [InlineData(PackFormat.MultiMC, ComponentUids.LiteLoader, false)]
+    [InlineData(PackFormat.MultiMC, ComponentUids.OptiFine, true)]
+    public void UnsupportedLoader_SaysWhatAFormatCantHold(PackFormat format, string loader, bool unsupported)
+    {
+        var manifest = new InstanceManifest
+        {
+            Name = "L",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.12.2" }, new ComponentRef { Uid = loader, Version = "1" }],
+        };
+        Assert.Equal(unsupported ? loader : null, ModpackExporter.UnsupportedLoader(manifest, format));
+        Assert.Null(ModpackExporter.UnsupportedLoader(new InstanceManifest { Name = "Vanilla" }, format));
+    }
+
+    [Fact]
+    public void FilesUnder_FollowsLinksOnce_AndNeverBackIntoTheInstance()
+    {
+        using var tmp = new TempFolder();
+        var game = System.IO.Path.Combine(tmp.Path, "game");
+        var outside = System.IO.Path.Combine(tmp.Path, "outside");
+        Directory.CreateDirectory(System.IO.Path.Combine(game, "saves", "Mine"));
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(System.IO.Path.Combine(game, "saves", "Mine", "level.dat"), "m");
+        File.WriteAllText(System.IO.Path.Combine(outside, "level.dat"), "o");
+        try
+        {
+            Directory.CreateSymbolicLink(System.IO.Path.Combine(game, "saves", "Shared"), outside); // A world kept elsewhere: followed.
+            Directory.CreateSymbolicLink(System.IO.Path.Combine(game, "saves", "Up"), tmp.Path); // A folder the game folder is in: not.
+            Directory.CreateSymbolicLink(System.IO.Path.Combine(outside, "Loop"), outside); // Back into itself: once.
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Assert.Skip("Making symbolic links needs Developer Mode or an administrator.");
+        }
+
+        var files = ModpackExporter.FilesUnder(game, System.IO.Path.Combine(game, "saves"))
+            .Select(f => System.IO.Path.GetRelativePath(game, f.FullName).Replace('\\', '/')).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(["saves/Mine/level.dat", "saves/Shared/level.dat"], files);
+    }
+
+    [Fact]
+    public async Task Export_TakesAWorldTheGameHasOpen()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Running",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }],
+        }, Ct);
+        var world = System.IO.Path.Combine(source.GameDirectory, "saves", "Mine");
+        Directory.CreateDirectory(System.IO.Path.Combine(world, "region"));
+        File.WriteAllText(System.IO.Path.Combine(world, "level.dat"), "l");
+        File.WriteAllText(System.IO.Path.Combine(world, "session.lock"), "\u2603");
+        File.WriteAllText(System.IO.Path.Combine(world, "region", "r.0.0.mca"), "r");
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+
+        // As the game holds them: the region file open for writing, session.lock locked.
+        using var region = new FileStream(System.IO.Path.Combine(world, "region", "r.0.0.mca"), FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+        using var sessionLock = new FileStream(System.IO.Path.Combine(world, "session.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+        if (OperatingSystem.IsWindows()) // What the game does there; elsewhere the lock doesn't stop reading.
+            sessionLock.Lock(0, sessionLock.Length);
+        foreach (var format in new[] { PackFormat.Modrinth, PackFormat.MultiMC })
+        {
+            var output = System.IO.Path.Combine(tmp.Path, $"running-{format}.zip");
+            await exporter.ExportAsync(source, new PackExportOptions { Format = format, Name = "Running", Include = ["saves"] }, output, Ct);
+            Assert.Equal(["saves/Mine/level.dat", "saves/Mine/region/r.0.0.mca"], ModpackReader.Read(output).Overrides.Select(o => o.Path).Order(StringComparer.Ordinal));
+        }
+        var wiz = System.IO.Path.Combine(tmp.Path, "running-wiz");
+        await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.Packwiz, Name = "Running", Include = ["saves"] }, wiz, Ct);
+        Assert.Equal("r", File.ReadAllText(System.IO.Path.Combine(wiz, "saves", "Mine", "region", "r.0.0.mca")));
+        Assert.False(File.Exists(System.IO.Path.Combine(wiz, "saves", "Mine", "session.lock")));
+    }
+
+    [Fact]
+    public async Task Export_Packwiz_AgainIntoItsFolder_RemovesWhatItNoLongerHas()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Wiz",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }],
+        }, Ct);
+        var config = System.IO.Path.Combine(source.GameDirectory, "config", "jei");
+        Directory.CreateDirectory(config);
+        File.WriteAllText(System.IO.Path.Combine(config, "jei.toml"), "j");
+        File.WriteAllText(System.IO.Path.Combine(source.GameDirectory, "config", "keep.json"), "{}");
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+        var wiz = System.IO.Path.Combine(tmp.Path, "wiz");
+        await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.Packwiz, Name = "Wiz", Include = ["config"] }, wiz, Ct);
+        File.WriteAllText(System.IO.Path.Combine(wiz, "README.md"), "mine"); // The repository's own, not the export's.
+
+        Directory.Delete(config, recursive: true); // JEI removed from the instance.
+        await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.Packwiz, Name = "Wiz", Include = ["config"] }, wiz, Ct);
+        Assert.False(Directory.Exists(System.IO.Path.Combine(wiz, "config", "jei")));
+        Assert.True(File.Exists(System.IO.Path.Combine(wiz, "config", "keep.json")));
+        Assert.True(File.Exists(System.IO.Path.Combine(wiz, "README.md")));
+        var read = await PackwizReader.ReadAsync(PackwizReader.NormalizeLocation(wiz), new HttpClient(), null, Ct);
+        Assert.Equal(["config/keep.json"], read.Files.Select(f => f.Path));
+    }
+
+    [Fact]
+    public async Task Export_Packwiz_EscapesWhatTomlCantHoldAsIs()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Wiz",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }],
+        }, Ct);
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var wiz = System.IO.Path.Combine(tmp.Path, "wiz");
+        const string summary = "Line one\r\nLine two\t\"quoted\" \\ back\u0001";
+        await new ModpackExporter(content).ExportAsync(source, new PackExportOptions { Format = PackFormat.Packwiz, Name = "Wiz \"N\"", Summary = summary, Include = [] }, wiz, Ct);
+        var read = await PackwizReader.ReadAsync(PackwizReader.NormalizeLocation(wiz), new HttpClient(), null, Ct);
+        Assert.Equal(("Wiz \"N\"", summary), (read.Name, read.Summary));
+    }
+
+    [Fact]
+    public async Task Export_Prism_LeavesOutOptiFine()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "OF",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.20.1" }, new ComponentRef { Uid = ComponentUids.OptiFine, Version = "HD_U_I6" }],
+        }, Ct);
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var output = System.IO.Path.Combine(tmp.Path, "of.zip");
+        var result = await new ModpackExporter(content).ExportAsync(source, new PackExportOptions { Format = PackFormat.MultiMC, Name = "OF", Include = [] }, output, Ct);
+        Assert.Single(result.Warnings);
+        using var zip = ZipFile.OpenRead(output);
+        using var reader = new StreamReader(zip.GetEntry("mmc-pack.json")!.Open());
+        Assert.DoesNotContain(ComponentUids.OptiFine, reader.ReadToEnd(), StringComparison.Ordinal); // Prism has no such component.
+    }
+
+    [Fact]
+    public void ExportState_InnermostChoiceWins()
+    {
+        var state = new PackExportState { Included = ["mods", "saves/Keep"], Excluded = ["mods/big.jar", "saves"] };
+        Assert.True(state.WasIncluded("mods/small.jar"));
+        Assert.False(state.WasIncluded("mods/big.jar"));
+        Assert.True(state.WasIncluded("saves/Keep/level.dat"));
+        Assert.False(state.WasIncluded("saves/Other"));
+        Assert.Null(state.WasIncluded("config"));
+        Assert.Null(state.WasIncluded("modsextra")); // Not inside "mods".
+        Assert.True(state.HasChoicesInside("saves"));
+        Assert.False(state.HasChoicesInside("saves/Keep"));
+    }
+
+    [Fact]
+    public async Task ExportState_RoundTrips()
+    {
+        using var tmp = new TempFolder();
+        var at = new DateTimeOffset(2026, 11, 20, 10, 0, 0, TimeSpan.Zero);
+        await new PackExportState
+        {
+            Format = PackFormat.Packwiz, Name = "N", Version = "2.0", Author = "A", ExportedAt = at, ExportedFormat = PackFormat.Modrinth, ExportedVersion = "1.0",
+            Included = ["mods"], Excluded = ["saves"],
+        }.SaveAsync(tmp.Path, Ct);
+        var back = PackExportState.Load(tmp.Path)!;
+        Assert.Equal((PackFormat.Packwiz, "N", "2.0", "A", at), (back.Format, back.Name, back.Version, back.Author, back.ExportedAt));
+        Assert.Equal((PackFormat.Modrinth, "1.0"), (back.ExportedFormat, back.ExportedVersion)); // What last finished, apart from the choices.
+        Assert.Empty(Directory.GetFiles(tmp.Path, "*.tmp")); // Saved through a temp file, gone after.
+        Assert.Equal(["mods"], back.Included);
+        Assert.Equal(["saves"], back.Excluded);
+        File.WriteAllText(System.IO.Path.Combine(tmp.Path, PackExportState.FileName), "{ not json");
+        Assert.Null(PackExportState.Load(tmp.Path));
     }
 
     [Fact]

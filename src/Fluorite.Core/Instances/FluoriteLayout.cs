@@ -57,12 +57,15 @@ public sealed class FluoriteLayout(string root) : IGameLayout
         return instance;
     }
 
-    /// <summary>Copies an instance (game directory included) under a new name. Natives are not copied (re-extracted on launch).</summary>
+    /// <summary>
+    /// Copies an instance (game directory included) under a new name. Natives are not copied (re-extracted on launch),
+    /// nor what the original was last exported as: the copy hasn't been.
+    /// </summary>
     public async Task<GameInstance> DuplicateAsync(GameInstance source, string newName, CancellationToken ct = default)
     {
         var id = UniqueFolderName(InstancesDir, newName);
         var dir = Path.Combine(InstancesDir, id);
-        await Task.Run(() => CopyDirectory(source.Directory, dir, skip: IsNatives), ct).ConfigureAwait(false);
+        await Task.Run(() => CopyDirectory(source.Directory, dir, skip: rel => IsNatives(rel) || IsExportState(rel)), ct).ConfigureAwait(false);
 
         var json = JsonSerializer.Serialize(source.Manifest, FluoriteJsonContext.Default.InstanceManifest);
         var manifest = JsonSerializer.Deserialize(json, FluoriteJsonContext.Default.InstanceManifest)!;
@@ -77,6 +80,10 @@ public sealed class FluoriteLayout(string root) : IGameLayout
         await SaveAsync(copy, ct).ConfigureAwait(false);
         return copy;
     }
+
+    /// <summary><c>.fluorite/export.json</c>: what the instance was last exported as (Fluorite.Modding's PackExportState).</summary>
+    private static bool IsExportState(string relative) =>
+        relative.Equals(Path.Combine(".fluorite", "export.json"), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Natives are re-extracted on launch: <c>natives/</c> (old location) and <c>.fluorite/natives/</c>.</summary>
     private static bool IsNatives(string relative) =>

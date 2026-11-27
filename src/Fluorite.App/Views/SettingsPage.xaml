@@ -218,6 +218,10 @@
                     <ComboBoxItem x:Uid="Settings_ConfirmDeleteSentence" />
                 </ComboBox>
             </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="Settings_ExportLocalOnly">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xEDE1;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.ExportLocalOnly, Mode=TwoWay}" />
+            </toolkit:SettingsCard>
 
             <TextBlock x:Uid="Settings_GroupApp" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4" />
             <toolkit:SettingsCard x:Uid="Settings_Language">

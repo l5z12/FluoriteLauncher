@@ -687,21 +687,76 @@
   <data name="Modpack_KindAdd" xml:space="preserve"><value>Add</value></data>
   <data name="Modpack_KindReplace" xml:space="preserve"><value>Update</value></data>
   <data name="Modpack_KindRemove" xml:space="preserve"><value>Remove</value></data>
-  <data name="Export_Title" xml:space="preserve"><value>Export {0}</value></data>
-  <data name="Export_Format" xml:space="preserve"><value>Format</value></data>
   <data name="Export_FormatModrinth" xml:space="preserve"><value>Modrinth (.mrpack)</value></data>
   <data name="Export_FormatCurseForge" xml:space="preserve"><value>CurseForge (.zip)</value></data>
   <data name="Export_FormatPrism" xml:space="preserve"><value>Prism Launcher / MultiMC (.zip)</value></data>
-  <data name="Export_FormatPackwiz" xml:space="preserve"><value>packwiz (folder)</value></data>
-  <data name="Export_Name" xml:space="preserve"><value>Pack name</value></data>
-  <data name="Export_Version" xml:space="preserve"><value>Pack version</value></data>
-  <data name="Export_Include" xml:space="preserve"><value>Include</value></data>
-  <data name="Export_Hint" xml:space="preserve"><value>Mods and packs that Modrinth or CurseForge host are linked, not copied; everything else is included in the pack. Worlds and personal settings are left out unless you tick them.</value></data>
   <data name="Export_Button" xml:space="preserve"><value>Export</value></data>
   <data name="Export_JobTitle" xml:space="preserve"><value>Export {0}</value></data>
   <data name="Export_Exporting" xml:space="preserve"><value>Exporting…</value></data>
   <data name="Export_Done" xml:space="preserve"><value>Exported: {0} linked, {1} included</value></data>
   <data name="Export_FailedTitle" xml:space="preserve"><value>Couldn't export</value></data>
+  <data name="Menu_Export.Text" xml:space="preserve"><value>Export as modpack…</value></data>
+  <data name="Palette_Export" xml:space="preserve"><value>Export {0} as a modpack</value></data>
+  <data name="Export_DialogTitle" xml:space="preserve"><value>Export as modpack</value></data>
+  <data name="Export_FormatBox.Header" xml:space="preserve"><value>Format</value></data>
+  <data name="Export_FormatModrinthTitle.Text" xml:space="preserve"><value>Modrinth (.mrpack)</value></data>
+  <data name="Export_FormatModrinthCaption.Text" xml:space="preserve"><value>Modrinth App, Prism, Fluorite and most launchers</value></data>
+  <data name="Export_FormatCurseForgeTitle.Text" xml:space="preserve"><value>CurseForge (.zip)</value></data>
+  <data name="Export_FormatCurseForgeCaption.Text" xml:space="preserve"><value>The CurseForge app</value></data>
+  <data name="Export_FormatPrismTitle.Text" xml:space="preserve"><value>Prism Launcher / MultiMC (.zip)</value></data>
+  <data name="Export_FormatPrismCaption.Text" xml:space="preserve"><value>The whole instance as it is, turned-off mods too</value></data>
+  <data name="Export_FormatPackwizTitle.Text" xml:space="preserve"><value>packwiz (folder)</value></data>
+  <data name="Export_FormatPackwizCaption.Text" xml:space="preserve"><value>Plain text files, for keeping a pack in git</value></data>
+  <data name="Export_NameBox.Header" xml:space="preserve"><value>Pack name</value></data>
+  <data name="Export_VersionBox.Header" xml:space="preserve"><value>Version</value></data>
+  <data name="Export_AuthorBox.Header" xml:space="preserve"><value>Author</value></data>
+  <data name="Export_AuthorBox.PlaceholderText" xml:space="preserve"><value>Optional</value></data>
+  <data name="Export_SummaryBox.Header" xml:space="preserve"><value>Summary</value></data>
+  <data name="Export_SummaryBox.PlaceholderText" xml:space="preserve"><value>Optional: a line about the pack</value></data>
+  <data name="Export_FieldUnused" xml:space="preserve"><value>{0} packs have no place for this.</value></data>
+  <data name="Export_LastExport" xml:space="preserve"><value>Last exported {0} · {1} {2}</value></data>
+  <data name="Export_Running" xml:space="preserve"><value>The game is running: worlds and settings it&apos;s using may be caught mid-save. Quit it first for a clean copy.</value></data>
+  <data name="Export_LoaderUnsupported" xml:space="preserve"><value>{0} packs can&apos;t hold {1}: whoever installs this one gets Minecraft {2} without it.</value></data>
+  <data name="Export_LoaderPrismCan" xml:space="preserve"><value>Prism packs can.</value></data>
+  <data name="Export_OptiFineLeftOut" xml:space="preserve"><value>OptiFine stays out: no pack format can hold it.</value></data>
+  <data name="Export_IncludeHeader.Text" xml:space="preserve"><value>Include</value></data>
+  <data name="Export_SelectAllLink.Content" xml:space="preserve"><value>Select all</value></data>
+  <data name="Export_SelectNoneLink.Content" xml:space="preserve"><value>Select none</value></data>
+  <data name="Export_DefaultsLink.Content" xml:space="preserve"><value>Defaults</value></data>
+  <data name="Export_ChosenSize" xml:space="preserve"><value>{0} of {1} chosen · {2}</value></data>
+  <data name="Export_SizeHint" xml:space="preserve"><value>Size on disk. Mods linked from Modrinth or CurseForge don&apos;t add to the pack.</value></data>
+  <data name="Export_Expand" xml:space="preserve"><value>Expand {0}</value></data>
+  <data name="Export_Collapse" xml:space="preserve"><value>Collapse {0}</value></data>
+  <data name="Export_FileCount" xml:space="preserve"><value>{0} files</value></data>
+  <data name="Export_DescConfig" xml:space="preserve"><value>Mod settings</value></data>
+  <data name="Export_DescDefaultConfigs" xml:space="preserve"><value>Settings for new worlds</value></data>
+  <data name="Export_DescSaves" xml:space="preserve"><value>Worlds</value></data>
+  <data name="Export_DescOptions" xml:space="preserve"><value>Your game settings</value></data>
+  <data name="Export_DescOptiFine" xml:space="preserve"><value>OptiFine settings</value></data>
+  <data name="Export_DescShaderOptions" xml:space="preserve"><value>Shader settings</value></data>
+  <data name="Export_DescServers" xml:space="preserve"><value>Server list</value></data>
+  <data name="Export_DescKubeJs" xml:space="preserve"><value>KubeJS scripts</value></data>
+  <data name="Export_DescResourcePacks" xml:space="preserve"><value>Resource packs</value></data>
+  <data name="Export_DescShaderPacks" xml:space="preserve"><value>Shader packs</value></data>
+  <data name="Export_DescMaps" xml:space="preserve"><value>Map data</value></data>
+  <data name="Export_DescReplays" xml:space="preserve"><value>Replays</value></data>
+  <data name="Export_DescSchematics" xml:space="preserve"><value>Schematics</value></data>
+  <data name="Export_Empty.Text" xml:space="preserve"><value>Nothing to export yet: the pack will hold Minecraft and the loader only.</value></data>
+  <data name="Export_DoneCopied" xml:space="preserve"><value>Exported: {0} files</value></data>
+  <data name="Export_Advanced.Text" xml:space="preserve"><value>Advanced</value></data>
+  <data name="Export_LocalOnly.Text" xml:space="preserve"><value>Copy every file into the pack</value></data>
+  <data name="Export_LocalOnlyCaption" xml:space="preserve"><value>Nothing is linked from {0}: it installs without downloading them and keeps working if a mod is taken down, but it&apos;s bigger.</value></data>
+  <data name="Export_ModrinthOrCurseForge" xml:space="preserve"><value>Modrinth or CurseForge</value></data>
+  <data name="Export_LocalOnlyPrism" xml:space="preserve"><value>Prism packs always hold every file.</value></data>
+  <data name="Export_LocalOnlyNoCurseForge" xml:space="preserve"><value>CurseForge is off in this build, so every file goes in anyway.</value></data>
+  <data name="Export_KeepDisabled.Text" xml:space="preserve"><value>Keep turned-off mods and packs</value></data>
+  <data name="Export_KeepDisabledCount" xml:space="preserve"><value>{0} among what&apos;s chosen. They install turned off.</value></data>
+  <data name="Export_KeepDisabledNone" xml:space="preserve"><value>None among what&apos;s chosen.</value></data>
+  <data name="Export_KeepDisabledPrism" xml:space="preserve"><value>Prism packs always keep them.</value></data>
+  <data name="Export_SummaryLocalOnly" xml:space="preserve"><value>Every file copied in</value></data>
+  <data name="Export_SummaryKeptDisabled" xml:space="preserve"><value>Turned-off kept</value></data>
+  <data name="Export_SummaryDroppedDisabled" xml:space="preserve"><value>{0} turned-off left out</value></data>
+  <data name="Export_SizeHintLocal" xml:space="preserve"><value>Size on disk, before compression.</value></data>
   <data name="Instance_UpdatePack.Text" xml:space="preserve"><value>Check for update</value></data>
   <data name="Instance_UpdatePackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Check for a modpack update</value></data>
   <data name="Instance_UpdatePackButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Check for a newer version of this modpack</value></data>
@@ -1120,8 +1175,6 @@
   <data name="Browse_NoResultsFor" xml:space="preserve"><value>Nothing found for “{0}”.</value></data>
   <data name="Browse_NoResultsForInstance" xml:space="preserve"><value>Only what works with {0} is shown. To see everything, choose “No instance (just browsing)” at the top.</value></data>
   <data name="Browse_ClearFilters.Content" xml:space="preserve"><value>Clear search and filters</value></data>
-  <data name="Export_SelectAll" xml:space="preserve"><value>Select all</value></data>
-  <data name="Export_SelectNone" xml:space="preserve"><value>Select none</value></data>
   <data name="Export_SelectedCount" xml:space="preserve"><value>{0} of {1} chosen</value></data>
   <data name="LibraryMenu_New.Text" xml:space="preserve"><value>New instance…</value></data>
   <data name="LibraryMenu_Import.Text" xml:space="preserve"><value>Import</value></data>
@@ -1215,6 +1268,8 @@
   <data name="Settings_SnapshotBeforeUpdates.Description" xml:space="preserve"><value>Before updating an instance&apos;s mods, modpack or version, keep a snapshot to go back to (the newest 5 per instance are kept).</value></data>
   <data name="Settings_ConfirmPermanentDelete.Header" xml:space="preserve"><value>Deleting instances for good</value></data>
   <data name="Settings_ConfirmPermanentDelete.Description" xml:space="preserve"><value>Shift+Del on an instance skips the Recycle Bin. What to type before it goes: nothing, its name, or a sentence. Deleting several at once asks for the sentence.</value></data>
+  <data name="Settings_ExportLocalOnly.Header" xml:space="preserve"><value>Copy every file into exported modpacks</value></data>
+  <data name="Settings_ExportLocalOnly.Description" xml:space="preserve"><value>Mods and packs from Modrinth or CurseForge go in the pack instead of being linked: it installs without downloading them and keeps working if one is taken down, but it&apos;s bigger. Each export can change this under Advanced.</value></data>
   <data name="Settings_ConfirmDeleteNone.Content" xml:space="preserve"><value>Nothing, just confirm</value></data>
   <data name="Settings_ConfirmDeleteName.Content" xml:space="preserve"><value>Type the instance's name</value></data>
   <data name="Settings_ConfirmDeleteSentence.Content" xml:space="preserve"><value>Type a sentence</value></data>

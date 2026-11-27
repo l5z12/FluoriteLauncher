@@ -263,77 +263,46 @@ public sealed class ModpackInstallService(
 
     // ── Export ────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Asks how (format, details, what goes in), starting from the instance's last export; then where, and exports with
+    /// progress in Activity. The choices are kept for next time once Export is pressed.
+    /// </summary>
     public async Task ExportAsync(GameInstance instance)
     {
         if (App.Window is not { } window)
             return;
-        var panel = new StackPanel { Spacing = 10, MinWidth = 520 };
-        var formats = new RadioButtons { Header = Loc.Get("Export_Format") };
-        foreach (var key in new[] { "Export_FormatModrinth", "Export_FormatCurseForge", "Export_FormatPrism", "Export_FormatPackwiz" })
-            formats.Items.Add(Loc.Get(key));
-        formats.SelectedIndex = Math.Clamp(settings.Current.LastExportFormat, 0, formats.Items.Count - 1); // The one used last time.
-        var state = StateOf(instance);
-        // Emptied, they fall back to the instance's name and 1.0.0; the placeholders say so.
-        var name = new TextBox { Header = Loc.Get("Export_Name"), Text = state?.Name ?? instance.Name, PlaceholderText = instance.Name };
-        var version = new TextBox { Header = Loc.Get("Export_Version"), Text = state?.Version ?? "1.0.0", PlaceholderText = "1.0.0" };
-        panel.Children.Add(formats);
-        panel.Children.Add(name);
-        panel.Children.Add(version);
-        var boxes = new List<CheckBox>();
-        // "Include" with Select all / Select none beside it, and the count chosen.
-        var includeRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        var includeHeader = Dialogs.Header(Loc.Get("Export_Include"));
-        includeHeader.VerticalAlignment = VerticalAlignment.Center;
-        includeHeader.Margin = new Thickness(0, 0, 8, 0);
-        var all = new HyperlinkButton { Content = Loc.Get("Export_SelectAll") };
-        var none = new HyperlinkButton { Content = Loc.Get("Export_SelectNone") };
-        var count = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0), Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorTertiaryBrush"] };
-        void Count() => count.Text = Loc.Format("Export_SelectedCount", boxes.Count(b => b.IsChecked == true), boxes.Count);
-        all.Click += (_, _) => boxes.ForEach(b => b.IsChecked = true);
-        none.Click += (_, _) => boxes.ForEach(b => b.IsChecked = false);
-        includeRow.Children.Add(includeHeader);
-        includeRow.Children.Add(all);
-        includeRow.Children.Add(none);
-        includeRow.Children.Add(count);
-        panel.Children.Add(includeRow);
-        var list = new StackPanel { Spacing = 0 };
-        foreach (var candidate in ModpackExporter.DefaultSelection(instance.GameDirectory))
-        {
-            var box = new CheckBox { Content = candidate.Name + (candidate.IsDirectory ? "/" : ""), IsChecked = candidate.IncludedByDefault, Tag = candidate.Name };
-            box.Checked += (_, _) => Count();
-            box.Unchecked += (_, _) => Count();
-            boxes.Add(box);
-            list.Children.Add(box);
-        }
-        panel.Children.Add(list);
-        Count();
-        panel.Children.Add(Dialogs.Text(Loc.Get("Export_Hint"), secondary: true));
-
-        if (await Dialogs.ShowAsync(Loc.Format("Export_Title", instance.Name), Dialogs.Scroll(panel, 560), Loc.Get("Export_Button")) != ContentDialogResult.Primary)
+        var saved = PackExportState.Load(instance.MetadataDirectory);
+        var panel = new Views.ExportPanel(instance, saved, StateOf(instance), settings.Current.LastExportFormat, settings.Current.LastExportAuthor,
+            running: App.Get<GameRunner>().Find(instance) is not null, curseForge: content.Has(ContentPlatform.CurseForge), localOnly: settings.Current.ExportLocalOnly);
+        var dialog = Dialogs.Create(Loc.Get("Export_DialogTitle"), Dialogs.Scroll(panel, 780), Loc.Get("Export_Button"));
+        dialog.Resources["ContentDialogMaxWidth"] = 1000d; // The list beside the details (the panel narrows with the window).
+        dialog.Resources["ContentDialogMaxHeight"] = 980d; // Room for Advanced opened; a short window still scrolls.
+        dialog.Opened += (_, _) => panel.FocusFirst();
+        if (await Dialogs.ShowAsync(dialog) != ContentDialogResult.Primary)
             return;
 
-        settings.Current.LastExportFormat = formats.SelectedIndex;
+        var format = panel.Format;
+        var state = panel.ToState();
+        settings.Current.LastExportFormat = panel.FormatIndex;
+        if (panel.UsesAuthor) // Emptied too, so it can be taken back; a format without one leaves it as it was.
+            settings.Current.LastExportAuthor = panel.Author;
         settings.Save();
-        var format = formats.SelectedIndex switch
-        {
-            1 => PackFormat.CurseForge,
-            2 => PackFormat.MultiMC,
-            3 => PackFormat.Packwiz,
-            _ => PackFormat.Modrinth,
-        };
-        var packName = string.IsNullOrWhiteSpace(name.Text) ? instance.Name : name.Text.Trim();
+        await TrySaveAsync(state, instance);
+
+        var packName = panel.PackName;
+        var fileName = SafeFileName($"{packName} {panel.PackVersion}");
         string? output;
         if (format == PackFormat.Packwiz)
         {
             var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(window.AppWindow.Id);
-            output = (await picker.PickSingleFolderAsync())?.Path;
+            output = (await picker.PickSingleFolderAsync())?.Path is { } folder ? PackwizFolder(folder, SafeFileName(packName)) : null;
         }
         else
         {
             var ext = format == PackFormat.Modrinth ? ".mrpack" : ".zip";
             var picker = new Microsoft.Windows.Storage.Pickers.FileSavePicker(window.AppWindow.Id)
             {
-                SuggestedFileName = FluoriteLayout.UniqueFolderName(Path.GetTempPath(), $"{packName} {version.Text}".Trim()),
+                SuggestedFileName = fileName,
                 DefaultFileExtension = ext,
             };
             picker.FileTypeChoices.Add(Loc.Get(format switch { PackFormat.Modrinth => "Export_FormatModrinth", PackFormat.CurseForge => "Export_FormatCurseForge", _ => "Export_FormatPrism" }), new List<string> { ext });
@@ -350,11 +319,21 @@ public sealed class ModpackInstallService(
             {
                 Format = format,
                 Name = packName,
-                Version = string.IsNullOrWhiteSpace(version.Text) ? "1.0.0" : version.Text.Trim(),
-                Include = boxes.Where(b => b.IsChecked == true).Select(b => (string)b.Tag).ToList(),
+                Version = panel.PackVersion,
+                Author = panel.Author,
+                Summary = panel.Summary,
+                Include = panel.Include,
+                LocalOnly = panel.LocalOnly,
+                KeepDisabled = panel.KeepDisabled,
             };
             var result = await Task.Run(() => packs.Exporter.ExportAsync(instance, options, output));
-            ContentInstallService.Finish(job, Loc.Format("Export_Done", result.Referenced, result.Bundled));
+            ContentInstallService.Finish(job, result.Referenced == 0
+                ? Loc.Format("Export_DoneCopied", result.Bundled)
+                : Loc.Format("Export_Done", result.Referenced, result.Bundled));
+            state.ExportedAt = DateTimeOffset.Now;
+            state.ExportedFormat = format;
+            state.ExportedVersion = options.Version;
+            await TrySaveAsync(state, instance);
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", format == PackFormat.Packwiz ? $"\"{output}\"" : $"/select,\"{output}\"") { UseShellExecute = true });
         }
         catch (Exception ex) when (IsExpected(ex))
@@ -362,6 +341,51 @@ public sealed class ModpackInstallService(
             ContentInstallService.Finish(job, ex.Message, failed: true);
             await Dialogs.ShowMessageAsync(Loc.Get("Export_FailedTitle"), ex.Message);
         }
+    }
+
+    /// <summary>The export's choices for next time; not being able to keep them doesn't stop the export.</summary>
+    private static async Task TrySaveAsync(PackExportState state, GameInstance instance)
+    {
+        try
+        {
+            await state.SaveAsync(instance.MetadataDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Where a packwiz pack goes in the folder picked: right there when it's empty or already holds a packwiz pack (the
+    /// pack's git checkout, exported into again); otherwise a new folder inside named after the pack, so its files
+    /// don't spill into Downloads or Documents.
+    /// </summary>
+    private static string PackwizFolder(string picked, string name)
+    {
+        try
+        {
+            if (File.Exists(Path.Combine(picked, "pack.toml")) || !Directory.EnumerateFileSystemEntries(picked).Any())
+                return picked;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return picked;
+        }
+        var folder = Path.Combine(picked, name);
+        for (var n = 2; Directory.Exists(folder) || File.Exists(folder); n++)
+            folder = Path.Combine(picked, $"{name} ({n})");
+        return folder;
+    }
+
+    /// <summary>
+    /// The name as a file or folder name: any language, with only what Windows refuses replaced, and a "_" before a
+    /// name it keeps for a device ("con" → "_con"); "modpack" when nothing's left.
+    /// </summary>
+    private static string SafeFileName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var safe = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray()).Trim().TrimEnd('.');
+        return safe.Length == 0 ? "modpack" : PackPaths.IsReservedName(safe) ? "_" + safe : safe;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
