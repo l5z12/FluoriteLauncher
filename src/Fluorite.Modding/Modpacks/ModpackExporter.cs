@@ -26,6 +26,15 @@ public sealed class PackExportOptions
     /// <see cref="ModpackExporter.DefaultSelection"/>) or ones deeper down (<c>saves/My World</c>).
     /// </summary>
     public required IReadOnlyCollection<string> Include { get; init; }
+
+    /// <summary>
+    /// Copy every file in, linking nothing from Modrinth or CurseForge (and asking them nothing): the pack installs
+    /// without downloads and outlives a mod being taken down, but is bigger.
+    /// </summary>
+    public bool LocalOnly { get; init; }
+
+    /// <summary>Keep turned-off (<c>.disabled</c>) files, which only Prism packs keep otherwise; they install turned off.</summary>
+    public bool KeepDisabled { get; init; }
 }
 
 public sealed record PackExportResult(string Path, int Referenced, int Bundled, IReadOnlyList<string> Warnings);
@@ -111,7 +120,7 @@ public sealed class ModpackExporter(ContentService content)
 
     public async Task<PackExportResult> ExportAsync(GameInstance instance, PackExportOptions options, string outputPath, CancellationToken ct = default)
     {
-        var files = Collect(instance.GameDirectory, options.Include, keepDisabled: !DropsDisabled(options.Format));
+        var files = Collect(instance.GameDirectory, options.Include, keepDisabled: options.KeepDisabled || !DropsDisabled(options.Format));
         return options.Format switch
         {
             PackFormat.Modrinth => await ExportMrpackAsync(instance, options, files, outputPath, ct).ConfigureAwait(false),
@@ -154,12 +163,12 @@ public sealed class ModpackExporter(ContentService content)
 
     private static bool IsContent(string relative) => PackPaths.LocationOf(relative) is not null;
 
-    /// <summary>Hashes the content files and asks a platform which of them it hosts.</summary>
+    /// <summary>Hashes the content files and asks a platform which of them it hosts; nothing when everything is to be copied in.</summary>
     private async Task<Dictionary<string, (ContentHashes Hashes, IdentifiedFile Match)>> IdentifyAsync(
-        ContentPlatform platform, List<(string Relative, string Full)> files, CancellationToken ct)
+        ContentPlatform platform, List<(string Relative, string Full)> files, bool localOnly, CancellationToken ct)
     {
         var result = new Dictionary<string, (ContentHashes, IdentifiedFile)>(StringComparer.OrdinalIgnoreCase);
-        if (!content.Has(platform))
+        if (localOnly || !content.Has(platform))
             return result;
         var hashed = new List<(string Relative, ContentHashes Hashes)>();
         foreach (var f in files.Where(f => IsContent(f.Relative)))
@@ -180,7 +189,7 @@ public sealed class ModpackExporter(ContentService content)
 
     private async Task<PackExportResult> ExportMrpackAsync(GameInstance instance, PackExportOptions o, List<(string Relative, string Full)> files, string output, CancellationToken ct)
     {
-        var known = await IdentifyAsync(ContentPlatform.Modrinth, files, ct).ConfigureAwait(false);
+        var known = await IdentifyAsync(ContentPlatform.Modrinth, files, o.LocalOnly, ct).ConfigureAwait(false);
         var m = instance.Manifest;
         var deps = new JsonObject { ["minecraft"] = m.MinecraftVersion };
         var warnings = new List<string>();
@@ -234,7 +243,7 @@ public sealed class ModpackExporter(ContentService content)
 
     private async Task<PackExportResult> ExportCurseForgeAsync(GameInstance instance, PackExportOptions o, List<(string Relative, string Full)> files, string output, CancellationToken ct)
     {
-        var known = await IdentifyAsync(ContentPlatform.CurseForge, files, ct).ConfigureAwait(false);
+        var known = await IdentifyAsync(ContentPlatform.CurseForge, files, o.LocalOnly, ct).ConfigureAwait(false);
         var m = instance.Manifest;
         var warnings = new List<string>();
         var loaders = new JsonArray();
@@ -348,9 +357,9 @@ public sealed class ModpackExporter(ContentService content)
 
     private async Task<PackExportResult> ExportPackwizAsync(GameInstance instance, PackExportOptions o, List<(string Relative, string Full)> files, string outputDir, CancellationToken ct)
     {
-        var modrinth = await IdentifyAsync(ContentPlatform.Modrinth, files, ct).ConfigureAwait(false);
+        var modrinth = await IdentifyAsync(ContentPlatform.Modrinth, files, o.LocalOnly, ct).ConfigureAwait(false);
         var remaining = files.Where(f => !modrinth.ContainsKey(f.Relative)).ToList();
-        var curseforge = await IdentifyAsync(ContentPlatform.CurseForge, remaining, ct).ConfigureAwait(false);
+        var curseforge = await IdentifyAsync(ContentPlatform.CurseForge, remaining, o.LocalOnly, ct).ConfigureAwait(false);
         Directory.CreateDirectory(outputDir);
         var index = new StringBuilder("hash-format = \"sha256\"\n");
         var referenced = 0;

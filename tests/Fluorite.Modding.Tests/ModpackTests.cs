@@ -347,6 +347,16 @@ public class ModpackInstallTests
         {
             Format = PackFormat.MultiMC, Name = "Escape", Include = ["../.."],
         }, System.IO.Path.Combine(tmp.Path, "escape.zip"), Ct));
+
+        // Turned-off mods: left out of a Modrinth pack unless asked to keep them.
+        Directory.CreateDirectory(System.IO.Path.Combine(game, "mods"));
+        File.WriteAllText(System.IO.Path.Combine(game, "mods", "off.jar.disabled"), "x");
+        foreach (var keep in new[] { false, true })
+        {
+            var packed = System.IO.Path.Combine(tmp.Path, $"keep-{keep}.mrpack");
+            await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.Modrinth, Name = "Off", Include = ["mods"], KeepDisabled = keep, LocalOnly = true }, packed, Ct);
+            Assert.Equal(keep ? ["mods/off.jar.disabled"] : [], ModpackReader.Read(packed).Overrides.Select(o => o.Path));
+        }
     }
 
     [Theory]

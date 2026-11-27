@@ -111,7 +111,12 @@ internal static class PackCommands
         var versionOption = new Option<string>("--pack-version") { DefaultValueFactory = _ => "1.0.0" };
         var authorOption = new Option<string?>("--author") { Description = "Pack author (CurseForge, packwiz)" };
         var summaryOption = new Option<string?>("--summary") { Description = "Short description (Modrinth, Prism notes, packwiz)" };
-        var export = new Command("export", "Export an instance as a modpack") { instanceArg, formatOption, outOption, includeOption, nameOption, versionOption, authorOption, summaryOption };
+        var localOnlyOption = new Option<bool>("--local-only") { Description = "Copy every file in; link nothing from Modrinth or CurseForge" };
+        var keepDisabledOption = new Option<bool>("--keep-disabled") { Description = "Keep turned-off (.disabled) files (Prism packs always do)" };
+        var export = new Command("export", "Export an instance as a modpack")
+        {
+            instanceArg, formatOption, outOption, includeOption, nameOption, versionOption, authorOption, summaryOption, localOnlyOption, keepDisabledOption,
+        };
         export.SetAction(async (pr, ct) =>
         {
             using var s = services(pr);
@@ -134,6 +139,8 @@ internal static class PackCommands
                 Version = pr.GetValue(versionOption)!,
                 Author = pr.GetValue(authorOption),
                 Summary = pr.GetValue(summaryOption),
+                LocalOnly = pr.GetValue(localOnlyOption),
+                KeepDisabled = pr.GetValue(keepDisabledOption),
                 Include = include,
             }, Path.GetFullPath(pr.GetValue(outOption)!), ct);
             foreach (var w in result.Warnings)

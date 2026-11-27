@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The Export dialog's body: the instance; then the format and the pack's details on the left, and what goes in
+  The Export dialog's body: the instance; then the format, the pack's details and Advanced on the left, and what goes in
   it on the right, as tall as the left. In a narrow window the list goes under the rest (FitWindow).
 -->
 <UserControl
@@ -95,6 +95,36 @@
                 </Grid>
                 <TextBlock x:Name="LastExport" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Visibility="Collapsed" />
             </StackPanel>
+
+            <!-- Closed by default; its header says what differs from a plain export. -->
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Expanding="Advanced_Expanding">
+                <Expander.Header>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Uid="Export_Advanced" VerticalAlignment="Center" />
+                        <TextBlock x:Name="AdvancedSummary" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Grid>
+                </Expander.Header>
+                <StackPanel Spacing="12">
+                    <!-- Turned off, and ticked, where the format does it anyway; the caption says why. -->
+                    <CheckBox x:Name="LocalOnlyBox" Click="LocalOnly_Click">
+                        <StackPanel>
+                            <TextBlock x:Uid="Export_LocalOnly" TextWrapping="Wrap" />
+                            <TextBlock x:Name="LocalOnlyCaption" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </CheckBox>
+                    <CheckBox x:Name="KeepDisabledBox" Click="KeepDisabled_Click">
+                        <StackPanel>
+                            <TextBlock x:Uid="Export_KeepDisabled" TextWrapping="Wrap" />
+                            <TextBlock x:Name="KeepDisabledCaption" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </CheckBox>
+                </StackPanel>
+            </Expander>
         </StackPanel>
 
         <!-- What goes in: as tall as the details beside it (FitList). -->

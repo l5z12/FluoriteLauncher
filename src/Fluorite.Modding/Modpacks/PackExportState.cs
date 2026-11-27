@@ -18,6 +18,11 @@ public sealed class PackExportState
     public string? Summary { get; set; }
     public DateTimeOffset ExportedAt { get; set; }
 
+    /// <summary>Copy every file in (see <see cref="PackExportOptions.LocalOnly"/>); null: as Settings says.</summary>
+    public bool? LocalOnly { get; set; }
+
+    public bool KeepDisabled { get; set; }
+
 #pragma warning disable CA2227 // Serialised.
     /// <summary>Relative paths (<c>/</c>) ticked, each with everything inside it.</summary>
     public List<string> Included { get; set; } = [];

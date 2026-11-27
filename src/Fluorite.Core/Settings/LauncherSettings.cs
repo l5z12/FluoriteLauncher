@@ -134,6 +134,12 @@ public sealed class LauncherSettings
     /// <summary>The author given to the last export, offered for instances exported for the first time.</summary>
     public string? LastExportAuthor { get; set; }
 
+    /// <summary>
+    /// Exported modpacks copy every file in instead of linking mods from Modrinth or CurseForge. Each export can
+    /// change it (Advanced).
+    /// </summary>
+    public bool ExportLocalOnly { get; set; }
+
     /// <summary>Library groups the user collapsed; "" stands for the ungrouped instances.</summary>
     public List<string> CollapsedGroups { get; set; } = [];
 

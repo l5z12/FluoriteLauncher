@@ -26,6 +26,9 @@ public sealed partial class ExportPanel : UserControl
     private readonly GameInstance _instance;
     private readonly PackExportState? _saved;
     private readonly bool _curseForge;
+    private readonly bool _localOnlyDefault;
+    private bool _localOnly;
+    private bool _keepDisabled;
     private readonly List<ExportNode> _roots = [];
     private ObservableCollection<ExportNode> _rows = [];
     private readonly List<ExportNode> _all = [];
@@ -36,12 +39,17 @@ public sealed partial class ExportPanel : UserControl
     /// <param name="pack">The modpack it was installed from, whose name and version a first export starts from.</param>
     /// <param name="lastFormat">The format used last time for any instance (<see cref="FormatOrder"/>).</param>
     /// <param name="curseForge">Whether CurseForge is on in this build (without it, nothing can be linked from there).</param>
-    public ExportPanel(GameInstance instance, PackExportState? saved, PackState? pack, int lastFormat, string? lastAuthor, bool running, bool curseForge)
+    /// <param name="localOnly">What Settings says: copy every file in, linking nothing.</param>
+    public ExportPanel(GameInstance instance, PackExportState? saved, PackState? pack, int lastFormat, string? lastAuthor, bool running, bool curseForge,
+        bool localOnly)
     {
         InitializeComponent();
         _instance = instance;
         _saved = saved;
         _curseForge = curseForge;
+        _localOnlyDefault = localOnly;
+        _localOnly = saved?.LocalOnly ?? localOnly;
+        _keepDisabled = saved?.KeepDisabled ?? false;
 
         var item = new InstanceItem(instance);
         InstanceName.Text = instance.Name;
@@ -118,7 +126,7 @@ public sealed partial class ExportPanel : UserControl
     }
 
     /// <summary>
-    /// Beside the details, the list is as tall as they are. Its height is set, not
+    /// Beside the details, the list is as tall as they are (Advanced opening makes it taller). Its height is set, not
     /// left to the layout: a list given all the height it asks for shows every row at once and stops scrolling.
     /// </summary>
     private void FitList() => ListPart.Height = _wide ? Math.Max(DetailsPart.ActualHeight, MinListHeight) : NarrowListHeight;
@@ -143,6 +151,12 @@ public sealed partial class ExportPanel : UserControl
 
     public string? Summary => SummaryBox.IsEnabled && !string.IsNullOrWhiteSpace(SummaryBox.Text) ? SummaryBox.Text.Trim() : null;
 
+    /// <summary>Copy every file in, linking nothing (Advanced; what Settings says to start with).</summary>
+    public bool LocalOnly => _localOnly;
+
+    /// <summary>Keep turned-off files (Advanced); Prism packs keep them anyway.</summary>
+    public bool KeepDisabled => _keepDisabled;
+
     /// <summary>What goes in the pack: every path ticked as a whole.</summary>
     public IReadOnlyList<string> Include
     {
@@ -166,6 +180,8 @@ public sealed partial class ExportPanel : UserControl
             Author = string.IsNullOrWhiteSpace(AuthorBox.Text) ? null : AuthorBox.Text.Trim(),
             Summary = string.IsNullOrWhiteSpace(SummaryBox.Text) ? null : SummaryBox.Text.Trim(),
             ExportedAt = _saved?.ExportedAt ?? default,
+            LocalOnly = _localOnly == _localOnlyDefault ? null : _localOnly, // Kept only when it differs: Settings stays in charge otherwise.
+            KeepDisabled = _keepDisabled,
         };
         Walk(_roots, state.Included, state.Excluded);
         return state;
@@ -223,8 +239,66 @@ public sealed partial class ExportPanel : UserControl
         SetField(SummaryField, SummaryBox, format is not PackFormat.CurseForge, name);
     }
 
+    // ── Advanced ──────────────────────────────────────────────────────────
+
     /// <summary>Prism packs always hold every file, and so do CurseForge packs when CurseForge is off in this build.</summary>
     private bool CopiesAll => Format == PackFormat.MultiMC || (Format == PackFormat.CurseForge && !_curseForge);
+
+    /// <summary>Opened at the foot of a dialog that may scroll: what it holds comes into view.</summary>
+    private void Advanced_Expanding(Expander sender, ExpanderExpandingEventArgs args) =>
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+            () => (sender.Content as UIElement)?.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = true }));
+
+    private void LocalOnly_Click(object sender, RoutedEventArgs e)
+    {
+        _localOnly = LocalOnlyBox.IsChecked == true;
+        UpdateCount();
+    }
+
+    private void KeepDisabled_Click(object sender, RoutedEventArgs e)
+    {
+        _keepDisabled = KeepDisabledBox.IsChecked == true;
+        UpdateCount();
+    }
+
+    /// <summary>
+    /// The two choices as this format takes them (ticked and turned off where it does that anyway, the caption saying
+    /// so), and the header's summary of what differs from a plain export.
+    /// </summary>
+    private void UpdateAdvanced(int? disabled)
+    {
+        var format = Format;
+        var copiesAll = CopiesAll;
+        LocalOnlyBox.IsEnabled = !copiesAll;
+        LocalOnlyBox.IsChecked = copiesAll || _localOnly;
+        LocalOnlyCaption.Text = format switch
+        {
+            PackFormat.MultiMC => Loc.Get("Export_LocalOnlyPrism"),
+            PackFormat.CurseForge when !_curseForge => Loc.Get("Export_LocalOnlyNoCurseForge"),
+            PackFormat.Modrinth => Loc.Format("Export_LocalOnlyCaption", "Modrinth"),
+            PackFormat.CurseForge => Loc.Format("Export_LocalOnlyCaption", "CurseForge"),
+            _ => Loc.Format("Export_LocalOnlyCaption", Loc.Get("Export_ModrinthOrCurseForge")),
+        };
+
+        var keeps = !ModpackExporter.DropsDisabled(format);
+        KeepDisabledBox.IsEnabled = !keeps;
+        KeepDisabledBox.IsChecked = keeps || _keepDisabled;
+        KeepDisabledCaption.Text = keeps ? Loc.Get("Export_KeepDisabledPrism")
+            : disabled switch
+            {
+                null => "",
+                0 => Loc.Get("Export_KeepDisabledNone"),
+                var n => Loc.Format("Export_KeepDisabledCount", Formats.Count(n.Value)),
+            };
+        KeepDisabledCaption.Visibility = KeepDisabledCaption.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        var parts = new List<string>();
+        if (!copiesAll && _localOnly)
+            parts.Add(Loc.Get("Export_SummaryLocalOnly"));
+        if (!keeps && disabled > 0)
+            parts.Add(_keepDisabled ? Loc.Get("Export_SummaryKeptDisabled") : Loc.Format("Export_SummaryDroppedDisabled", Formats.Count(disabled.Value)));
+        AdvancedSummary.Text = string.Join(" · ", parts);
+    }
 
     /// <summary>A closed InfoBar still takes the panel's spacing twice over: collapsed, it takes none.</summary>
     private static void Show(InfoBar bar, bool open)
@@ -523,7 +597,7 @@ public sealed partial class ExportPanel : UserControl
         return map;
     }
 
-    /// <summary>"12 of 20 chosen · 384 MB".</summary>
+    /// <summary>"12 of 20 chosen · 384 MB", and Advanced (how many turned-off files there are among them).</summary>
     private void UpdateCount()
     {
         var chosen = _roots.Count(r => r.State != false);
@@ -532,7 +606,8 @@ public sealed partial class ExportPanel : UserControl
             ? Loc.Format("Export_ChosenSize", chosen, _roots.Count, Formats.Size(t.Bytes))
             : Loc.Format("Export_SelectedCount", chosen, _roots.Count);
         // Linked mods don't add to the pack; with nothing linked, the size is about what it takes before compression.
-        ToolTipService.SetToolTip(CountText, tally is null ? null : Loc.Get(CopiesAll ? "Export_SizeHintLocal" : "Export_SizeHint"));
+        ToolTipService.SetToolTip(CountText, tally is null ? null : Loc.Get(CopiesAll || _localOnly ? "Export_SizeHintLocal" : "Export_SizeHint"));
+        UpdateAdvanced(tally?.Disabled);
     }
 
     private ExportTally Sum(IEnumerable<ExportNode> nodes)

@@ -273,10 +273,10 @@ public sealed class ModpackInstallService(
             return;
         var saved = PackExportState.Load(instance.MetadataDirectory);
         var panel = new Views.ExportPanel(instance, saved, StateOf(instance), settings.Current.LastExportFormat, settings.Current.LastExportAuthor,
-            running: App.Get<GameRunner>().Find(instance) is not null, curseForge: content.Has(ContentPlatform.CurseForge));
+            running: App.Get<GameRunner>().Find(instance) is not null, curseForge: content.Has(ContentPlatform.CurseForge), localOnly: settings.Current.ExportLocalOnly);
         var dialog = Dialogs.Create(Loc.Get("Export_DialogTitle"), Dialogs.Scroll(panel, 780), Loc.Get("Export_Button"));
         dialog.Resources["ContentDialogMaxWidth"] = 1000d; // The list beside the details (the panel narrows with the window).
-        dialog.Resources["ContentDialogMaxHeight"] = 980d; // Room for it all; a short window still scrolls.
+        dialog.Resources["ContentDialogMaxHeight"] = 980d; // Room for Advanced opened; a short window still scrolls.
         dialog.Opened += (_, _) => panel.FocusFirst();
         if (await Dialogs.ShowAsync(dialog) != ContentDialogResult.Primary)
             return;
@@ -323,6 +323,8 @@ public sealed class ModpackInstallService(
                 Author = panel.Author,
                 Summary = panel.Summary,
                 Include = panel.Include,
+                LocalOnly = panel.LocalOnly,
+                KeepDisabled = panel.KeepDisabled,
             };
             var result = await Task.Run(() => packs.Exporter.ExportAsync(instance, options, output));
             ContentInstallService.Finish(job, result.Referenced == 0
