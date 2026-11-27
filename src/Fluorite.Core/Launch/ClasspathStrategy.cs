@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Fluorite.Core.Launch;
@@ -9,8 +10,14 @@ namespace Fluorite.Core.Launch;
 /// </summary>
 public static class ClasspathStrategy
 {
-    /// <summary>Writes a Java @argfile. Every argument is quoted; backslashes and quotes are escaped as Java requires.</summary>
-    public static string WriteArgFile(IEnumerable<string> args, string path)
+    /// <summary>
+    /// Writes a Java @argfile into <paramref name="directory"/> and returns its path. Each launch gets one of its own:
+    /// the arguments hold the game folder and the account's token, so two launches of one version mustn't share a file
+    /// one could rewrite before the other's Java has read it. Files left by launches more than a few minutes ago are
+    /// deleted first (Java reads its argfile only as it starts). Every argument is quoted; backslashes and quotes are
+    /// escaped as Java requires.
+    /// </summary>
+    public static string WriteArgFile(IEnumerable<string> args, string directory)
     {
         var sb = new StringBuilder();
         foreach (var a in args)
@@ -30,13 +37,38 @@ public static class ClasspathStrategy
             }
             sb.Append('"').Append('\n');
         }
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        Directory.CreateDirectory(directory);
+        foreach (var old in Directory.EnumerateFiles(directory, ArgFilePrefix + "*.txt"))
+        {
+            if (File.GetLastWriteTimeUtc(old) < DateTime.UtcNow - TimeSpan.FromMinutes(10))
+                DeleteArgFile(old);
+        }
+        var path = Path.Combine(directory, $"{ArgFilePrefix}-{Guid.NewGuid().ToString("N")[..8]}.txt");
         File.WriteAllText(path, sb.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         return path;
     }
 
-    /// <summary>Creates a jar containing only a manifest whose <c>Class-Path</c> references <paramref name="entries"/>.</summary>
-    public static string WritePathingJar(IEnumerable<string> entries, string jarPath)
+    private const string ArgFilePrefix = "launch-args";
+
+    /// <summary>Deletes an argfile its game no longer needs, if it can (one left is deleted by a later launch).</summary>
+    public static void DeleteArgFile(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Writes a jar containing only a manifest whose <c>Class-Path</c> references <paramref name="entries"/> into
+    /// <paramref name="directory"/>, named after what it holds, and returns its path. A running Java 8 game keeps its
+    /// jar open, so a jar is never written again: launches with the same classpath share it, one with another gets
+    /// its own.
+    /// </summary>
+    public static string WritePathingJar(IEnumerable<string> entries, string directory)
     {
         var urls = entries.Select(e =>
         {
@@ -51,12 +83,26 @@ public static class ClasspathStrategy
         AppendManifestLine(manifest, "Created-By: " + FluoriteInfo.LauncherName);
         manifest.Append("\r\n");
 
-        Directory.CreateDirectory(Path.GetDirectoryName(jarPath)!);
-        using var fs = new FileStream(jarPath, FileMode.Create, FileAccess.Write);
-        using var zip = new ZipArchive(fs, ZipArchiveMode.Create);
-        var entry = zip.CreateEntry("META-INF/MANIFEST.MF", CompressionLevel.Optimal);
-        using var w = new StreamWriter(entry.Open(), new UTF8Encoding(false));
-        w.Write(manifest.ToString());
+        var text = manifest.ToString();
+        var jarPath = Path.Combine(directory, $"classpath-{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..16]}.jar");
+        if (File.Exists(jarPath))
+            return jarPath;
+        Directory.CreateDirectory(directory);
+        try
+        {
+            AtomicFile.Write(jarPath, tmp =>
+            {
+                using var fs = new FileStream(tmp, FileMode.CreateNew, FileAccess.Write);
+                using var zip = new ZipArchive(fs, ZipArchiveMode.Create);
+                var entry = zip.CreateEntry("META-INF/MANIFEST.MF", CompressionLevel.Optimal);
+                using var w = new StreamWriter(entry.Open(), new UTF8Encoding(false));
+                w.Write(text);
+            });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException && File.Exists(jarPath))
+        {
+            // Another launch with this classpath made the same jar a moment ago, and its game has it open.
+        }
         return jarPath;
     }
 

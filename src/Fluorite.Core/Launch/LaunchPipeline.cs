@@ -37,7 +37,11 @@ public sealed record LaunchCommand(string Executable, IReadOnlyList<string> Argu
     }
 }
 
-public sealed record PreparedLaunch(ResolvedVersion Version, JavaInstallation Java, LaunchCommand Command, IReadOnlyList<string> Warnings);
+public sealed record PreparedLaunch(ResolvedVersion Version, JavaInstallation Java, LaunchCommand Command, IReadOnlyList<string> Warnings)
+{
+    /// <summary>The Java @argfile the command reads its arguments from, when they're too long for a command line.</summary>
+    public string? ArgumentFile { get; init; }
+}
 
 public sealed class LaunchedGame(PreparedLaunch prepared, IGameProcess process)
 {
@@ -197,7 +201,7 @@ public sealed class LaunchPipeline(
         args.Add(built.MainClass);
         args.AddRange(built.Game);
 
-        args = ApplyCommandLineLimits(args, runtime, classpath, vars["classpath"], options, version.Id);
+        (args, var argFile) = ApplyCommandLineLimits(args, runtime, classpath, vars["classpath"], options, version.Id);
 
         var executable = runtime.LaunchExecutable;
         if (!string.IsNullOrWhiteSpace(options.WrapperCommand))
@@ -214,7 +218,7 @@ public sealed class LaunchPipeline(
         var command = new LaunchCommand(executable, args, options.GameDirectory, options.Environment);
         if (_logger.IsEnabled(LogLevel.Information))
             CoreLog.Prepared(_logger, version.Id, runtime.ToString(), command.ToDisplayString([options.Session.AccessToken]));
-        return new PreparedLaunch(version, runtime, command, warnings);
+        return new PreparedLaunch(version, runtime, command, warnings) { ArgumentFile = argFile };
     }
 
     public async Task<LaunchedGame> LaunchAsync(string versionId, LaunchOptions options, IProgress<LaunchProgress>? progress = null, CancellationToken ct = default)
@@ -222,8 +226,20 @@ public sealed class LaunchPipeline(
         var prepared = await PrepareAsync(versionId, options, progress, ct).ConfigureAwait(false);
         progress?.Report(new(LaunchStage.Starting));
         var cmd = prepared.Command;
-        var process = processLauncher.Start(new ProcessSpec(cmd.Executable, cmd.Arguments, cmd.WorkingDirectory, cmd.Environment, options.Priority,
-            options.GpuPreference, prepared.Java.LaunchExecutable));
+        IGameProcess process;
+        try
+        {
+            process = processLauncher.Start(new ProcessSpec(cmd.Executable, cmd.Arguments, cmd.WorkingDirectory, cmd.Environment, options.Priority,
+                options.GpuPreference, prepared.Java.LaunchExecutable));
+        }
+        catch when (prepared.ArgumentFile is { } unused)
+        {
+            ClasspathStrategy.DeleteArgFile(unused);
+            throw;
+        }
+        // The argfile holds the account's token; once the game is over nothing needs it.
+        if (prepared.ArgumentFile is { } argFile)
+            _ = process.Exited.ContinueWith(_ => ClasspathStrategy.DeleteArgFile(argFile), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
         progress?.Report(new(LaunchStage.Running, process.Id.ToString(CultureInfo.InvariantCulture)));
         return new LaunchedGame(prepared, process);
     }
@@ -296,24 +312,25 @@ public sealed class LaunchPipeline(
         return args;
     }
 
-    private List<string> ApplyCommandLineLimits(List<string> args, JavaInstallation runtime, List<string> classpath, string classpathValue, LaunchOptions o, string versionId)
+    /// <returns>The arguments to launch with, and the argfile they're in when that's how they go.</returns>
+    private (List<string> Args, string? ArgFile) ApplyCommandLineLimits(List<string> args, JavaInstallation runtime, List<string> classpath, string classpathValue, LaunchOptions o, string versionId)
     {
         var length = CommandLine.Quote(runtime.LaunchExecutable).Length + 1 + CommandLine.Join(args).Length;
         if (length <= o.ArgFileThreshold)
-            return args;
+            return (args, null);
 
         var scratch = Path.Combine(Dirs.VersionDir(versionId), ".fluorite");
         if (runtime.Major >= 9)
         {
-            var file = ClasspathStrategy.WriteArgFile(args, Path.Combine(scratch, "launch-args.txt"));
+            var file = ClasspathStrategy.WriteArgFile(args, scratch);
             CoreLog.UsingArgFile(_logger, length, file);
-            return ["@" + file];
+            return (["@" + file], file);
         }
 
         // Java 8: replace the classpath with a pathing jar.
-        var jar = ClasspathStrategy.WritePathingJar(classpath, Path.Combine(scratch, "classpath.jar"));
+        var jar = ClasspathStrategy.WritePathingJar(classpath, scratch);
         CoreLog.UsingPathingJar(_logger, length, jar);
-        return args.Select(a => a == classpathValue ? jar : a).ToList();
+        return (args.Select(a => a == classpathValue ? jar : a).ToList(), null);
     }
 
     private static void MaterializeJar(string source, string target)

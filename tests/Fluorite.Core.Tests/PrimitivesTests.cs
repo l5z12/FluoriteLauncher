@@ -286,3 +286,55 @@ public class AtomicFileTests
         }
     }
 }
+
+public class ClasspathStrategyTests
+{
+    [Fact]
+    public void ArgFiles_AreEachLaunchsOwn_AndOldOnesGo()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-argfile-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var old = Path.Combine(dir, "launch-args.txt"); // Where every launch of the version wrote it before.
+            File.WriteAllText(old, "\"--gameDir\"\n\"A\"\n");
+            File.SetLastWriteTimeUtc(old, DateTime.UtcNow.AddHours(-1));
+            var a = ClasspathStrategy.WriteArgFile(["--gameDir", "A"], dir);
+            var b = ClasspathStrategy.WriteArgFile(["--gameDir", "B"], dir); // Launched while A's Java starts.
+            Assert.NotEqual(a, b);
+            Assert.Equal("\"--gameDir\"\n\"A\"\n", File.ReadAllText(a));
+            Assert.Equal("\"--gameDir\"\n\"B\"\n", File.ReadAllText(b));
+            Assert.False(File.Exists(old));
+
+            ClasspathStrategy.DeleteArgFile(a);
+            Assert.Equal([b], Directory.EnumerateFiles(dir));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void PathingJar_IsSharedByLaunchesWithTheSameClasspath()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-argfile-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var lib = Path.Combine(dir, "lib.jar");
+            var other = Path.Combine(dir, "other.jar");
+            var jar = ClasspathStrategy.WritePathingJar([lib], dir);
+            using (var open = new FileStream(jar, FileMode.Open, FileAccess.Read, FileShare.Read)) // The first game has it open.
+                Assert.Equal(jar, ClasspathStrategy.WritePathingJar([lib], dir));
+            Assert.NotEqual(jar, ClasspathStrategy.WritePathingJar([lib, other], dir));
+            using var zip = System.IO.Compression.ZipFile.OpenRead(jar);
+            using var manifest = new StreamReader(zip.GetEntry("META-INF/MANIFEST.MF")!.Open());
+            Assert.Contains("lib.jar", manifest.ReadToEnd().Replace("\r\n ", "", StringComparison.Ordinal), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+}
