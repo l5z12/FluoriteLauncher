@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Fluorite.Core;
 using Fluorite.Core.Instances;
 using Fluorite.Modding.Content;
 using Fluorite.Modding.Platforms;
@@ -131,7 +132,7 @@ public sealed class ModpackExporter(ContentService content)
         {
             PackFormat.Modrinth => await ExportMrpackAsync(instance, options, files, outputPath, ct).ConfigureAwait(false),
             PackFormat.CurseForge => await ExportCurseForgeAsync(instance, options, files, outputPath, ct).ConfigureAwait(false),
-            PackFormat.MultiMC => ExportPrism(instance, options, files, outputPath),
+            PackFormat.MultiMC => ExportPrism(instance, options, files, outputPath, ct),
             PackFormat.Packwiz => await ExportPackwizAsync(instance, options, files, outputPath, ct).ConfigureAwait(false),
             _ => throw new NotSupportedException($"Can't export as {options.Format}."),
         };
@@ -284,10 +285,11 @@ public sealed class ModpackExporter(ContentService content)
 
         var entries = new JsonArray();
         var bundled = 0;
-        using (var zip = Create(output))
+        WriteZip(output, zip =>
         {
             foreach (var (rel, full) in files)
             {
+                ct.ThrowIfCancellationRequested();
                 if (known.TryGetValue(rel, out var hit) && hit.Match.Version.Files.FirstOrDefault(f => HashUtil(f.Sha1, hit.Hashes.Sha1)) is { Url: { } url } file)
                 {
                     entries.Add((JsonNode)new JsonObject
@@ -315,7 +317,7 @@ public sealed class ModpackExporter(ContentService content)
             index["files"] = entries;
             index["dependencies"] = deps;
             WriteJson(zip, "modrinth.index.json", index);
-        }
+        });
         return new PackExportResult(output, entries.Count, bundled, warnings);
     }
 
@@ -342,10 +344,11 @@ public sealed class ModpackExporter(ContentService content)
         var list = new JsonArray();
         var html = new StringBuilder("<ul>\n");
         var bundled = 0;
-        using (var zip = Create(output))
+        WriteZip(output, zip =>
         {
             foreach (var (rel, full) in files)
             {
+                ct.ThrowIfCancellationRequested();
                 if (known.TryGetValue(rel, out var hit))
                 {
                     var v = hit.Match.Version;
@@ -378,13 +381,13 @@ public sealed class ModpackExporter(ContentService content)
             var entry = zip.CreateEntry("modlist.html");
             using var w = new StreamWriter(entry.Open(), new UTF8Encoding(false));
             w.Write(html.Append("</ul>\n"));
-        }
+        });
         return new PackExportResult(output, list.Count, bundled, warnings);
     }
 
     // ── Prism / MultiMC ───────────────────────────────────────────────────
 
-    private static PackExportResult ExportPrism(GameInstance instance, PackExportOptions o, List<(string Relative, string Full)> files, string output)
+    private static PackExportResult ExportPrism(GameInstance instance, PackExportOptions o, List<(string Relative, string Full)> files, string output, CancellationToken ct)
     {
         var m = instance.Manifest;
         var components = new JsonArray();
@@ -427,15 +430,18 @@ public sealed class ModpackExporter(ContentService content)
         if (s.JvmArguments is { } jvm)
             cfg.Append("OverrideJavaArgs=true\nJvmArgs=").Append(IniFile.Encode(jvm)).Append('\n');
 
-        using (var zip = Create(output))
+        WriteZip(output, zip =>
         {
             WriteText(zip, "instance.cfg", cfg.ToString());
             WriteJson(zip, "mmc-pack.json", new JsonObject { ["components"] = components, ["formatVersion"] = 1 });
             if (iconFile is not null)
                 AddFile(zip, iconFile, iconKey + Path.GetExtension(iconFile).ToLowerInvariant());
             foreach (var (rel, full) in files)
+            {
+                ct.ThrowIfCancellationRequested();
                 AddFile(zip, full, "minecraft/" + rel);
-        }
+            }
+        });
         return new PackExportResult(output, 0, files.Count, warnings);
     }
 
@@ -447,73 +453,122 @@ public sealed class ModpackExporter(ContentService content)
         var remaining = files.Where(f => !modrinth.ContainsKey(f.Relative)).ToList();
         var curseforge = await IdentifyAsync(ContentPlatform.CurseForge, remaining, o.LocalOnly, ct).ConfigureAwait(false);
         var before = PackwizFiles(outputDir); // Exported into before (a pack's git checkout): what that export wrote.
-        Directory.CreateDirectory(outputDir);
         var index = new StringBuilder("hash-format = \"sha256\"\n");
         var referenced = 0;
         var bundled = 0;
         var now = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var (rel, full) in files)
-        {
-            string written;
-            var metaFile = false;
-            if (modrinth.TryGetValue(rel, out var mr) && mr.Match.Version.Files.FirstOrDefault(f => HashUtil(f.Sha1, mr.Hashes.Sha1)) is { Url: { } url })
-            {
-                written = WriteMetafile(outputDir, rel, Path.GetFileName(rel), url, "sha512", mr.Hashes.Sha512,
-                    $"[update.modrinth]\nmod-id = {Toml(mr.Match.Version.ProjectId)}\nversion = {Toml(mr.Match.Version.Id)}\n", mr.Match.Version.Name);
-                metaFile = true;
-                referenced++;
-            }
-            else if (curseforge.TryGetValue(rel, out var cf))
-            {
-                written = WriteMetafile(outputDir, rel, Path.GetFileName(rel), null, "sha1", cf.Hashes.Sha1,
-                    $"[update.curseforge]\nfile-id = {cf.Match.Version.Id}\nproject-id = {cf.Match.Version.ProjectId}\n", cf.Match.Version.Name);
-                metaFile = true;
-                referenced++;
-            }
-            else
-            {
-                written = rel;
-                var target = PackPaths.Resolve(outputDir, rel);
-                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                using (var source = OpenShared(full))
-                using (var copy = File.Create(target))
-                    source.CopyTo(copy);
-                File.SetLastWriteTimeUtc(target, File.GetLastWriteTimeUtc(full));
-                bundled++;
-            }
-            now.Add(written);
-            var hash = await ModpackInstaller.HashAsync(PackPaths.Resolve(outputDir, written), "sha256", ct).ConfigureAwait(false);
-            index.Append("\n[[files]]\nfile = ").Append(Toml(written)).Append("\nhash = ").Append(Toml(hash)).Append('\n');
-            if (metaFile)
-                index.Append("metafile = true\n");
-        }
-
-        var indexPath = Path.Combine(outputDir, "index.toml");
-        await File.WriteAllTextAsync(indexPath, index.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
-        var m = instance.Manifest;
         var warnings = new List<string>();
-        var versions = new StringBuilder("[versions]\nminecraft = ").Append(Toml(m.MinecraftVersion ?? "")).Append('\n');
-        if (ComponentResolver.PrimaryLoader(m) is { } loader)
+
+        // Written into a folder beside the pack and moved in once whole: an export that fails leaves the pack as it was.
+        var stage = AtomicFile.TempPath(Path.TrimEndingDirectorySeparator(Path.GetFullPath(outputDir)));
+        try
         {
-            if (LoaderKey(PackFormat.Packwiz, loader.Uid) is { } key)
-                versions.Append(key).Append(" = ").Append(Toml(loader.Version)).Append('\n');
-            else
-                warnings.Add($"packwiz packs can't express {loader.Uid}; installers will get vanilla {m.MinecraftVersion}.");
+            Directory.CreateDirectory(stage);
+            foreach (var (rel, full) in files)
+            {
+                ct.ThrowIfCancellationRequested();
+                string written;
+                var metaFile = false;
+                if (modrinth.TryGetValue(rel, out var mr) && mr.Match.Version.Files.FirstOrDefault(f => HashUtil(f.Sha1, mr.Hashes.Sha1)) is { Url: { } url })
+                {
+                    written = WriteMetafile(stage, rel, Path.GetFileName(rel), url, "sha512", mr.Hashes.Sha512,
+                        $"[update.modrinth]\nmod-id = {Toml(mr.Match.Version.ProjectId)}\nversion = {Toml(mr.Match.Version.Id)}\n", mr.Match.Version.Name);
+                    metaFile = true;
+                    referenced++;
+                }
+                else if (curseforge.TryGetValue(rel, out var cf))
+                {
+                    written = WriteMetafile(stage, rel, Path.GetFileName(rel), null, "sha1", cf.Hashes.Sha1,
+                        $"[update.curseforge]\nfile-id = {cf.Match.Version.Id}\nproject-id = {cf.Match.Version.ProjectId}\n", cf.Match.Version.Name);
+                    metaFile = true;
+                    referenced++;
+                }
+                else
+                {
+                    written = rel;
+                    var target = PackPaths.Resolve(stage, rel);
+                    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                    using (var source = OpenShared(full))
+                    using (var copy = File.Create(target))
+                        source.CopyTo(copy);
+                    File.SetLastWriteTimeUtc(target, File.GetLastWriteTimeUtc(full));
+                    bundled++;
+                }
+                now.Add(written);
+                var hash = await ModpackInstaller.HashAsync(PackPaths.Resolve(stage, written), "sha256", ct).ConfigureAwait(false);
+                index.Append("\n[[files]]\nfile = ").Append(Toml(written)).Append("\nhash = ").Append(Toml(hash)).Append('\n');
+                if (metaFile)
+                    index.Append("metafile = true\n");
+            }
+
+            var indexPath = Path.Combine(stage, "index.toml");
+            await File.WriteAllTextAsync(indexPath, index.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
+            var m = instance.Manifest;
+            var versions = new StringBuilder("[versions]\nminecraft = ").Append(Toml(m.MinecraftVersion ?? "")).Append('\n');
+            if (ComponentResolver.PrimaryLoader(m) is { } loader)
+            {
+                if (LoaderKey(PackFormat.Packwiz, loader.Uid) is { } key)
+                    versions.Append(key).Append(" = ").Append(Toml(loader.Version)).Append('\n');
+                else
+                    warnings.Add($"packwiz packs can't express {loader.Uid}; installers will get vanilla {m.MinecraftVersion}.");
+            }
+            var pack = new StringBuilder()
+                .Append("name = ").Append(Toml(o.Name)).Append('\n')
+                .Append("author = ").Append(Toml(o.Author ?? "")).Append('\n')
+                .Append("version = ").Append(Toml(o.Version)).Append('\n');
+            if (!string.IsNullOrWhiteSpace(o.Summary))
+                pack.Append("description = ").Append(Toml(o.Summary)).Append('\n');
+            pack.Append("pack-format = \"packwiz:1.1.0\"\n\n")
+                .Append("[index]\nfile = \"index.toml\"\nhash-format = \"sha256\"\nhash = ")
+                .Append(Toml(await ModpackInstaller.HashAsync(indexPath, "sha256", ct).ConfigureAwait(false))).Append("\n\n")
+                .Append(versions);
+            await File.WriteAllTextAsync(Path.Combine(stage, "pack.toml"), pack.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
+            MoveInto(stage, outputDir);
         }
-        var pack = new StringBuilder()
-            .Append("name = ").Append(Toml(o.Name)).Append('\n')
-            .Append("author = ").Append(Toml(o.Author ?? "")).Append('\n')
-            .Append("version = ").Append(Toml(o.Version)).Append('\n');
-        if (!string.IsNullOrWhiteSpace(o.Summary))
-            pack.Append("description = ").Append(Toml(o.Summary)).Append('\n');
-        pack.Append("pack-format = \"packwiz:1.1.0\"\n\n")
-            .Append("[index]\nfile = \"index.toml\"\nhash-format = \"sha256\"\nhash = ")
-            .Append(Toml(await ModpackInstaller.HashAsync(indexPath, "sha256", ct).ConfigureAwait(false))).Append("\n\n")
-            .Append(versions);
-        await File.WriteAllTextAsync(Path.Combine(outputDir, "pack.toml"), pack.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
+        finally
+        {
+            TryDeleteDirectory(stage);
+        }
         RemoveLeftovers(outputDir, before.Where(f => !now.Contains(f)));
         return new PackExportResult(outputDir, referenced, bundled, warnings);
+    }
+
+    /// <summary>
+    /// Moves a finished packwiz export from <paramref name="stage"/> into <paramref name="folder"/>: the whole folder
+    /// when there's none yet, else file by file with <c>index.toml</c> and <c>pack.toml</c> last, so what's there reads
+    /// as the old pack until it's the new one. Files of the folder's own (a repository's) stay.
+    /// </summary>
+    private static void MoveInto(string stage, string folder)
+    {
+        if (!Directory.Exists(folder))
+        {
+            Directory.Move(stage, folder);
+            return;
+        }
+        string[] last = ["index.toml", "pack.toml"];
+        var relative = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(stage, f))
+            .Where(r => !last.Contains(r, StringComparer.OrdinalIgnoreCase))
+            .Concat(last)
+            .ToList();
+        foreach (var rel in relative)
+        {
+            var target = Path.Combine(folder, rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Move(Path.Combine(stage, rel), target, overwrite: true);
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 
     /// <summary>
@@ -622,12 +677,18 @@ public sealed class ModpackExporter(ContentService content)
 
     private static bool HashUtil(string? a, string b) => Core.Net.HashUtil.HashEquals(a, b);
 
-    private static ZipArchive Create(string path)
+    /// <summary>
+    /// Writes a pack through a temp file (see <see cref="AtomicFile"/>): an export that fails leaves no half-written
+    /// pack behind, and the pack it replaces stays until the new one is whole.
+    /// </summary>
+    private static void WriteZip(string path, Action<ZipArchive> write)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-        if (File.Exists(path))
-            File.Delete(path);
-        return ZipFile.Open(path, ZipArchiveMode.Create);
+        AtomicFile.Write(path, tmp =>
+        {
+            using var zip = ZipFile.Open(tmp, ZipArchiveMode.Create);
+            write(zip);
+        });
     }
 
     private static void WriteJson(ZipArchive zip, string name, JsonObject json) =>
