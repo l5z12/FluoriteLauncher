@@ -326,11 +326,12 @@ public sealed class ContentManager : IDisposable
         var target = System.IO.Path.Combine(folder, System.IO.Path.GetFileName(sourcePath));
         if (string.Equals(System.IO.Path.GetFullPath(sourcePath), System.IO.Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase))
             return target;
-        var tmp = target + ".part";
-        await using (var src = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 16, useAsync: true))
-        await using (var dst = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16, useAsync: true))
+        await AtomicFile.WriteAsync(target, async tmp =>
+        {
+            await using var src = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 16, useAsync: true);
+            await using var dst = new FileStream(tmp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1 << 16, useAsync: true);
             await src.CopyToAsync(dst, ct).ConfigureAwait(false);
-        File.Move(tmp, target, overwrite: true);
+        }).ConfigureAwait(false);
         // A previously disabled copy of the same file would load twice once re-enabled; drop it.
         if (File.Exists(target + ContentLocation.DisabledSuffix))
             File.Delete(target + ContentLocation.DisabledSuffix);

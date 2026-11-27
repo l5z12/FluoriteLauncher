@@ -147,7 +147,8 @@ public sealed class ModpackInstaller(DownloadEngine downloader, MirrorTable mirr
             if (manifest.IconEntry is { } entry && manifest.ArchivePath is { } archive)
             {
                 using var zip = ZipNames.OpenRead(archive);
-                zip.GetEntry(entry)?.ExtractToFile(icon, overwrite: true);
+                if (zip.GetEntry(entry) is { } iconEntry)
+                    AtomicFile.Write(icon, tmp => iconEntry.ExtractToFile(tmp));
             }
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException)
@@ -479,7 +480,7 @@ public sealed class ModpackInstaller(DownloadEngine downloader, MirrorTable mirr
                 continue;
             var target = PackPaths.Resolve(saves, rel);
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            e.ExtractToFile(target, overwrite: true);
+            AtomicFile.Write(target, tmp => e.ExtractToFile(tmp));
         }
     }
 

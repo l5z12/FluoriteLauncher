@@ -85,7 +85,7 @@ public sealed class MojangRuntimeInstaller(HttpClient http, DownloadEngine downl
             }
 
             await downloader.DownloadAllAsync(items, progress, ct).ConfigureAwait(false);
-            await File.WriteAllTextAsync(Path.Combine(runtimeRoot, component, platform, ".version"), entries[0].Version?.Name ?? "", ct).ConfigureAwait(false);
+            await AtomicFile.WriteAllTextAsync(Path.Combine(runtimeRoot, component, platform, ".version"), entries[0].Version?.Name ?? "", ct: ct).ConfigureAwait(false);
 
             return await JavaProbe.ProbeAsync(home, JavaSource.Fluorite, ct).ConfigureAwait(false)
                 ?? throw new InvalidDataException($"Installed runtime '{component}' at {home} could not be probed.");

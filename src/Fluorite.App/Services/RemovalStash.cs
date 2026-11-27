@@ -1,4 +1,5 @@
 using System.Globalization;
+using Fluorite.Core;
 using Fluorite.Core.Platform;
 using Fluorite.Platform.Windows.Shell;
 using Microsoft.Extensions.Logging;
@@ -54,7 +55,7 @@ public sealed class RemovalStash
         {
             Directory.CreateDirectory(dir);
             TryHide(root);
-            File.WriteAllLines(Path.Combine(dir, OriginsFile), originals);
+            AtomicFile.WriteAllText(Path.Combine(dir, OriginsFile), string.Concat(originals.Select(o => o + Environment.NewLine))); // All or none: a list cut short loses where the rest came from.
             if (permanent)
                 File.WriteAllText(Path.Combine(dir, PermanentFile), "");
             foreach (var item in items)

@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using System.Text;
+using Fluorite.Core;
 using Microsoft.Win32;
 
 namespace Fluorite.Platform.Windows.Shell;
@@ -43,7 +44,7 @@ public static class ShellIntegration
             sb.Append("IconFile=").AppendLine(iconPath);
             sb.AppendLine("IconIndex=0");
         }
-        File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
+        AtomicFile.WriteAllText(path, sb.ToString(), Encoding.UTF8);
         return path;
     }
 }
