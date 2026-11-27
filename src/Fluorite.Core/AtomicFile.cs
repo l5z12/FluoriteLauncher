@@ -22,7 +22,7 @@ public static class AtomicFile
         try
         {
             write(tmp);
-            File.Move(tmp, path, overwrite: true);
+            Move(tmp, path);
         }
         finally
         {
@@ -38,7 +38,7 @@ public static class AtomicFile
         try
         {
             await write(tmp).ConfigureAwait(false);
-            File.Move(tmp, path, overwrite: true);
+            await MoveAsync(tmp, path).ConfigureAwait(false);
         }
         finally
         {
@@ -61,6 +61,53 @@ public static class AtomicFile
 
     /// <summary>Copies <paramref name="source"/> to <paramref name="target"/>, replacing it if it's there.</summary>
     public static void Copy(string source, string target) => Write(target, tmp => File.Copy(source, tmp));
+
+    /// <summary>
+    /// Moves <paramref name="source"/> over <paramref name="target"/>, trying again for a moment while something has the
+    /// target open (an antivirus or indexer looking at a file just written, another read of it): Windows won't replace
+    /// an open file, and may say so with an <see cref="UnauthorizedAccessException"/> as well as an
+    /// <see cref="IOException"/>. Throws as <see cref="File.Move(string, string, bool)"/> does when it still can't.
+    /// </summary>
+    public static void Move(string source, string target)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(source, target, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (MayPass(ex) && attempt < MoveAttempts)
+            {
+                Thread.Sleep(RetryDelay(attempt));
+            }
+        }
+    }
+
+    /// <inheritdoc cref="Move"/>
+    public static async Task MoveAsync(string source, string target)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(source, target, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (MayPass(ex) && attempt < MoveAttempts)
+            {
+                await Task.Delay(RetryDelay(attempt)).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private const int MoveAttempts = 5;
+
+    private static TimeSpan RetryDelay(int attempt) => TimeSpan.FromMilliseconds(50 * attempt); // Half a second in all.
+
+    /// <summary>A file in the way, not a path that's wrong.</summary>
+    private static bool MayPass(Exception ex) =>
+        ex is UnauthorizedAccessException or (IOException and not FileNotFoundException and not DirectoryNotFoundException and not PathTooLongException);
 
     /// <summary>A temp path beside <paramref name="path"/> that no other write shares.</summary>
     public static string TempPath(string path) => $"{path}.{Guid.NewGuid():N}.tmp";

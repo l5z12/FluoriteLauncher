@@ -165,7 +165,7 @@ public sealed class AccountSkins(
             await AtomicFile.WriteAllBytesAsync(cached, bytes, ct).ConfigureAwait(false);
             return bytes;
         }
-        catch (Exception ex) when (!ct.IsCancellationRequested && ex is HttpRequestException or OperationCanceledException or IOException)
+        catch (Exception ex) when (!ct.IsCancellationRequested && ex is HttpRequestException or OperationCanceledException or IOException or UnauthorizedAccessException)
         {
             return null;
         }

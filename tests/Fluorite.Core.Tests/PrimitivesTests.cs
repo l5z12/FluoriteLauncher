@@ -183,4 +183,31 @@ public class AtomicFileTests
             Directory.Delete(dir, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task Write_WaitsForAReadOfTheFileToFinish()
+    {
+        if (!OperatingSystem.IsWindows())
+            Assert.Skip("Only Windows refuses to replace a file that's open.");
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, "skin.png");
+            File.WriteAllText(path, "old");
+            var reader = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read); // Another load of the same skin.
+            var done = Task.Run(async () =>
+            {
+                await Task.Delay(30, TestContext.Current.CancellationToken);
+                await reader.DisposeAsync();
+            }, TestContext.Current.CancellationToken);
+            AtomicFile.WriteAllText(path, "new");
+            await done;
+            Assert.Equal("new", File.ReadAllText(path));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
 }

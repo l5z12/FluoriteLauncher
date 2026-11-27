@@ -417,7 +417,7 @@ public sealed class ModpackInstallService(
             instance.Manifest.Icon = path;
             await layout.SaveAsync(instance);
         }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
+        catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException or TaskCanceledException)
         {
         }
     }
