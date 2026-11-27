@@ -149,7 +149,7 @@ public sealed class OfficialLayout(string root, ExternalLayoutContext context) :
             if (!File.Exists(path) || new FileInfo(path).Length != bytes.Length)
             {
                 Directory.CreateDirectory(dir);
-                File.WriteAllBytes(path, bytes);
+                AtomicFile.WriteAllBytes(path, bytes);
             }
             return path;
         }

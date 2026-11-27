@@ -83,9 +83,7 @@ public sealed class IniFile
 
     public void Save(string path)
     {
-        var tmp = path + ".fluorite-tmp";
-        File.WriteAllText(tmp, ToString(), new UTF8Encoding(false));
-        File.Move(tmp, path, overwrite: true);
+        AtomicFile.WriteAllText(path, ToString());
     }
 
     internal static string Decode(string raw)

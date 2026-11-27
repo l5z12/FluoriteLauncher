@@ -1,3 +1,4 @@
+using System.Text;
 using Fluorite.Core.Java;
 using Fluorite.Core.Launch;
 using Fluorite.Core.Net;
@@ -154,4 +155,186 @@ public class MirrorTableTests
     public void LegacyForgeMaven_IsCanonicalized() =>
         Assert.Equal("https://maven.minecraftforge.net/net/minecraftforge/forge/1.7.10-10.13.4.1614/x.jar",
             MirrorTable.Canonicalize("http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.7.10-10.13.4.1614/x.jar"));
+}
+
+public class AtomicFileTests
+{
+    [Fact]
+    public void Write_ThatFails_LeavesTheFileAsItWas()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, "settings.json");
+            File.WriteAllText(path, "old");
+            Assert.Throws<IOException>(() => AtomicFile.Write(path, tmp =>
+            {
+                File.WriteAllText(tmp, "ne"); // Cut short: the disk filled up.
+                throw new IOException("There is not enough space on the disk.");
+            }));
+            Assert.Equal("old", File.ReadAllText(path));
+
+            AtomicFile.WriteAllText(path, "new");
+            Assert.Equal("new", File.ReadAllText(path));
+            Assert.Equal(["settings.json"], Directory.EnumerateFiles(dir).Select(Path.GetFileName)); // No temp file left.
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Write_WaitsForAReadOfTheFileToFinish()
+    {
+        if (!OperatingSystem.IsWindows())
+            Assert.Skip("Only Windows refuses to replace a file that's open.");
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, "skin.png");
+            File.WriteAllText(path, "old");
+            var reader = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read); // Another load of the same skin.
+            var done = Task.Run(async () =>
+            {
+                await Task.Delay(30, TestContext.Current.CancellationToken);
+                await reader.DisposeAsync();
+            }, TestContext.Current.CancellationToken);
+            AtomicFile.WriteAllText(path, "new");
+            await done;
+            Assert.Equal("new", File.ReadAllText(path));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("sodium.jar.1a2b3c4d.tmp", true)]
+    [InlineData("fluorite.1a2b3c4d.tmp", true)]
+    [InlineData("notes.tmp", false)]
+    [InlineData("backup.2024.tmp", false)]
+    [InlineData("sodium.jar", false)]
+    public void IsTempFile(string name, bool temp) => Assert.Equal(temp, AtomicFile.IsTempFile(name));
+
+    [Fact]
+    public void WriteAllText_WritesTheEncodingAsFileDoes()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var plain = Path.Combine(dir, "plain.txt");
+            var marked = Path.Combine(dir, "marked.url");
+            AtomicFile.WriteAllText(plain, "é");
+            AtomicFile.WriteAllText(marked, "é", Encoding.UTF8);
+            Assert.Equal([0xC3, 0xA9], File.ReadAllBytes(plain));
+            Assert.Equal([0xEF, 0xBB, 0xBF, 0xC3, 0xA9], File.ReadAllBytes(marked));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TempPath_IsATempFile() => Assert.True(AtomicFile.IsTempFile(Path.GetFileName(AtomicFile.TempPath(@"C:\mods\sodium.jar"))));
+
+    [Fact]
+    public void Write_OfAFileWithTheLongestNameThereIs()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, new string('m', 251) + ".jar"); // 255 characters: no room for a suffix.
+            AtomicFile.WriteAllText(path, "jar");
+            Assert.Equal("jar", File.ReadAllText(path));
+            Assert.Single(Directory.EnumerateFiles(dir));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Copy_OfAReadOnlyFile_ThatCantBePutInPlace_LeavesNoTempFile()
+    {
+        if (!OperatingSystem.IsWindows())
+            Assert.Skip("Only Windows refuses to replace a file that's open.");
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var source = Path.Combine(dir, "asset");
+        try
+        {
+            File.WriteAllText(source, "a");
+            File.SetAttributes(source, FileAttributes.ReadOnly);
+            var target = Path.Combine(dir, "target");
+            File.WriteAllText(target, "old");
+            using (new FileStream(target, FileMode.Open, FileAccess.Read, FileShare.Read))
+                Assert.True(Record.Exception(() => AtomicFile.Copy(source, target)) is IOException or UnauthorizedAccessException);
+            Assert.Equal(["asset", "target"], Directory.EnumerateFiles(dir).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+        }
+        finally
+        {
+            File.SetAttributes(source, FileAttributes.Normal);
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+}
+
+public class ClasspathStrategyTests
+{
+    [Fact]
+    public void ArgFiles_AreEachLaunchsOwn_AndOldOnesGo()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-argfile-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var old = Path.Combine(dir, "launch-args.txt"); // Where every launch of the version wrote it before.
+            File.WriteAllText(old, "\"--gameDir\"\n\"A\"\n");
+            File.SetLastWriteTimeUtc(old, DateTime.UtcNow.AddHours(-1));
+            var a = ClasspathStrategy.WriteArgFile(["--gameDir", "A"], dir);
+            var b = ClasspathStrategy.WriteArgFile(["--gameDir", "B"], dir); // Launched while A's Java starts.
+            Assert.NotEqual(a, b);
+            Assert.Equal("\"--gameDir\"\n\"A\"\n", File.ReadAllText(a));
+            Assert.Equal("\"--gameDir\"\n\"B\"\n", File.ReadAllText(b));
+            Assert.False(File.Exists(old));
+
+            ClasspathStrategy.DeleteArgFile(a);
+            Assert.Equal([b], Directory.EnumerateFiles(dir));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void PathingJar_IsSharedByLaunchesWithTheSameClasspath()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-argfile-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var lib = Path.Combine(dir, "lib.jar");
+            var other = Path.Combine(dir, "other.jar");
+            var jar = ClasspathStrategy.WritePathingJar([lib], dir);
+            using (var open = new FileStream(jar, FileMode.Open, FileAccess.Read, FileShare.Read)) // The first game has it open.
+                Assert.Equal(jar, ClasspathStrategy.WritePathingJar([lib], dir));
+            Assert.NotEqual(jar, ClasspathStrategy.WritePathingJar([lib, other], dir));
+            using var zip = System.IO.Compression.ZipFile.OpenRead(jar);
+            using var manifest = new StreamReader(zip.GetEntry("META-INF/MANIFEST.MF")!.Open());
+            Assert.Contains("lib.jar", manifest.ReadToEnd().Replace("\r\n ", "", StringComparison.Ordinal), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
 }

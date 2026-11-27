@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Fluorite.Core;
 using Fluorite.Core.Instances;
 using Fluorite.Modding.Content;
 using Fluorite.Modding.Platforms;
@@ -131,7 +132,7 @@ public sealed class ModpackExporter(ContentService content)
         {
             PackFormat.Modrinth => await ExportMrpackAsync(instance, options, files, outputPath, ct).ConfigureAwait(false),
             PackFormat.CurseForge => await ExportCurseForgeAsync(instance, options, files, outputPath, ct).ConfigureAwait(false),
-            PackFormat.MultiMC => ExportPrism(instance, options, files, outputPath),
+            PackFormat.MultiMC => ExportPrism(instance, options, files, outputPath, ct),
             PackFormat.Packwiz => await ExportPackwizAsync(instance, options, files, outputPath, ct).ConfigureAwait(false),
             _ => throw new NotSupportedException($"Can't export as {options.Format}."),
         };
@@ -218,11 +219,13 @@ public sealed class ModpackExporter(ContentService content)
     }
 
     /// <summary>
-    /// Files no pack holds: downloads cut short (<c>.part</c>), and a world's <c>session.lock</c>, which only says a
-    /// game has the world open (and which that game locks, so it can't even be read then).
+    /// Files no pack holds: downloads cut short (<c>.part</c>), temp files of writes that never finished, and a world's
+    /// <c>session.lock</c>, which only says a game has the world open (and which that game locks, so it can't even be
+    /// read then).
     /// </summary>
     public static bool IsNeverExported(string fileName) =>
-        fileName.EndsWith(".part", StringComparison.OrdinalIgnoreCase) || fileName.Equals("session.lock", StringComparison.OrdinalIgnoreCase);
+        fileName.EndsWith(".part", StringComparison.OrdinalIgnoreCase) || AtomicFile.IsTempFile(fileName)
+        || fileName.Equals("session.lock", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Opens a file to copy into the pack even while the game has it open: a running game keeps its world's region
@@ -284,10 +287,11 @@ public sealed class ModpackExporter(ContentService content)
 
         var entries = new JsonArray();
         var bundled = 0;
-        using (var zip = Create(output))
+        WriteZip(output, zip =>
         {
             foreach (var (rel, full) in files)
             {
+                ct.ThrowIfCancellationRequested();
                 if (known.TryGetValue(rel, out var hit) && hit.Match.Version.Files.FirstOrDefault(f => HashUtil(f.Sha1, hit.Hashes.Sha1)) is { Url: { } url } file)
                 {
                     entries.Add((JsonNode)new JsonObject
@@ -315,7 +319,7 @@ public sealed class ModpackExporter(ContentService content)
             index["files"] = entries;
             index["dependencies"] = deps;
             WriteJson(zip, "modrinth.index.json", index);
-        }
+        });
         return new PackExportResult(output, entries.Count, bundled, warnings);
     }
 
@@ -342,10 +346,11 @@ public sealed class ModpackExporter(ContentService content)
         var list = new JsonArray();
         var html = new StringBuilder("<ul>\n");
         var bundled = 0;
-        using (var zip = Create(output))
+        WriteZip(output, zip =>
         {
             foreach (var (rel, full) in files)
             {
+                ct.ThrowIfCancellationRequested();
                 if (known.TryGetValue(rel, out var hit))
                 {
                     var v = hit.Match.Version;
@@ -378,13 +383,13 @@ public sealed class ModpackExporter(ContentService content)
             var entry = zip.CreateEntry("modlist.html");
             using var w = new StreamWriter(entry.Open(), new UTF8Encoding(false));
             w.Write(html.Append("</ul>\n"));
-        }
+        });
         return new PackExportResult(output, list.Count, bundled, warnings);
     }
 
     // ── Prism / MultiMC ───────────────────────────────────────────────────
 
-    private static PackExportResult ExportPrism(GameInstance instance, PackExportOptions o, List<(string Relative, string Full)> files, string output)
+    private static PackExportResult ExportPrism(GameInstance instance, PackExportOptions o, List<(string Relative, string Full)> files, string output, CancellationToken ct)
     {
         var m = instance.Manifest;
         var components = new JsonArray();
@@ -427,15 +432,18 @@ public sealed class ModpackExporter(ContentService content)
         if (s.JvmArguments is { } jvm)
             cfg.Append("OverrideJavaArgs=true\nJvmArgs=").Append(IniFile.Encode(jvm)).Append('\n');
 
-        using (var zip = Create(output))
+        WriteZip(output, zip =>
         {
             WriteText(zip, "instance.cfg", cfg.ToString());
             WriteJson(zip, "mmc-pack.json", new JsonObject { ["components"] = components, ["formatVersion"] = 1 });
             if (iconFile is not null)
                 AddFile(zip, iconFile, iconKey + Path.GetExtension(iconFile).ToLowerInvariant());
             foreach (var (rel, full) in files)
+            {
+                ct.ThrowIfCancellationRequested();
                 AddFile(zip, full, "minecraft/" + rel);
-        }
+            }
+        });
         return new PackExportResult(output, 0, files.Count, warnings);
     }
 
@@ -447,73 +455,162 @@ public sealed class ModpackExporter(ContentService content)
         var remaining = files.Where(f => !modrinth.ContainsKey(f.Relative)).ToList();
         var curseforge = await IdentifyAsync(ContentPlatform.CurseForge, remaining, o.LocalOnly, ct).ConfigureAwait(false);
         var before = PackwizFiles(outputDir); // Exported into before (a pack's git checkout): what that export wrote.
-        Directory.CreateDirectory(outputDir);
         var index = new StringBuilder("hash-format = \"sha256\"\n");
         var referenced = 0;
         var bundled = 0;
         var now = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var (rel, full) in files)
-        {
-            string written;
-            var metaFile = false;
-            if (modrinth.TryGetValue(rel, out var mr) && mr.Match.Version.Files.FirstOrDefault(f => HashUtil(f.Sha1, mr.Hashes.Sha1)) is { Url: { } url })
-            {
-                written = WriteMetafile(outputDir, rel, Path.GetFileName(rel), url, "sha512", mr.Hashes.Sha512,
-                    $"[update.modrinth]\nmod-id = {Toml(mr.Match.Version.ProjectId)}\nversion = {Toml(mr.Match.Version.Id)}\n", mr.Match.Version.Name);
-                metaFile = true;
-                referenced++;
-            }
-            else if (curseforge.TryGetValue(rel, out var cf))
-            {
-                written = WriteMetafile(outputDir, rel, Path.GetFileName(rel), null, "sha1", cf.Hashes.Sha1,
-                    $"[update.curseforge]\nfile-id = {cf.Match.Version.Id}\nproject-id = {cf.Match.Version.ProjectId}\n", cf.Match.Version.Name);
-                metaFile = true;
-                referenced++;
-            }
-            else
-            {
-                written = rel;
-                var target = PackPaths.Resolve(outputDir, rel);
-                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                using (var source = OpenShared(full))
-                using (var copy = File.Create(target))
-                    source.CopyTo(copy);
-                File.SetLastWriteTimeUtc(target, File.GetLastWriteTimeUtc(full));
-                bundled++;
-            }
-            now.Add(written);
-            var hash = await ModpackInstaller.HashAsync(PackPaths.Resolve(outputDir, written), "sha256", ct).ConfigureAwait(false);
-            index.Append("\n[[files]]\nfile = ").Append(Toml(written)).Append("\nhash = ").Append(Toml(hash)).Append('\n');
-            if (metaFile)
-                index.Append("metafile = true\n");
-        }
-
-        var indexPath = Path.Combine(outputDir, "index.toml");
-        await File.WriteAllTextAsync(indexPath, index.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
-        var m = instance.Manifest;
         var warnings = new List<string>();
-        var versions = new StringBuilder("[versions]\nminecraft = ").Append(Toml(m.MinecraftVersion ?? "")).Append('\n');
-        if (ComponentResolver.PrimaryLoader(m) is { } loader)
+
+        // Written into a folder of its own inside the pack's and moved in once whole: an export that fails leaves the pack
+        // as it was. Inside rather than beside it, as the folder above may not be the user's to write (a share's root).
+        var created = !Directory.Exists(outputDir);
+        Directory.CreateDirectory(outputDir);
+        var stage = Path.Combine(outputDir, ".fluorite-export-" + Guid.NewGuid().ToString("N")[..8]);
+        var exported = false;
+        try
         {
-            if (LoaderKey(PackFormat.Packwiz, loader.Uid) is { } key)
-                versions.Append(key).Append(" = ").Append(Toml(loader.Version)).Append('\n');
-            else
-                warnings.Add($"packwiz packs can't express {loader.Uid}; installers will get vanilla {m.MinecraftVersion}.");
+            Directory.CreateDirectory(stage).Attributes |= FileAttributes.Hidden;
+            foreach (var (rel, full) in files)
+            {
+                ct.ThrowIfCancellationRequested();
+                string written;
+                var metaFile = false;
+                if (modrinth.TryGetValue(rel, out var mr) && mr.Match.Version.Files.FirstOrDefault(f => HashUtil(f.Sha1, mr.Hashes.Sha1)) is { Url: { } url })
+                {
+                    written = WriteMetafile(stage, rel, Path.GetFileName(rel), url, "sha512", mr.Hashes.Sha512,
+                        $"[update.modrinth]\nmod-id = {Toml(mr.Match.Version.ProjectId)}\nversion = {Toml(mr.Match.Version.Id)}\n", mr.Match.Version.Name);
+                    metaFile = true;
+                    referenced++;
+                }
+                else if (curseforge.TryGetValue(rel, out var cf))
+                {
+                    written = WriteMetafile(stage, rel, Path.GetFileName(rel), null, "sha1", cf.Hashes.Sha1,
+                        $"[update.curseforge]\nfile-id = {cf.Match.Version.Id}\nproject-id = {cf.Match.Version.ProjectId}\n", cf.Match.Version.Name);
+                    metaFile = true;
+                    referenced++;
+                }
+                else
+                {
+                    written = rel;
+                    var target = PackPaths.Resolve(stage, rel);
+                    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                    using (var source = OpenShared(full))
+                    using (var copy = File.Create(target))
+                        source.CopyTo(copy);
+                    File.SetLastWriteTimeUtc(target, File.GetLastWriteTimeUtc(full));
+                    bundled++;
+                }
+                now.Add(written);
+                var hash = await ModpackInstaller.HashAsync(PackPaths.Resolve(stage, written), "sha256", ct).ConfigureAwait(false);
+                index.Append("\n[[files]]\nfile = ").Append(Toml(written)).Append("\nhash = ").Append(Toml(hash)).Append('\n');
+                if (metaFile)
+                    index.Append("metafile = true\n");
+            }
+
+            var indexPath = Path.Combine(stage, "index.toml");
+            await File.WriteAllTextAsync(indexPath, index.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
+            var m = instance.Manifest;
+            var versions = new StringBuilder("[versions]\nminecraft = ").Append(Toml(m.MinecraftVersion ?? "")).Append('\n');
+            if (ComponentResolver.PrimaryLoader(m) is { } loader)
+            {
+                if (LoaderKey(PackFormat.Packwiz, loader.Uid) is { } key)
+                    versions.Append(key).Append(" = ").Append(Toml(loader.Version)).Append('\n');
+                else
+                    warnings.Add($"packwiz packs can't express {loader.Uid}; installers will get vanilla {m.MinecraftVersion}.");
+            }
+            var pack = new StringBuilder()
+                .Append("name = ").Append(Toml(o.Name)).Append('\n')
+                .Append("author = ").Append(Toml(o.Author ?? "")).Append('\n')
+                .Append("version = ").Append(Toml(o.Version)).Append('\n');
+            if (!string.IsNullOrWhiteSpace(o.Summary))
+                pack.Append("description = ").Append(Toml(o.Summary)).Append('\n');
+            pack.Append("pack-format = \"packwiz:1.1.0\"\n\n")
+                .Append("[index]\nfile = \"index.toml\"\nhash-format = \"sha256\"\nhash = ")
+                .Append(Toml(await ModpackInstaller.HashAsync(indexPath, "sha256", ct).ConfigureAwait(false))).Append("\n\n")
+                .Append(versions);
+            await File.WriteAllTextAsync(Path.Combine(stage, "pack.toml"), pack.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
+            MoveInto(stage, outputDir);
+            exported = true;
         }
-        var pack = new StringBuilder()
-            .Append("name = ").Append(Toml(o.Name)).Append('\n')
-            .Append("author = ").Append(Toml(o.Author ?? "")).Append('\n')
-            .Append("version = ").Append(Toml(o.Version)).Append('\n');
-        if (!string.IsNullOrWhiteSpace(o.Summary))
-            pack.Append("description = ").Append(Toml(o.Summary)).Append('\n');
-        pack.Append("pack-format = \"packwiz:1.1.0\"\n\n")
-            .Append("[index]\nfile = \"index.toml\"\nhash-format = \"sha256\"\nhash = ")
-            .Append(Toml(await ModpackInstaller.HashAsync(indexPath, "sha256", ct).ConfigureAwait(false))).Append("\n\n")
-            .Append(versions);
-        await File.WriteAllTextAsync(Path.Combine(outputDir, "pack.toml"), pack.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
+        finally
+        {
+            TryDeleteDirectory(created && !exported ? outputDir : stage); // A folder made for an export that failed goes too.
+        }
         RemoveLeftovers(outputDir, before.Where(f => !now.Contains(f)));
         return new PackExportResult(outputDir, referenced, bundled, warnings);
+    }
+
+    /// <summary>
+    /// Moves a finished packwiz export from <paramref name="stage"/> into <paramref name="folder"/> file by file,
+    /// <c>index.toml</c> and <c>pack.toml</c> last. File by file, not the folder at once: Windows won't move a folder
+    /// while anything has a file in it open, which an antivirus often does just after the file is written. Each file
+    /// it replaces is kept aside until all are in, and put back if one can't be moved in (an editor holding it), so
+    /// the folder holds the old pack or the new one, not some of each. Files of the folder's own (a repository's) stay.
+    /// </summary>
+    private static void MoveInto(string stage, string folder)
+    {
+        string[] last = ["index.toml", "pack.toml"];
+        var relative = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(stage, f))
+            .Where(r => !last.Contains(r, StringComparer.OrdinalIgnoreCase))
+            .Concat(last)
+            .ToList();
+        var aside = stage + "-replaced";
+        var moved = new List<(string Target, string? Replaced)>();
+        var keepAside = false;
+        try
+        {
+            foreach (var rel in relative)
+            {
+                var target = Path.Combine(folder, rel);
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                string? replaced = null;
+                if (File.Exists(target))
+                {
+                    replaced = Path.Combine(aside, rel);
+                    Directory.CreateDirectory(Path.GetDirectoryName(replaced)!);
+                    AtomicFile.Move(target, replaced);
+                }
+                moved.Add((target, replaced));
+                AtomicFile.Move(Path.Combine(stage, rel), target);
+            }
+        }
+        catch
+        {
+            for (var i = moved.Count - 1; i >= 0; i--)
+            {
+                var (target, replaced) = moved[i];
+                try
+                {
+                    if (replaced is not null)
+                        AtomicFile.Move(replaced, target);
+                    else
+                        File.Delete(target);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    keepAside |= replaced is not null; // Not put back: the file stays where it was kept, not lost.
+                }
+            }
+            throw;
+        }
+        finally
+        {
+            if (!keepAside)
+                TryDeleteDirectory(aside);
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 
     /// <summary>
@@ -622,12 +719,18 @@ public sealed class ModpackExporter(ContentService content)
 
     private static bool HashUtil(string? a, string b) => Core.Net.HashUtil.HashEquals(a, b);
 
-    private static ZipArchive Create(string path)
+    /// <summary>
+    /// Writes a pack through a temp file (see <see cref="AtomicFile"/>): an export that fails leaves no half-written
+    /// pack behind, and the pack it replaces stays until the new one is whole.
+    /// </summary>
+    private static void WriteZip(string path, Action<ZipArchive> write)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-        if (File.Exists(path))
-            File.Delete(path);
-        return ZipFile.Open(path, ZipArchiveMode.Create);
+        AtomicFile.Write(path, tmp =>
+        {
+            using var zip = ZipFile.Open(tmp, ZipArchiveMode.Create);
+            write(zip);
+        });
     }
 
     private static void WriteJson(ZipArchive zip, string name, JsonObject json) =>

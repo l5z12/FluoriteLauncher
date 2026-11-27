@@ -23,7 +23,7 @@ public static class InstanceIcons
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, $"icon-{Convert.ToHexStringLower(SHA256.HashData(bytes))[..8]}{Path.GetExtension(source).ToLowerInvariant()}");
         if (!File.Exists(path))
-            File.WriteAllBytes(path, bytes);
+            AtomicFile.WriteAllBytes(path, bytes);
         return path;
     }
 

@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fluorite.Core;
 using Fluorite.Core.Instances;
 using Fluorite.Core.Net;
 using Fluorite.Core.Text;
@@ -58,10 +59,12 @@ public sealed class PackState
     {
         Directory.CreateDirectory(metadataDirectory);
         var path = Path.Combine(metadataDirectory, FileName);
-        var tmp = path + ".tmp";
-        await using (var fs = File.Create(tmp))
+        await AtomicFile.WriteAsync(path, async tmp =>
+        {
+            await using var fs = File.Create(tmp);
             await JsonSerializer.SerializeAsync(fs, this, PackStateJsonContext.Default.PackState, ct).ConfigureAwait(false);
-        File.Move(tmp, path, overwrite: true);
+            fs.Flush(flushToDisk: true); // As AtomicFile.WriteAllBytes does: kept through a power cut.
+        }).ConfigureAwait(false);
     }
 
     public PackSource ToSource() => new(Format, ProjectId, VersionId, Version) { Url = Url };
@@ -144,7 +147,8 @@ public sealed class ModpackInstaller(DownloadEngine downloader, MirrorTable mirr
             if (manifest.IconEntry is { } entry && manifest.ArchivePath is { } archive)
             {
                 using var zip = ZipNames.OpenRead(archive);
-                zip.GetEntry(entry)?.ExtractToFile(icon, overwrite: true);
+                if (zip.GetEntry(entry) is { } iconEntry)
+                    AtomicFile.Write(icon, tmp => iconEntry.ExtractToFile(tmp));
             }
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException)
@@ -476,7 +480,7 @@ public sealed class ModpackInstaller(DownloadEngine downloader, MirrorTable mirr
                 continue;
             var target = PackPaths.Resolve(saves, rel);
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            e.ExtractToFile(target, overwrite: true);
+            AtomicFile.Write(target, tmp => e.ExtractToFile(tmp));
         }
     }
 

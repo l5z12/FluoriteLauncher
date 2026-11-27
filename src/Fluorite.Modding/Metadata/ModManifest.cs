@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Fluorite.Core;
 using Tomlyn;
 using Tomlyn.Model;
 
@@ -214,48 +215,41 @@ public static partial class ModManifest
     /// </summary>
     public static bool Write(string jarPath, string entryName, string text, string originalCopy)
     {
-        var temp = jarPath + ".fluorite-edit";
         var unsigned = false;
+        var copied = false;
         try
         {
-            File.Copy(jarPath, temp, overwrite: true);
-            using (var zip = ZipFile.Open(temp, ZipArchiveMode.Update))
+            AtomicFile.Write(jarPath, temp =>
             {
-                var old = FindEntry(zip, entryName) ?? throw new FileNotFoundException($"{entryName} isn't in {Path.GetFileName(jarPath)}.");
-                var name = old.FullName;
-                old.Delete();
-                using (var writer = new StreamWriter(zip.CreateEntry(name, CompressionLevel.Optimal).Open(), new UTF8Encoding(false)))
-                    writer.Write(text);
-                foreach (var signature in zip.Entries.Where(IsSignature).ToList())
+                File.Copy(jarPath, temp);
+                using (var zip = ZipFile.Open(temp, ZipArchiveMode.Update))
                 {
-                    signature.Delete();
-                    unsigned = true;
+                    var old = FindEntry(zip, entryName) ?? throw new FileNotFoundException($"{entryName} isn't in {Path.GetFileName(jarPath)}.");
+                    var name = old.FullName;
+                    old.Delete();
+                    using (var writer = new StreamWriter(zip.CreateEntry(name, CompressionLevel.Optimal).Open(), new UTF8Encoding(false)))
+                        writer.Write(text);
+                    foreach (var signature in zip.Entries.Where(IsSignature).ToList())
+                    {
+                        signature.Delete();
+                        unsigned = true;
+                    }
                 }
-            }
-            if (ContentMetadataReader.Read(temp).Mods.Count == 0 && ContentMetadataReader.Read(jarPath).Mods.Count > 0)
-                throw new InvalidDataException("With this change the file no longer declares a mod. Is its id still there?");
-
-            var copied = false;
-            if (!File.Exists(originalCopy))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(originalCopy)!);
-                File.Copy(jarPath, originalCopy);
-                copied = true;
-            }
-            try
-            {
-                File.Move(temp, jarPath, overwrite: true); // Fails while the game has the jar open.
-            }
-            catch when (copied)
-            {
-                File.Delete(originalCopy);
-                throw;
-            }
+                if (ContentMetadataReader.Read(temp).Mods.Count == 0 && ContentMetadataReader.Read(jarPath).Mods.Count > 0)
+                    throw new InvalidDataException("With this change the file no longer declares a mod. Is its id still there?");
+                if (!File.Exists(originalCopy))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(originalCopy)!);
+                    AtomicFile.Copy(jarPath, originalCopy);
+                    copied = true;
+                }
+            }); // Moving the edited jar in fails while the game has the jar open.
             return unsigned;
         }
-        finally
+        catch when (copied)
         {
-            File.Delete(temp);
+            File.Delete(originalCopy); // Kept for an edit that didn't happen.
+            throw;
         }
     }
 

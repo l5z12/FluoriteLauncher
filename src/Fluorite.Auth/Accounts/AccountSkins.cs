@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Fluorite.Auth.Microsoft;
 using Fluorite.Auth.Yggdrasil;
+using Fluorite.Core;
 
 namespace Fluorite.Auth.Accounts;
 
@@ -161,10 +162,10 @@ public sealed class AccountSkins(
             cts.CancelAfter(TimeSpan.FromSeconds(30));
             var bytes = await http.GetByteArrayAsync(url, cts.Token).ConfigureAwait(false);
             Directory.CreateDirectory(cacheDirectory);
-            await File.WriteAllBytesAsync(cached, bytes, ct).ConfigureAwait(false);
+            await AtomicFile.WriteAllBytesAsync(cached, bytes, ct).ConfigureAwait(false);
             return bytes;
         }
-        catch (Exception ex) when (!ct.IsCancellationRequested && ex is HttpRequestException or OperationCanceledException or IOException)
+        catch (Exception ex) when (!ct.IsCancellationRequested && ex is HttpRequestException or OperationCanceledException or IOException or UnauthorizedAccessException)
         {
             return null;
         }
@@ -198,7 +199,7 @@ public sealed class AccountSkins(
         var name = Convert.ToHexStringLower(SHA256.HashData(png))[..16] + (slim ? "-slim" : "-classic") + ".png";
         var path = Path.Combine(libraryDirectory, name);
         if (!File.Exists(path))
-            File.WriteAllBytes(path, png);
+            AtomicFile.WriteAllBytes(path, png);
         return new LibrarySkin(path, slim, File.GetCreationTimeUtc(path));
     }
 

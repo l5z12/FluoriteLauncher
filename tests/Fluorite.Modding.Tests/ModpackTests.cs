@@ -500,6 +500,81 @@ public class ModpackInstallTests
     }
 
     [Fact]
+    public async Task Export_ThatFails_LeavesTheEarlierPackAsItWas()
+    {
+        if (!OperatingSystem.IsWindows())
+            Assert.Skip("Needs a file another program holds shut, which only Windows enforces.");
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Pack",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }],
+        }, Ct);
+        var config = System.IO.Path.Combine(source.GameDirectory, "config");
+        Directory.CreateDirectory(config);
+        File.WriteAllText(System.IO.Path.Combine(config, "a.toml"), "a");
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+        var output = System.IO.Path.Combine(tmp.Path, "out");
+        var zip = System.IO.Path.Combine(output, "pack.mrpack");
+        var wiz = System.IO.Path.Combine(output, "wiz");
+        var asZip = new PackExportOptions { Format = PackFormat.Modrinth, Name = "Pack", Include = ["config"] };
+        var asWiz = new PackExportOptions { Format = PackFormat.Packwiz, Name = "Pack", Include = ["config"] };
+        await exporter.ExportAsync(source, asZip, zip, Ct);
+        await exporter.ExportAsync(source, asWiz, wiz, Ct);
+        var packed = File.ReadAllBytes(zip);
+        var packToml = File.ReadAllText(System.IO.Path.Combine(wiz, "pack.toml"));
+
+        // A file added since that another program holds shut: exporting again fails partway, after a.toml.
+        File.WriteAllText(System.IO.Path.Combine(config, "b.toml"), "b");
+        using (new FileStream(System.IO.Path.Combine(config, "b.toml"), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await Assert.ThrowsAnyAsync<IOException>(() => exporter.ExportAsync(source, asZip, zip, Ct));
+            await Assert.ThrowsAnyAsync<IOException>(() => exporter.ExportAsync(source, asWiz, wiz, Ct));
+            await Assert.ThrowsAnyAsync<IOException>(() => exporter.ExportAsync(source, asWiz, System.IO.Path.Combine(output, "new-wiz"), Ct));
+        }
+        Assert.Equal(packed, File.ReadAllBytes(zip));
+        Assert.Equal(packToml, File.ReadAllText(System.IO.Path.Combine(wiz, "pack.toml")));
+        Assert.Equal(["a.toml"], Directory.EnumerateFiles(System.IO.Path.Combine(wiz, "config")).Select(System.IO.Path.GetFileName));
+        Assert.Equal(["pack.mrpack", "wiz"], Directory.EnumerateFileSystemEntries(output).Select(System.IO.Path.GetFileName).Order(StringComparer.Ordinal)); // No temp file or folder left.
+    }
+
+    [Fact]
+    public async Task Export_Packwiz_AgainIntoItsFolder_PutsBackWhatItReplacedWhenAFileWontMove()
+    {
+        if (!OperatingSystem.IsWindows())
+            Assert.Skip("Needs a file another program holds open, which only Windows keeps from being moved.");
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Wiz",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }],
+        }, Ct);
+        var config = System.IO.Path.Combine(source.GameDirectory, "config");
+        Directory.CreateDirectory(config);
+        File.WriteAllText(System.IO.Path.Combine(config, "a.toml"), "a1");
+        File.WriteAllText(System.IO.Path.Combine(config, "b.toml"), "b1");
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+        var wiz = System.IO.Path.Combine(tmp.Path, "wiz");
+        var options = new PackExportOptions { Format = PackFormat.Packwiz, Name = "Wiz", Include = ["config"] };
+        await exporter.ExportAsync(source, options, wiz, Ct);
+        var index = File.ReadAllText(System.IO.Path.Combine(wiz, "index.toml"));
+
+        File.WriteAllText(System.IO.Path.Combine(config, "a.toml"), "a2");
+        File.WriteAllText(System.IO.Path.Combine(config, "b.toml"), "b2");
+        // An editor has the pack's b.toml open: a.toml is replaced first, then b.toml can't be.
+        using (new FileStream(System.IO.Path.Combine(wiz, "config", "b.toml"), FileMode.Open, FileAccess.Read, FileShare.Read))
+            Assert.True(await Record.ExceptionAsync(() => exporter.ExportAsync(source, options, wiz, Ct)) is IOException or UnauthorizedAccessException);
+        Assert.Equal("a1", File.ReadAllText(System.IO.Path.Combine(wiz, "config", "a.toml")));
+        Assert.Equal("b1", File.ReadAllText(System.IO.Path.Combine(wiz, "config", "b.toml")));
+        Assert.Equal(index, File.ReadAllText(System.IO.Path.Combine(wiz, "index.toml")));
+        Assert.Equal(["config", "index.toml", "pack.toml"], Directory.EnumerateFileSystemEntries(wiz).Select(System.IO.Path.GetFileName).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public async Task Export_Packwiz_AgainIntoItsFolder_RemovesWhatItNoLongerHas()
     {
         using var tmp = new TempFolder();

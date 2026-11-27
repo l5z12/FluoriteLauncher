@@ -80,7 +80,7 @@ public sealed class AssetManager(GameDirectories dirs, DownloadEngine downloader
             if (fi.Exists && fi.Length == obj.Size)
                 continue;
             Directory.CreateDirectory(fi.DirectoryName!);
-            File.Copy(dirs.AssetObject(obj.Hash), target, overwrite: true);
+            AtomicFile.Copy(dirs.AssetObject(obj.Hash), target);
         }
     }
 }

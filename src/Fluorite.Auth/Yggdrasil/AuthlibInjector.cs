@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using Fluorite.Core;
 using Fluorite.Core.Net;
 
 namespace Fluorite.Auth.Yggdrasil;
@@ -45,7 +46,7 @@ public sealed class AuthlibInjector(HttpClient http, MirrorTable mirrors, string
                 var sha256 = artifact.Checksums?.Sha256;
                 if (!File.Exists(target) || (sha256 is not null && !HashMatches(target, sha256)))
                     await DownloadAsync(artifact.DownloadUrl, target, sha256, ct).ConfigureAwait(false);
-                await File.WriteAllBytesAsync(stamp, raw, ct).ConfigureAwait(false);
+                await AtomicFile.WriteAllBytesAsync(stamp, raw, ct).ConfigureAwait(false);
                 DeleteOthers(target);
                 return target;
             }
@@ -92,7 +93,6 @@ public sealed class AuthlibInjector(HttpClient http, MirrorTable mirrors, string
     private async Task DownloadAsync(string url, string target, string? sha256, CancellationToken ct)
     {
         Exception? last = null;
-        var tmp = target + ".part";
         foreach (var uri in mirrors.Candidates(url))
         {
             try
@@ -105,8 +105,7 @@ public sealed class AuthlibInjector(HttpClient http, MirrorTable mirrors, string
                     last = new InvalidDataException($"authlib-injector from {uri.Host} failed its SHA-256 check.");
                     continue;
                 }
-                await File.WriteAllBytesAsync(tmp, bytes, ct).ConfigureAwait(false);
-                File.Move(tmp, target, overwrite: true);
+                await AtomicFile.WriteAllBytesAsync(target, bytes, ct).ConfigureAwait(false);
                 return;
             }
             catch (Exception ex) when (!ct.IsCancellationRequested && ex is HttpRequestException or OperationCanceledException)

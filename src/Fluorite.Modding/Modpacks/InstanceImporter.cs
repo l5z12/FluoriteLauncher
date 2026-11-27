@@ -119,7 +119,7 @@ public static class InstanceImporter
         if (candidate.IconPath is { } icon && File.Exists(icon))
         {
             var target = Path.Combine(instance.Directory, "icon" + Path.GetExtension(icon));
-            File.Copy(icon, target, overwrite: true);
+            AtomicFile.Copy(icon, target);
             instance.Manifest.Icon = target;
             await layout.SaveAsync(instance, ct).ConfigureAwait(false);
         }
@@ -158,7 +158,7 @@ public static class InstanceImporter
         if (source.Manifest.Icon is { } icon && File.Exists(icon))
         {
             var target = Path.Combine(instance.Directory, "icon" + Path.GetExtension(icon));
-            File.Copy(icon, target, overwrite: true);
+            AtomicFile.Copy(icon, target);
             instance.Manifest.Icon = target;
             await layout.SaveAsync(instance, ct).ConfigureAwait(false);
         }

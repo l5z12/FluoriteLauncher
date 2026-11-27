@@ -114,16 +114,7 @@ public sealed class FluoriteLayout(string root) : IGameLayout
         var path = Path.Combine(instance.Directory, ManifestFileName);
         // The manifest as it is now (it may change while this writes), through a temp file no other save shares.
         var json = JsonSerializer.SerializeToUtf8Bytes(instance.Manifest, FluoriteJsonContext.Default.InstanceManifest);
-        var tmp = $"{path}.{Guid.NewGuid():N}.tmp";
-        try
-        {
-            await File.WriteAllBytesAsync(tmp, json, ct).ConfigureAwait(false);
-            File.Move(tmp, path, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(tmp); // Only there when the write or move failed.
-        }
+        await AtomicFile.WriteAllBytesAsync(path, json, ct).ConfigureAwait(false);
     }
 
     private GameInstance ToInstance(string dir, InstanceManifest manifest) => new()

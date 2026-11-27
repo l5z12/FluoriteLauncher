@@ -124,7 +124,7 @@ public sealed class VersionRepository(GameDirectories dirs, HttpClient http, Mir
         var bytes = await GetBytesWithFallbackAsync(entry.Url, ct, entry.Sha1).ConfigureAwait(false);
         var path = dirs.VersionJson(id);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllBytesAsync(path, bytes, ct).ConfigureAwait(false);
+        await AtomicFile.WriteAllBytesAsync(path, bytes, ct).ConfigureAwait(false);
         return JsonSerializer.Deserialize(bytes, FluoriteJsonContext.Default.VersionJson)
             ?? throw new InvalidDataException($"Version JSON for '{id}' is empty.");
     }

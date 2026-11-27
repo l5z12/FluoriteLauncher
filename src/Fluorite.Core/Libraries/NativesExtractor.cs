@@ -34,9 +34,9 @@ public static class NativesExtractor
                 Directory.CreateDirectory(fi.DirectoryName!);
                 try
                 {
-                    entry.ExtractToFile(dest, overwrite: true);
+                    AtomicFile.Write(dest, tmp => entry.ExtractToFile(tmp));
                 }
-                catch (IOException) when (fi.Exists)
+                catch (Exception ex) when (fi.Exists && ex is IOException or UnauthorizedAccessException)
                 {
                     // Locked by a running instance; the existing copy is used.
                 }

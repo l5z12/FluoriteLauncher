@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using Fluorite.Core;
 
 namespace Fluorite.Modding.Util;
 
@@ -45,6 +46,6 @@ internal static class JarTools
         if (fi.Exists && fi.Length == entry.Length)
             return;
         Directory.CreateDirectory(fi.DirectoryName!);
-        entry.ExtractToFile(target, overwrite: true);
+        AtomicFile.Write(target, tmp => entry.ExtractToFile(tmp));
     }
 }
