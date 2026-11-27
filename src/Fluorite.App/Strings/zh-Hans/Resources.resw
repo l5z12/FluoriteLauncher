@@ -1146,6 +1146,7 @@
   <data name="Undo_RemovedMany" xml:space="preserve"><value>已移除 {0} 项。</value></data>
   <data name="Undo_DeletingOne" xml:space="preserve"><value>即将永久删除“{0}”。</value></data>
   <data name="Undo_DeletingMany" xml:space="preserve"><value>即将永久删除 {0} 项。</value></data>
+  <data name="Undo_NotAllBack" xml:space="preserve"><value>未能全部恢复，未恢复的项目将移到回收站。</value></data>
   <data name="Undo_DismissedOne" xml:space="preserve"><value>已忽略 1 个问题。</value></data>
   <data name="Undo_DismissedMany" xml:space="preserve"><value>已忽略 {0} 个问题。</value></data>
   <data name="Undo_RestoredOne" xml:space="preserve"><value>已重新显示 1 个问题。</value></data>
@@ -1173,6 +1174,7 @@
   <data name="Library_DeletePermanentManyTitle" xml:space="preserve"><value>永久删除 {0} 个实例？</value></data>
   <data name="Library_DeletePermanentManyBody" xml:space="preserve"><value>这些实例及其存档、模组和设置将被永久删除，不会移到回收站，且无法撤销。</value></data>
   <data name="Library_DeleteKept" xml:space="preserve"><value>{0} 个未删除：游戏正在运行，或它们属于其他启动器。</value></data>
+  <data name="Library_DeleteFailed" xml:space="preserve"><value>{0} 个未能删除：{1}</value></data>
   <data name="Library_DropToGroup" xml:space="preserve"><value>移到“{0}”</value></data>
   <data name="Library_UpdateOne" xml:space="preserve"><value>1 个更新</value></data>
   <data name="Library_Updates" xml:space="preserve"><value>{0} 个更新</value></data>

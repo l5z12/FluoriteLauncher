@@ -209,8 +209,10 @@ public sealed partial class ScreenshotsViewModel : ObservableObject
         var message = UndoOffer.RemovedText(shots.Select(s => s.FileName).ToList(), permanent);
         var offer = new UndoOffer(message, async () =>
         {
-            await Task.Run(stash.Restore);
+            var allBack = await Task.Run(stash.Restore);
             await RefreshAsync();
+            if (!allBack)
+                Error = Loc.Get("Undo_NotAllBack"); // After the reload, which clears it.
         }, stash.Commit);
         _ = PendingUndo?.CommitAsync();
         offer.Finished += (_, _) =>

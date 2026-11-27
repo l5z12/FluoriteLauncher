@@ -1146,6 +1146,7 @@
   <data name="Undo_RemovedMany" xml:space="preserve"><value>Removed {0} items.</value></data>
   <data name="Undo_DeletingOne" xml:space="preserve"><value>Deleting “{0}” permanently.</value></data>
   <data name="Undo_DeletingMany" xml:space="preserve"><value>Deleting {0} items permanently.</value></data>
+  <data name="Undo_NotAllBack" xml:space="preserve"><value>Couldn't put everything back. What's missing goes to the Recycle Bin.</value></data>
   <data name="Undo_DismissedOne" xml:space="preserve"><value>Dismissed 1 issue.</value></data>
   <data name="Undo_DismissedMany" xml:space="preserve"><value>Dismissed {0} issues.</value></data>
   <data name="Undo_RestoredOne" xml:space="preserve"><value>Showing 1 issue again.</value></data>
@@ -1173,6 +1174,7 @@
   <data name="Library_DeletePermanentManyTitle" xml:space="preserve"><value>Permanently delete {0} instances?</value></data>
   <data name="Library_DeletePermanentManyBody" xml:space="preserve"><value>They will be deleted for good, with their worlds, mods and settings. They won't go to the Recycle Bin, and this can't be undone.</value></data>
   <data name="Library_DeleteKept" xml:space="preserve"><value>{0} not deleted: a game is running, or they belong to another launcher.</value></data>
+  <data name="Library_DeleteFailed" xml:space="preserve"><value>{0} couldn't be deleted: {1}</value></data>
   <data name="Library_DropToGroup" xml:space="preserve"><value>Move to “{0}”</value></data>
   <data name="Library_UpdateOne" xml:space="preserve"><value>1 update</value></data>
   <data name="Library_Updates" xml:space="preserve"><value>{0} updates</value></data>

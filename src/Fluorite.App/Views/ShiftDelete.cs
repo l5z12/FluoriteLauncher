@@ -23,11 +23,12 @@ public static class ShiftDelete
     public static void SetIsEnabled(DependencyObject element, bool value) => element.SetValue(IsEnabledProperty, value);
 
     /// <summary>
-    /// Whether a Delete click deletes for good. A menu item's click does what the item said when it was clicked;
-    /// anything else (a key, a button) goes by Shift being held.
+    /// Whether a Delete click deletes for good: with Shift held, and on a menu item only when it said "Delete
+    /// permanently" too. The label follows Shift a moment late, and a click in that moment does the gentler thing
+    /// (the Recycle Bin), never the opposite of what the label said.
     /// </summary>
     public static bool ForGood(object sender) =>
-        sender is MenuFlyoutItem item && s_states.TryGetValue(item, out var state) && state.Text is not null ? state.ForGood : ItemKeys.IsShiftDown;
+        ItemKeys.IsShiftDown && (sender is not MenuFlyoutItem item || !s_states.TryGetValue(item, out var state) || state.Text is null || state.ForGood);
 
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {

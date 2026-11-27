@@ -694,9 +694,11 @@ public sealed partial class ContentListViewModel(ContentService content, Content
         await ReloadAsync();
         OfferUndo(new UndoOffer(message, async () =>
         {
-            await Task.Run(stash.Restore);
+            var allBack = await Task.Run(stash.Restore);
             await manager.RestoreRecordsAsync(files);
             await ReloadAsync();
+            if (!allBack)
+                Error = Loc.Get("Undo_NotAllBack"); // After the reload, which clears it.
         }, stash.Commit));
     }
 

@@ -369,8 +369,10 @@ public sealed partial class WorldsViewModel(GameRunner runner, ShortcutService s
         HasNoBackups = Backups.Count == 0;
         OfferUndo(new UndoOffer(UndoOffer.RemovedText([item.Title], permanent), async () =>
         {
-            await Task.Run(stash.Restore);
+            var allBack = await Task.Run(stash.Restore);
             await RefreshAsync();
+            if (!allBack)
+                Error = Loc.Get("Undo_NotAllBack"); // After the reload, which clears it.
         }, stash.Commit));
     }
 
@@ -427,8 +429,10 @@ public sealed partial class WorldsViewModel(GameRunner runner, ShortcutService s
         await RefreshAsync();
         OfferUndo(new UndoOffer(UndoOffer.RemovedText([world.Name], permanent), async () =>
         {
-            await Task.Run(stash.Restore);
+            var allBack = await Task.Run(stash.Restore);
             await RefreshAsync();
+            if (!allBack)
+                Error = Loc.Get("Undo_NotAllBack"); // After the reload, which clears it.
         }, stash.Commit));
     }
 

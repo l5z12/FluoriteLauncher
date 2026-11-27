@@ -31,8 +31,23 @@ public class PermanentDeleteTests
         }
         finally
         {
-            if (Directory.Exists(root))
-                Directory.Delete(root, recursive: true);
+            Cleanup(root);
+        }
+    }
+
+    /// <summary>Whatever a failed test left, read-only files too, without hiding the failure behind its own.</summary>
+    private static void Cleanup(string root)
+    {
+        try
+        {
+            if (!Directory.Exists(root))
+                return;
+            foreach (var file in Directory.EnumerateFiles(root, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = 0 }))
+                File.SetAttributes(file, FileAttributes.Normal);
+            Directory.Delete(root, recursive: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
         }
     }
 

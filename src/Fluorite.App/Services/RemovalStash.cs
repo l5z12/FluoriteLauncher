@@ -46,16 +46,17 @@ public sealed class RemovalStash
         var dir = Path.Combine(root, DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N")[..8]);
         var originals = paths.Select(p => Path.TrimEndingDirectorySeparator(Path.GetFullPath(p))).ToList();
         var items = originals.Select((p, i) => (p, Path.Combine(dir, i.ToString(CultureInfo.InvariantCulture), Path.GetFileName(p)))).ToList();
-        Directory.CreateDirectory(dir);
-        TryHide(root);
-        File.WriteAllLines(Path.Combine(dir, OriginsFile), originals);
-        if (permanent)
-            File.WriteAllText(Path.Combine(dir, PermanentFile), "");
+        // Claimed before the folder exists: CommitLeftovers, on another thread, mustn't take it for an earlier run's.
         lock (s_waiting)
             s_waiting.Add(dir);
         var moved = new List<(string Original, string Stashed)>();
         try
         {
+            Directory.CreateDirectory(dir);
+            TryHide(root);
+            File.WriteAllLines(Path.Combine(dir, OriginsFile), originals);
+            if (permanent)
+                File.WriteAllText(Path.Combine(dir, PermanentFile), "");
             foreach (var item in items)
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(item.Item2)!);
@@ -65,26 +66,33 @@ public sealed class RemovalStash
         }
         catch
         {
+            // Nothing was removed, so nothing of it is deleted for good: one that can't go back waits for the bin.
+            DropPermanentMarker(dir);
             foreach (var (original, stashed) in moved)
-                Move(stashed, original);
-            Forget(dir);
+                TryMove(stashed, original);
+            Forget(dir, moved);
             throw;
         }
         return new RemovalStash(dir, moved, permanent);
     }
 
     /// <summary>
-    /// Puts everything back. One whose place was taken meanwhile (the same name added again) stays removed, in the
-    /// Recycle Bin even after Shift+Del: Undo asked for it back, so it isn't deleted for good.
+    /// Puts everything back; false when something couldn't go back. That goes to the Recycle Bin, even after
+    /// Shift+Del: Undo asked for it back, so it isn't deleted for good. So does one whose place was taken meanwhile
+    /// (the same name added again).
     /// </summary>
-    public void Restore()
+    public bool Restore()
     {
+        // First: if this stops halfway, what's left mustn't be deleted for good on the next start.
+        DropPermanentMarker(_dir);
+        var allBack = true;
         foreach (var (original, stashed) in _items)
         {
-            if (!Exists(original) && Exists(stashed))
-                Move(stashed, original);
+            if (!Exists(stashed) || Exists(original) || !TryMove(stashed, original))
+                allBack = false;
         }
         Finish(permanent: false); // Whatever couldn't go back.
+        return allBack;
     }
 
     /// <summary>
@@ -120,12 +128,12 @@ public sealed class RemovalStash
                 Logger.LogWarning(ex, "Could not finish removing {Path}", original);
             }
         }
-        Forget(_dir);
+        Forget(_dir, _items);
     }
 
     /// <summary>
-    /// Finishes removals an earlier run left waiting (it closed or crashed before they were final); this run's own
-    /// stashes are left alone.
+    /// Finishes removals left waiting: by an earlier run (it closed or crashed before they were final), or kept because
+    /// something in them couldn't be removed yet. Stashes still open to Undo are left alone.
     /// </summary>
     public static void CommitLeftovers(string gameDirectory)
     {
@@ -136,13 +144,25 @@ public sealed class RemovalStash
         {
             foreach (var dir in Directory.EnumerateDirectories(root))
             {
+                // Claimed while it's being finished, so a second call (another page opening) leaves it alone too.
                 lock (s_waiting)
                 {
-                    if (s_waiting.Contains(dir))
+                    if (!s_waiting.Add(dir))
                         continue;
                 }
-                var origins = Path.Combine(dir, OriginsFile);
-                var originals = File.Exists(origins) ? File.ReadAllLines(origins) : [];
+                string[] originals;
+                try
+                {
+                    var origins = Path.Combine(dir, OriginsFile);
+                    originals = File.Exists(origins) ? File.ReadAllLines(origins) : [];
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Logger.LogWarning(ex, "Could not read what {Dir} holds", dir);
+                    lock (s_waiting)
+                        s_waiting.Remove(dir);
+                    continue;
+                }
                 var items = originals.Select((p, i) => (p, Path.Combine(dir, i.ToString(CultureInfo.InvariantCulture), Path.GetFileName(p)))).ToList();
                 new RemovalStash(dir, items, File.Exists(Path.Combine(dir, PermanentFile))).Commit();
             }
@@ -155,20 +175,60 @@ public sealed class RemovalStash
         }
     }
 
-    private static void Forget(string dir)
+    /// <summary>
+    /// Done with it for now. The folder goes only once nothing in it is waiting: what couldn't go to the bin or be
+    /// deleted stays, with the list of where it came from, for a later <see cref="CommitLeftovers"/> to try again.
+    /// </summary>
+    private static void Forget(string dir, IEnumerable<(string Original, string Stashed)> items)
     {
-        lock (s_waiting)
-            s_waiting.Remove(dir);
         try
         {
-            if (Directory.Exists(dir))
-                Directory.Delete(dir, recursive: true);
-            var root = Path.GetDirectoryName(dir)!;
-            if (Directory.Exists(root) && !Directory.EnumerateFileSystemEntries(root).Any())
-                Directory.Delete(root);
+            if (items.Any(i => Exists(i.Stashed)))
+            {
+                Logger.LogWarning("Kept {Dir} to finish later: something in it couldn't be removed yet", dir);
+            }
+            else
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, recursive: true);
+                var root = Path.GetDirectoryName(dir)!;
+                if (Directory.Exists(root) && !Directory.EnumerateFileSystemEntries(root).Any())
+                    Directory.Delete(root);
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+        }
+        lock (s_waiting)
+            s_waiting.Remove(dir);
+    }
+
+    /// <summary>After Undo or a failed removal: nothing in the stash is to be deleted for good any more.</summary>
+    private static void DropPermanentMarker(string dir)
+    {
+        var marker = Path.Combine(dir, PermanentFile);
+        try
+        {
+            if (File.Exists(marker))
+                File.Delete(marker);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Logger.LogWarning(ex, "Could not unmark {Dir} as deleted for good", dir);
+        }
+    }
+
+    private static bool TryMove(string from, string to)
+    {
+        try
+        {
+            Move(from, to);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Logger.LogWarning(ex, "Could not put back {Path}", to);
+            return false;
         }
     }
 

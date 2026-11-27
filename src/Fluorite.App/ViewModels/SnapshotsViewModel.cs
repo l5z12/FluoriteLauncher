@@ -171,8 +171,10 @@ public sealed partial class SnapshotsViewModel(SnapshotService snapshots, GameRu
         IsEmpty = Items.Count == 0;
         var offer = new UndoOffer(UndoOffer.RemovedText([item.Title], permanent), async () =>
         {
-            await Task.Run(stash.Restore);
+            var allBack = await Task.Run(stash.Restore);
             Refresh();
+            if (!allBack)
+                Error = Loc.Get("Undo_NotAllBack"); // After the reload, which clears it.
         }, stash.Commit);
         _ = PendingUndo?.CommitAsync();
         offer.Finished += (_, _) =>
