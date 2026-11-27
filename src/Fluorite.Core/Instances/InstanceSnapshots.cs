@@ -182,8 +182,9 @@ public sealed class InstanceSnapshots(string root, Func<string, string, bool>? t
         foreach (var file in Directory.EnumerateFiles(source))
         {
             ct.ThrowIfCancellationRequested();
-            // A download not in place yet (an install or a fix waiting to be confirmed) isn't part of the instance.
-            if (file.EndsWith(".part", StringComparison.OrdinalIgnoreCase))
+            // A download not in place yet (an install or a fix waiting to be confirmed), or the temp file of a write that
+            // never finished, isn't part of the instance.
+            if (file.EndsWith(".part", StringComparison.OrdinalIgnoreCase) || AtomicFile.IsTempFile(Path.GetFileName(file)))
                 continue;
             CopyFile(file, Path.Combine(target, Path.GetFileName(file)));
         }

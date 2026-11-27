@@ -123,6 +123,19 @@ public static class AtomicFile
 
     private const int MaxNameLength = 255;
 
+    /// <summary>
+    /// Whether <paramref name="fileName"/> is named as <see cref="TempPath"/> names temp files: one still there was left
+    /// by a write that never finished (the launcher killed while it wrote), and isn't a file of anyone's.
+    /// </summary>
+    public static bool IsTempFile(string fileName)
+    {
+        if (!fileName.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))
+            return false;
+        var stem = fileName[..^".tmp".Length];
+        var dot = stem.LastIndexOf('.');
+        return dot > 0 && stem.Length - dot - 1 == 8 && stem[(dot + 1)..].All(char.IsAsciiHexDigitLower);
+    }
+
     private static string Target(string path)
     {
         path = Path.GetFullPath(path);

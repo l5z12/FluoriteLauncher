@@ -211,6 +211,17 @@ public class AtomicFileTests
         }
     }
 
+    [Theory]
+    [InlineData("sodium.jar.1a2b3c4d.tmp", true)]
+    [InlineData("fluorite.1a2b3c4d.tmp", true)]
+    [InlineData("notes.tmp", false)]
+    [InlineData("backup.2024.tmp", false)]
+    [InlineData("sodium.jar", false)]
+    public void IsTempFile(string name, bool temp) => Assert.Equal(temp, AtomicFile.IsTempFile(name));
+
+    [Fact]
+    public void TempPath_IsATempFile() => Assert.True(AtomicFile.IsTempFile(Path.GetFileName(AtomicFile.TempPath(@"C:\mods\sodium.jar"))));
+
     [Fact]
     public void Write_OfAFileWithTheLongestNameThereIs()
     {

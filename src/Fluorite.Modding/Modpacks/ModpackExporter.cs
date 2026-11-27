@@ -219,11 +219,13 @@ public sealed class ModpackExporter(ContentService content)
     }
 
     /// <summary>
-    /// Files no pack holds: downloads cut short (<c>.part</c>), and a world's <c>session.lock</c>, which only says a
-    /// game has the world open (and which that game locks, so it can't even be read then).
+    /// Files no pack holds: downloads cut short (<c>.part</c>), temp files of writes that never finished, and a world's
+    /// <c>session.lock</c>, which only says a game has the world open (and which that game locks, so it can't even be
+    /// read then).
     /// </summary>
     public static bool IsNeverExported(string fileName) =>
-        fileName.EndsWith(".part", StringComparison.OrdinalIgnoreCase) || fileName.Equals("session.lock", StringComparison.OrdinalIgnoreCase);
+        fileName.EndsWith(".part", StringComparison.OrdinalIgnoreCase) || AtomicFile.IsTempFile(fileName)
+        || fileName.Equals("session.lock", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Opens a file to copy into the pack even while the game has it open: a running game keeps its world's region
