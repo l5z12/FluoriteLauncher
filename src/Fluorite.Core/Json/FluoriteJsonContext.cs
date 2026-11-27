@@ -34,5 +34,6 @@ namespace Fluorite.Core.Json;
 [JsonSerializable(typeof(News.PatchNotesFeed))]
 [JsonSerializable(typeof(News.PatchNoteContent))]
 [JsonSerializable(typeof(News.NewsFeed))]
+[JsonSerializable(typeof(News.ArticleSearch))]
 [JsonSerializable(typeof(Diagnostics.MclogsResponse))]
 public sealed partial class FluoriteJsonContext : JsonSerializerContext;

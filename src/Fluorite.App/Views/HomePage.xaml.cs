@@ -119,11 +119,18 @@ public sealed partial class HomePage : Page
     }
 
     /// <summary>A news card's click, and Open in browser on any article card: its minecraft.net article.</summary>
-    private void OpenInBrowser_Click(object sender, RoutedEventArgs e)
+    private async void OpenInBrowser_Click(object sender, RoutedEventArgs e)
     {
-        if (Bind.ItemOf<NewsCard>(sender) is { Link: { } link })
+        if (Bind.ItemOf<NewsCard>(sender) is { } card && await LinkOfAsync(card) is { } link)
             _ = Windows.System.Launcher.LaunchUriAsync(link);
     }
+
+    /// <summary>A card's minecraft.net article: for patch notes, the address the site lists when it can be had.</summary>
+    private async Task<Uri?> LinkOfAsync(NewsCard card) =>
+        card.PatchNote is { } note ? await ViewModel.ArticleLinkAsync(note) : card.Link;
+
+    /// <summary>The site's addresses are looked up while the menu is open, so they're in when an item is picked.</summary>
+    private void PatchNoteMenu_Opening(object sender, object e) => ViewModel.LookUpArticles();
 
     private void OpenWiki_Click(object sender, RoutedEventArgs e)
     {
@@ -131,9 +138,9 @@ public sealed partial class HomePage : Page
             _ = Windows.System.Launcher.LaunchUriAsync(link);
     }
 
-    private void CopyLink_Click(object sender, RoutedEventArgs e)
+    private async void CopyLink_Click(object sender, RoutedEventArgs e)
     {
-        if (Bind.ItemOf<NewsCard>(sender) is { Link: { } link } card)
+        if (Bind.ItemOf<NewsCard>(sender) is { } card && await LinkOfAsync(card) is { } link)
             CopyLink(card, link);
     }
 
@@ -147,13 +154,14 @@ public sealed partial class HomePage : Page
     /// Ctrl+C copies the focused patch-notes or news card's link. Enter is the card's own click: the patch notes, or
     /// the news article in the browser.
     /// </summary>
-    private void ArticleCard_PreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    private async void ArticleCard_PreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
-        if (sender is UIElement element && ItemKeys.HasFocus(element) && Bind.ItemOf<NewsCard>(sender) is { Link: { } link } card
+        if (sender is UIElement element && ItemKeys.HasFocus(element) && Bind.ItemOf<NewsCard>(sender) is { HasLink: true } card
             && ItemKeys.Chord(e) == ItemKeys.Copy)
         {
             e.Handled = true;
-            CopyLink(card, link);
+            if (await LinkOfAsync(card) is { } link)
+                CopyLink(card, link);
         }
     }
 

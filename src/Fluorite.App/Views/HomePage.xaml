@@ -168,7 +168,7 @@
                                 Tag="{x:Bind}" Click="PatchNote_Click" CornerRadius="8" AutomationProperties.Name="{x:Bind Title}"
                                 PreviewKeyDown="ArticleCard_PreviewKeyDown">
                             <Button.ContextFlyout>
-                                <MenuFlyout>
+                                <MenuFlyout Opening="PatchNoteMenu_Opening">
                                     <MenuFlyoutItem x:Uid="Menu_Open" Tag="{x:Bind}" Click="PatchNote_Click" KeyboardAcceleratorTextOverride="Enter">
                                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A5;" /></MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>

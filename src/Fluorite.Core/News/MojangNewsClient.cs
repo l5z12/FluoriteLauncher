@@ -62,6 +62,23 @@ public sealed class NewsFeed
     public List<NewsEntry> Entries { get; set; } = [];
 }
 
+/// <summary>An article as minecraft.net's own search lists it.</summary>
+public sealed class ArticleListing
+{
+    public string? Title { get; set; }
+    public string? Url { get; set; }
+}
+
+public sealed class ArticleSearchResult
+{
+    public List<ArticleListing>? Results { get; set; }
+}
+
+public sealed class ArticleSearch
+{
+    public ArticleSearchResult? Result { get; set; }
+}
+
 /// <summary>
 /// Reads the official launcher's content feeds (Java patch notes and news). Responses are cached on disk so the
 /// home page has content offline.
@@ -73,10 +90,61 @@ public sealed partial class MojangNewsClient(HttpClient http, string cacheDir, I
     private readonly ILogger _logger = logger ?? NullLogger<MojangNewsClient>.Instance;
 
     /// <summary>
+    /// minecraft.net's own search (what its news pages list), for the newest Java articles: 24, the most it gives at
+    /// once, reach about two months back. The patch-notes feed has no addresses; this has them.
+    /// </summary>
+    public const string JavaArticlesUrl =
+        "https://net-secondary.web.minecraft-services.net/api/v1.0/en-us/search?pageSize=24&sortType=Recent&tag=minecraft:games/minecraft-java";
+
+    /// <summary>The newest Java articles on minecraft.net. Not kept for offline: <see cref="ArticleUri(PatchNoteEntry)"/> is.</summary>
+    public async Task<IReadOnlyList<ArticleListing>> GetJavaArticlesAsync(CancellationToken ct = default)
+    {
+        var bytes = await http.GetByteArrayAsync(new Uri(JavaArticlesUrl), ct).ConfigureAwait(false);
+        return JsonSerializer.Deserialize(bytes, FluoriteJsonContext.Default.ArticleSearch)?.Result?.Results?.Where(a => a is not null).ToList() ?? [];
+    }
+
+    /// <summary>
+    /// The minecraft.net article about a patch note: the one titled like it among <paramref name="articles"/>, else
+    /// <see cref="ArticleUri(PatchNoteEntry)"/>. A hotfix snapshot takes over the article of the one before (26.4
+    /// Snapshot 10's is ".../minecraft-26-4-snapshot-9", retitled), which only the listing tells.
+    /// </summary>
+    public static Uri? ArticleUri(PatchNoteEntry entry, IEnumerable<ArticleListing> articles)
+    {
+        var title = TitleKey(entry.Title);
+        foreach (var article in articles)
+        {
+            if (title.Length > 0 && TitleKey(article.Title) == title && SiteArticle(article.Url) is { } uri)
+                return uri;
+        }
+        return ArticleUri(entry);
+    }
+
+    /// <summary>"Minecraft: Java Edition 26.3" → "minecraft java edition 26 3": case and punctuation aside.</summary>
+    private static string TitleKey(string? title) =>
+        string.Join(' ', NonWord().Split((title ?? "").ToLowerInvariant()).Where(w => w.Length > 0));
+
+    [GeneratedRegex(@"[^\p{L}\p{N}]+")]
+    private static partial Regex NonWord();
+
+    /// <summary>An article on minecraft.net itself (the search lists other sites too), without its locale.</summary>
+    private static Uri? SiteArticle(string? url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps
+            || uri.Host is not ("www.minecraft.net" or "minecraft.net"))
+            return null;
+        // ".../en-us/article/x" → ".../article/x": the site picks the reader's own, as the news feed's links do.
+        return new Uri("https://www.minecraft.net" + Locale().Replace(uri.AbsolutePath, "/", 1));
+    }
+
+    [GeneratedRegex(@"^/[a-z]{2}-[a-z]{2}/", RegexOptions.IgnoreCase)]
+    private static partial Regex Locale();
+
+    /// <summary>
     /// The minecraft.net article about a patch note, worked out from its version: the feed has no address. Every
     /// recent one follows the version, except a hotfix that has no article of its own (a "b" snapshot, a snapshot that
-    /// only fixed a crash); that address leads to "page not found", which the site gives no way to tell beforehand.
-    /// Older versions (1.20 and before) often have other addresses too. Null for a version it can't make one of.
+    /// only fixed a crash): that address leads to "page not found", so <see cref="ArticleUri(PatchNoteEntry, IEnumerable{ArticleListing})"/>
+    /// comes first when the listing is in. Older versions (1.20 and before) often have other addresses too. Null for
+    /// a version it can't make one of.
     /// </summary>
     public static Uri? ArticleUri(PatchNoteEntry entry)
     {

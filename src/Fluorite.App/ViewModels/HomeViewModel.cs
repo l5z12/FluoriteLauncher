@@ -23,7 +23,10 @@ public sealed class NewsCard
     public BitmapImage? Image { get; init; }
     public PatchNoteEntry? PatchNote { get; init; }
 
-    /// <summary>The article on minecraft.net: Open in browser, Copy link.</summary>
+    /// <summary>
+    /// The article on minecraft.net: Open in browser, Copy link. For patch notes, worked out from the version; what
+    /// they use is <see cref="HomeViewModel.ArticleLinkAsync"/>, the site's own address when it can be had.
+    /// </summary>
     public Uri? Link { get; init; }
     public bool HasLink => Link is not null;
 
@@ -208,6 +211,8 @@ public sealed partial class HomeViewModel(
         // (and write the cache) at once. Started before the versions are awaited, so both are fetched at once.
         if (_newsLoad is { IsCompleted: true } && (refresh || !HasNews))
             _newsLoad = null;
+        if (refresh)
+            _articles = null; // A hotfix since may have taken over an article: looked up again when a link is wanted.
         if (_newsLoad is null)
         {
             IsLoadingNews = !HasNews;
@@ -322,6 +327,51 @@ public sealed partial class HomeViewModel(
         return (uri, decodeWidth) => uri is null ? null
             : images.TryGetValue(uri, out var image) ? image
             : new(uri) { DecodePixelWidth = decodeWidth };
+    }
+
+    /// <summary>minecraft.net's own list of its newest Java articles: looked up once a patch note's link is wanted.</summary>
+    private Task<IReadOnlyList<ArticleListing>>? _articles;
+
+    /// <summary>
+    /// Starts looking up minecraft.net's own addresses unless that's under way or done: when a patch-notes card's menu
+    /// opens, so they're in by the time an item is picked. Again after a lookup that found nothing (offline, say).
+    /// </summary>
+    public void LookUpArticles()
+    {
+        if (_articles is null || _articles.IsCompletedSuccessfully && _articles.Result.Count == 0)
+            _articles = FetchArticlesAsync();
+    }
+
+    /// <summary>Never throws: nothing found, the links are worked out from the versions.</summary>
+    private async Task<IReadOnlyList<ArticleListing>> FetchArticlesAsync()
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15)); // The HttpClient never gives up.
+            return await news.GetJavaArticlesAsync(timeout.Token);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            logger.LogWarning(ex, "Looking up minecraft.net's articles failed");
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// A patch note's minecraft.net article: as the site lists it, once that's in (waited for a few seconds at most),
+    /// else worked out from its version. Only the listing has a hotfix's, which takes over the article before it.
+    /// </summary>
+    public async Task<Uri?> ArticleLinkAsync(PatchNoteEntry note)
+    {
+        LookUpArticles();
+        try
+        {
+            return MojangNewsClient.ArticleUri(note, await _articles!.WaitAsync(TimeSpan.FromSeconds(3)));
+        }
+        catch (TimeoutException)
+        {
+            return MojangNewsClient.ArticleUri(note);
+        }
     }
 
     [RelayCommand]

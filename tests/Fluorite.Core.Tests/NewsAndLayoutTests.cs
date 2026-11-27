@@ -136,6 +136,31 @@ public class MojangNewsClientTests
     public void PatchNote_Article_IsWorkedOutFromTheVersion(string version, string slug) =>
         Assert.Equal("https://www.minecraft.net/article/" + slug, MojangNewsClient.ArticleUri(new PatchNoteEntry { Version = version })?.AbsoluteUri);
 
+    [Fact]
+    public async Task PatchNote_Article_IsTheOneTheSiteListsUnderItsTitle()
+    {
+        // As minecraft.net listed them on 2026-11-27: 26.4 Snapshot 10, a hotfix, took over Snapshot 9's article.
+        const string listing = """
+        { "result": { "results": [
+          { "title": "Minecraft 26.4 Snapshot 10", "url": "https://www.minecraft.net/en-us/article/minecraft-26-4-snapshot-9" },
+          { "title": "Minecraft: Java Edition 26.3", "url": "https://feedback.minecraft.net/hc/en-us/articles/1-Minecraft-Java-Edition-26-3" },
+          null ], "numFound": 3, "page": 1 } }
+        """;
+        using var dir = new TempDir();
+        using var http = new HttpClient(new StubHandler(req => req.RequestUri!.Host == "net-secondary.web.minecraft-services.net"
+            ? StubHandler.Json(listing) : new HttpResponseMessage(HttpStatusCode.NotFound)));
+        var articles = await new MojangNewsClient(http, dir.Path).GetJavaArticlesAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(2, articles.Count);
+
+        Assert.Equal("https://www.minecraft.net/article/minecraft-26-4-snapshot-9",
+            MojangNewsClient.ArticleUri(new PatchNoteEntry { Title = "Minecraft 26.4  snapshot 10", Version = "26.4-snapshot-10" }, articles)?.AbsoluteUri);
+        // Not listed, or listed on another site: worked out from the version.
+        Assert.Equal("https://www.minecraft.net/article/minecraft-26-4-snapshot-8",
+            MojangNewsClient.ArticleUri(new PatchNoteEntry { Title = "Minecraft 26.4 Snapshot 8", Version = "26.4-snapshot-8" }, articles)?.AbsoluteUri);
+        Assert.Equal("https://www.minecraft.net/article/minecraft-java-edition-26-3",
+            MojangNewsClient.ArticleUri(new PatchNoteEntry { Title = "Minecraft: Java Edition 26.3", Version = "26.3" }, articles)?.AbsoluteUri);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
