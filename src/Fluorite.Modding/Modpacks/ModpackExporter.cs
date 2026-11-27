@@ -454,7 +454,39 @@ public sealed class ModpackExporter(ContentService content)
         return metaRel;
     }
 
-    private static string Toml(string s) => "\"" + s.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
+    /// <summary>A TOML basic string: quotes, backslashes and control characters (a summary's line breaks) escaped, which TOML requires.</summary>
+    private static string Toml(string s)
+    {
+        var sb = new StringBuilder(s.Length + 2).Append('"');
+        foreach (var c in s)
+        {
+            switch (c)
+            {
+                case '"':
+                    sb.Append("\\\"");
+                    break;
+                case '\\':
+                    sb.Append("\\\\");
+                    break;
+                case '\n':
+                    sb.Append("\\n");
+                    break;
+                case '\r':
+                    sb.Append("\\r");
+                    break;
+                case '\t':
+                    sb.Append("\\t");
+                    break;
+                case < ' ' or '\u007F':
+                    sb.Append("\\u").Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
+        return sb.Append('"').ToString();
+    }
 
     private static bool HashUtil(string? a, string b) => Core.Net.HashUtil.HashEquals(a, b);
 

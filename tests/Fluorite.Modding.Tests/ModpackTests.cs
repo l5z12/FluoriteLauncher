@@ -429,6 +429,24 @@ public class ModpackInstallTests
     }
 
     [Fact]
+    public async Task Export_Packwiz_EscapesWhatTomlCantHoldAsIs()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Wiz",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }],
+        }, Ct);
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var wiz = System.IO.Path.Combine(tmp.Path, "wiz");
+        const string summary = "Line one\r\nLine two\t\"quoted\" \\ back\u0001";
+        await new ModpackExporter(content).ExportAsync(source, new PackExportOptions { Format = PackFormat.Packwiz, Name = "Wiz \"N\"", Summary = summary, Include = [] }, wiz, Ct);
+        var read = await PackwizReader.ReadAsync(PackwizReader.NormalizeLocation(wiz), new HttpClient(), null, Ct);
+        Assert.Equal(("Wiz \"N\"", summary), (read.Name, read.Summary));
+    }
+
+    [Fact]
     public async Task Export_Prism_LeavesOutOptiFine()
     {
         using var tmp = new TempFolder();
