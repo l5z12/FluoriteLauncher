@@ -107,7 +107,11 @@ internal static class PackCommands
 
         var formatOption = new Option<string>("--format") { Description = "mrpack|curseforge|prism|packwiz", Required = true };
         var outOption = new Option<string>("--out") { Required = true };
-        var includeOption = new Option<string?>("--include") { Description = "Comma-separated entries, top-level or deeper (saves/My World) (default: everything except worlds and personal settings)" };
+        var includeOption = new Option<string[]>("--include")
+        {
+            Description = "An entry to include, top-level or deeper (saves/My World); repeat for more. A comma-separated list works too, "
+                + "unless the whole value is a path that exists (default: everything except worlds and personal settings)",
+        };
         var versionOption = new Option<string>("--pack-version") { DefaultValueFactory = _ => "1.0.0" };
         var authorOption = new Option<string?>("--author") { Description = "Pack author (CurseForge, packwiz)" };
         var summaryOption = new Option<string?>("--summary") { Description = "Short description (Modrinth, Prism notes, packwiz)" };
@@ -129,8 +133,9 @@ internal static class PackCommands
                 "packwiz" => PackFormat.Packwiz,
                 var other => throw new ArgumentException($"Unknown format '{other}'."),
             };
-            var include = pr.GetValue(includeOption) is { } list
-                ? list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            // Each --include is one path, commas and all ("saves/Build, Test"); one that isn't a path is a list, as before.
+            var include = pr.GetValue(includeOption) is { Length: > 0 } given
+                ? given.SelectMany(v => Exists(instance.GameDirectory, v) ? [v.Trim()] : v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)).ToArray()
                 : ModpackExporter.DefaultSelection(instance.GameDirectory).Where(c => c.IncludedByDefault).Select(c => c.Name).ToArray();
             var result = await s.Packs.Exporter.ExportAsync(instance, new PackExportOptions
             {
@@ -166,6 +171,13 @@ internal static class PackCommands
         pack.Subcommands.Add(export);
         pack.Subcommands.Add(copy);
         return pack;
+    }
+
+    /// <summary>Whether <paramref name="relative"/> is a file or folder in the game directory.</summary>
+    private static bool Exists(string gameDirectory, string relative)
+    {
+        var full = Path.Combine(gameDirectory, relative.Trim().Trim('/', '\\'));
+        return File.Exists(full) || Directory.Exists(full);
     }
 
     private static Command BuildLaunchers(Func<ParseResult, CliServices> services)
