@@ -210,4 +210,29 @@ public class AtomicFileTests
             Directory.Delete(dir, recursive: true);
         }
     }
+
+    [Fact]
+    public void Copy_OfAReadOnlyFile_ThatCantBePutInPlace_LeavesNoTempFile()
+    {
+        if (!OperatingSystem.IsWindows())
+            Assert.Skip("Only Windows refuses to replace a file that's open.");
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var source = Path.Combine(dir, "asset");
+        try
+        {
+            File.WriteAllText(source, "a");
+            File.SetAttributes(source, FileAttributes.ReadOnly);
+            var target = Path.Combine(dir, "target");
+            File.WriteAllText(target, "old");
+            using (new FileStream(target, FileMode.Open, FileAccess.Read, FileShare.Read))
+                Assert.True(Record.Exception(() => AtomicFile.Copy(source, target)) is IOException or UnauthorizedAccessException);
+            Assert.Equal(["asset", "target"], Directory.EnumerateFiles(dir).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+        }
+        finally
+        {
+            File.SetAttributes(source, FileAttributes.Normal);
+            Directory.Delete(dir, recursive: true);
+        }
+    }
 }

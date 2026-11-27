@@ -131,6 +131,9 @@ public static class AtomicFile
     {
         try
         {
+            if (!File.Exists(path))
+                return;
+            File.SetAttributes(path, FileAttributes.Normal); // A copy of a read-only file is read-only too.
             File.Delete(path);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
