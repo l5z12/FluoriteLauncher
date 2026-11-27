@@ -9,6 +9,8 @@ using Fluorite.Core.Instances;
 using Fluorite.Modding.Content;
 using Fluorite.Modding.Platforms;
 using Fluorite.Modding.Util;
+using Tomlyn;
+using Tomlyn.Model;
 
 namespace Fluorite.Modding.Modpacks;
 
@@ -444,10 +446,12 @@ public sealed class ModpackExporter(ContentService content)
         var modrinth = await IdentifyAsync(ContentPlatform.Modrinth, files, o.LocalOnly, ct).ConfigureAwait(false);
         var remaining = files.Where(f => !modrinth.ContainsKey(f.Relative)).ToList();
         var curseforge = await IdentifyAsync(ContentPlatform.CurseForge, remaining, o.LocalOnly, ct).ConfigureAwait(false);
+        var before = PackwizFiles(outputDir); // Exported into before (a pack's git checkout): what that export wrote.
         Directory.CreateDirectory(outputDir);
         var index = new StringBuilder("hash-format = \"sha256\"\n");
         var referenced = 0;
         var bundled = 0;
+        var now = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var (rel, full) in files)
         {
@@ -478,6 +482,7 @@ public sealed class ModpackExporter(ContentService content)
                 File.SetLastWriteTimeUtc(target, File.GetLastWriteTimeUtc(full));
                 bundled++;
             }
+            now.Add(written);
             var hash = await ModpackInstaller.HashAsync(PackPaths.Resolve(outputDir, written), "sha256", ct).ConfigureAwait(false);
             index.Append("\n[[files]]\nfile = ").Append(Toml(written)).Append("\nhash = ").Append(Toml(hash)).Append('\n');
             if (metaFile)
@@ -507,7 +512,57 @@ public sealed class ModpackExporter(ContentService content)
             .Append(Toml(await ModpackInstaller.HashAsync(indexPath, "sha256", ct).ConfigureAwait(false))).Append("\n\n")
             .Append(versions);
         await File.WriteAllTextAsync(Path.Combine(outputDir, "pack.toml"), pack.ToString(), new UTF8Encoding(false), ct).ConfigureAwait(false);
+        RemoveLeftovers(outputDir, before.Where(f => !now.Contains(f)));
         return new PackExportResult(outputDir, referenced, bundled, warnings);
+    }
+
+    /// <summary>
+    /// The files the packwiz pack in <paramref name="folder"/> lists in its index, if there is one: what an earlier
+    /// export wrote there. Empty when there's none, or it can't be read.
+    /// </summary>
+    private static List<string> PackwizFiles(string folder)
+    {
+        try
+        {
+            var packToml = Path.Combine(folder, "pack.toml");
+            if (!File.Exists(packToml))
+                return [];
+            var pack = TomlSerializer.Deserialize<TomlTable>(File.ReadAllText(packToml), Metadata.ModsTomlContext.Default);
+            var indexName = pack?.TryGetValue("index", out var i) == true && i is TomlTable t && t.TryGetValue("file", out var f) && f is string s ? s : "index.toml";
+            var indexPath = PackPaths.Resolve(folder, indexName);
+            if (!File.Exists(indexPath))
+                return [];
+            var index = TomlSerializer.Deserialize<TomlTable>(File.ReadAllText(indexPath), Metadata.ModsTomlContext.Default);
+            if (index?.TryGetValue("files", out var files) != true || files is not TomlTableArray entries)
+                return [];
+            return entries.Select(e => e.TryGetValue("file", out var file) ? PackPaths.Sanitize(file as string) : null).OfType<string>().ToList();
+        }
+        catch (Exception ex) when (ex is TomlException or IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Deletes what an earlier export into this folder wrote and this one didn't (a mod since removed, say), and any
+    /// folder that leaves empty. Nothing the old index didn't list is touched: the repository's own files stay.
+    /// </summary>
+    private static void RemoveLeftovers(string folder, IEnumerable<string> leftovers)
+    {
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
+        foreach (var relative in leftovers)
+        {
+            try
+            {
+                var path = PackPaths.Resolve(folder, relative);
+                File.Delete(path);
+                for (var dir = Path.GetDirectoryName(path); dir is not null && dir.Length > root.Length && !Directory.EnumerateFileSystemEntries(dir).Any(); dir = Path.GetDirectoryName(dir))
+                    Directory.Delete(dir);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+            }
+        }
     }
 
     /// <summary>Writes <c>&lt;folder&gt;/&lt;name&gt;.pw.toml</c> next to where the file would go; returns its relative path.</summary>

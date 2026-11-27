@@ -500,6 +500,35 @@ public class ModpackInstallTests
     }
 
     [Fact]
+    public async Task Export_Packwiz_AgainIntoItsFolder_RemovesWhatItNoLongerHas()
+    {
+        using var tmp = new TempFolder();
+        var layout = new FluoriteLayout(System.IO.Path.Combine(tmp.Path, "root"));
+        var source = await layout.CreateAsync(new InstanceManifest
+        {
+            Name = "Wiz",
+            Components = [new ComponentRef { Uid = ComponentUids.Minecraft, Version = "1.21.1" }],
+        }, Ct);
+        var config = System.IO.Path.Combine(source.GameDirectory, "config", "jei");
+        Directory.CreateDirectory(config);
+        File.WriteAllText(System.IO.Path.Combine(config, "jei.toml"), "j");
+        File.WriteAllText(System.IO.Path.Combine(source.GameDirectory, "config", "keep.json"), "{}");
+        using var content = new ContentService([], new DownloadEngine(new HttpClient()), new MirrorTable(DownloadSourceKind.Official));
+        var exporter = new ModpackExporter(content);
+        var wiz = System.IO.Path.Combine(tmp.Path, "wiz");
+        await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.Packwiz, Name = "Wiz", Include = ["config"] }, wiz, Ct);
+        File.WriteAllText(System.IO.Path.Combine(wiz, "README.md"), "mine"); // The repository's own, not the export's.
+
+        Directory.Delete(config, recursive: true); // JEI removed from the instance.
+        await exporter.ExportAsync(source, new PackExportOptions { Format = PackFormat.Packwiz, Name = "Wiz", Include = ["config"] }, wiz, Ct);
+        Assert.False(Directory.Exists(System.IO.Path.Combine(wiz, "config", "jei")));
+        Assert.True(File.Exists(System.IO.Path.Combine(wiz, "config", "keep.json")));
+        Assert.True(File.Exists(System.IO.Path.Combine(wiz, "README.md")));
+        var read = await PackwizReader.ReadAsync(PackwizReader.NormalizeLocation(wiz), new HttpClient(), null, Ct);
+        Assert.Equal(["config/keep.json"], read.Files.Select(f => f.Path));
+    }
+
+    [Fact]
     public async Task Export_Packwiz_EscapesWhatTomlCantHoldAsIs()
     {
         using var tmp = new TempFolder();
