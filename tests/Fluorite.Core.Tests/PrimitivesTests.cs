@@ -155,3 +155,32 @@ public class MirrorTableTests
         Assert.Equal("https://maven.minecraftforge.net/net/minecraftforge/forge/1.7.10-10.13.4.1614/x.jar",
             MirrorTable.Canonicalize("http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.7.10-10.13.4.1614/x.jar"));
 }
+
+public class AtomicFileTests
+{
+    [Fact]
+    public void Write_ThatFails_LeavesTheFileAsItWas()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluorite-atomic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, "settings.json");
+            File.WriteAllText(path, "old");
+            Assert.Throws<IOException>(() => AtomicFile.Write(path, tmp =>
+            {
+                File.WriteAllText(tmp, "ne"); // Cut short: the disk filled up.
+                throw new IOException("There is not enough space on the disk.");
+            }));
+            Assert.Equal("old", File.ReadAllText(path));
+
+            AtomicFile.WriteAllText(path, "new");
+            Assert.Equal("new", File.ReadAllText(path));
+            Assert.Equal(["settings.json"], Directory.EnumerateFiles(dir).Select(Path.GetFileName)); // No temp file left.
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+}
