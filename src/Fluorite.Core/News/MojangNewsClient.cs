@@ -79,6 +79,23 @@ public sealed class ArticleSearch
     public ArticleSearchResult? Result { get; set; }
 }
 
+/// <summary>Where Mojang's web services are, as its discovery service tells minecraft.net.</summary>
+public sealed class ServiceDiscovery
+{
+    public ServiceDiscoveryResult? Result { get; set; }
+}
+
+public sealed class ServiceDiscoveryResult
+{
+    /// <summary>By service ("net"), then environment ("prod").</summary>
+    public Dictionary<string, Dictionary<string, DiscoveredService>>? ServiceEnvironments { get; set; }
+}
+
+public sealed class DiscoveredService
+{
+    public string? ServiceUri { get; set; }
+}
+
 /// <summary>
 /// Reads the official launcher's content feeds (Java patch notes and news). Responses are cached on disk so the
 /// home page has content offline.
@@ -89,18 +106,107 @@ public sealed partial class MojangNewsClient(HttpClient http, string cacheDir, I
 
     private readonly ILogger _logger = logger ?? NullLogger<MojangNewsClient>.Instance;
 
+    /// <summary>Where minecraft.net asks for the addresses of Mojang's web services.</summary>
+    public const string DiscoveryUrl = "https://client.discovery.minecraft-services.net/api/v1.0/discovery/web/builds/1.0.0.0";
+
+    /// <summary>What discovery says for minecraft.net's own service ("net") as of 2026-11: used until it has answered once.</summary>
+    public const string DefaultNetService = "https://net-secondary.web.minecraft-services.net";
+
     /// <summary>
     /// minecraft.net's own search (what its news pages list), for the newest Java articles: 24, the most it gives at
     /// once, reach about two months back. The patch-notes feed has no addresses; this has them.
     /// </summary>
-    public const string JavaArticlesUrl =
-        "https://net-secondary.web.minecraft-services.net/api/v1.0/en-us/search?pageSize=24&sortType=Recent&tag=minecraft:games/minecraft-java";
+    private const string JavaArticlesPath = "/api/v1.0/en-us/search?pageSize=24&sortType=Recent&tag=minecraft:games/minecraft-java";
 
-    /// <summary>The newest Java articles on minecraft.net. Not kept for offline: <see cref="ArticleUri(PatchNoteEntry)"/> is.</summary>
+    /// <summary>How long discovery's answer is used before asking again. A move shows sooner: the search fails.</summary>
+    private static readonly TimeSpan DiscoveryMaxAge = TimeSpan.FromDays(7);
+
+    private Uri? _netService;
+
+    /// <summary>
+    /// The newest Java articles on minecraft.net, from the service discovery points to. Not kept for offline:
+    /// <see cref="ArticleUri(PatchNoteEntry)"/> is.
+    /// </summary>
     public async Task<IReadOnlyList<ArticleListing>> GetJavaArticlesAsync(CancellationToken ct = default)
     {
-        var bytes = await http.GetByteArrayAsync(new Uri(JavaArticlesUrl), ct).ConfigureAwait(false);
+        var service = await GetNetServiceAsync(rediscover: false, ct).ConfigureAwait(false);
+        try
+        {
+            return await SearchJavaArticlesAsync(service, ct).ConfigureAwait(false);
+        }
+        catch (HttpRequestException) when (!ct.IsCancellationRequested)
+        {
+            // Maybe moved since discovery was last asked: asked again, and tried there if it's somewhere else.
+            var again = await GetNetServiceAsync(rediscover: true, ct).ConfigureAwait(false);
+            if (again == service)
+                throw;
+            return await SearchJavaArticlesAsync(again, ct).ConfigureAwait(false);
+        }
+    }
+
+    private async Task<IReadOnlyList<ArticleListing>> SearchJavaArticlesAsync(Uri service, CancellationToken ct)
+    {
+        var bytes = await http.GetByteArrayAsync(new Uri(service, JavaArticlesPath), ct).ConfigureAwait(false);
         return JsonSerializer.Deserialize(bytes, FluoriteJsonContext.Default.ArticleSearch)?.Result?.Results?.Where(a => a is not null).ToList() ?? [];
+    }
+
+    /// <summary>
+    /// Where minecraft.net's own service is: discovery's answer, kept on disk for <see cref="DiscoveryMaxAge"/> (or
+    /// asked now with <paramref name="rediscover"/>). Discovery out of reach, the answer kept from before however old,
+    /// else <see cref="DefaultNetService"/>.
+    /// </summary>
+    private async Task<Uri> GetNetServiceAsync(bool rediscover, CancellationToken ct)
+    {
+        if (!rediscover && _netService is { } known)
+            return known;
+        var cachePath = Path.Combine(cacheDir, "discovery.json");
+        if (!rediscover && File.Exists(cachePath) && DateTime.UtcNow - File.GetLastWriteTimeUtc(cachePath) < DiscoveryMaxAge
+            && NetServiceIn(await TryReadAsync(cachePath, ct).ConfigureAwait(false)) is { } cached)
+            return _netService = cached;
+        try
+        {
+            var bytes = await http.GetByteArrayAsync(new Uri(DiscoveryUrl), ct).ConfigureAwait(false);
+            var service = NetServiceIn(bytes) ?? throw new InvalidDataException("Discovery has no address for minecraft.net's service.");
+            if (await CacheFile.TrySaveAsync(cachePath, bytes).ConfigureAwait(false) is { } notSaved)
+                CoreLog.CacheNotSaved(_logger, notSaved, cachePath);
+            return _netService = service;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidDataException && !ct.IsCancellationRequested)
+        {
+            return _netService = NetServiceIn(await TryReadAsync(cachePath, ct).ConfigureAwait(false)) ?? new Uri(DefaultNetService);
+        }
+    }
+
+    private static async Task<byte[]?> TryReadAsync(string path, CancellationToken ct)
+    {
+        try
+        {
+            return await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null; // Not there, or held by another launcher sharing the folder.
+        }
+    }
+
+    /// <summary>The "net" service's address in a discovery answer: an https one on Mojang's services, or null.</summary>
+    private static Uri? NetServiceIn(byte[]? discovery)
+    {
+        if (discovery is null)
+            return null;
+        try
+        {
+            var services = JsonSerializer.Deserialize(discovery, FluoriteJsonContext.Default.ServiceDiscovery)?.Result?.ServiceEnvironments;
+            return services?.GetValueOrDefault("net")?.GetValueOrDefault("prod")?.ServiceUri is { } url
+                && Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps
+                && uri.Host.EndsWith(".minecraft-services.net", StringComparison.OrdinalIgnoreCase)
+                    ? uri
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     /// <summary>
